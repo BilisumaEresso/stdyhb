@@ -1,0 +1,26 @@
+{
+  "name": "studyhub",
+  "version": "1.0.0",
+  "description": "Study smart",
+  "keywords": [
+    "Study",
+    "bot",
+    "resource"
+  ],
+  "license": "ISC",
+  "author": "Billy",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "axios": "^1.17.0",
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.6.3",
+    "serpapi": "^2.2.1",
+    "telegraf": "^4.16.3"
+  }
+}
