@@ -170,47 +170,102 @@ async function processMessage(msg, channelUsername) {
   };
 
   try {
-    await TelegramResource.updateOne(
-      { fileUniqueId },
-      { $set: resource },
-      { upsert: true },
-    );
-    return resource;
+    const existing = await TelegramResource.findOne({ channelUsername, messageId: msg.id });
+    
+    if (!existing) {
+      // It's a brand new resource! Forward it to the Archive Channel!
+      let archiveMessageId = null;
+      if (process.env.ARCHIVE_CHAT_ID) {
+        const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+        try {
+          const tg = await getClient();
+          const forwarded = await tg.forwardMessages(archiveChatId, {
+            messages: [msg.id],
+            fromPeer: `@${channelUsername}`
+          });
+          
+          let newMsgId = forwarded && forwarded[0] ? forwarded[0].id : null;
+          if (!newMsgId) {
+            const history = await tg.getMessages(archiveChatId, { limit: 1 });
+            if (history && history.length > 0) newMsgId = history[0].id;
+          }
+          archiveMessageId = newMsgId;
+          
+          // Small delay to prevent flood limits when archiving many files
+          await new Promise(r => setTimeout(r, 200));
+        } catch (archiveErr) {
+          console.error(`⚠️ Failed to archive msg ${msg.id}:`, archiveErr.message);
+        }
+      }
+      
+      resource.archiveMessageId = archiveMessageId;
+      await TelegramResource.create(resource);
+      return resource;
+    } else {
+      // Just update existing
+      await TelegramResource.updateOne({ _id: existing._id }, { $set: resource });
+      return resource;
+    }
   } catch (err) {
-    if (err.code === 11000) return null; // already indexed
+    if (err.code === 11000) return null; // duplicate key error safety net
     throw err;
   }
 }
 
 // ─── index one channel ────────────────────────────────────────────────────────
 
-async function indexChannel(channelUsername, limit = 200) {
+async function indexChannel(channelUsername) {
   const tg = await getClient();
-  console.log(`\nIndexing @${channelUsername} (last ${limit} messages)...`);
+  
+  // Find max messageId for this channel to use incremental mode
+  const maxResource = await TelegramResource.findOne({ channelUsername }).sort({ messageId: -1 });
+  const minId = maxResource ? maxResource.messageId : 0;
+
+  console.log(`\nIndexing @${channelUsername} (Incremental from msgId: ${minId})...`);
 
   let indexed = 0;
   let skipped = 0;
+  let totalFetched = 0;
+  const channelStartTime = Date.now();
 
   try {
-    const messages = await tg.getMessages(`@${channelUsername}`, {
-      limit,
-      filter: new Api.InputMessagesFilterDocument(),
-    });
+    let batchIndexed = 0;
+    let batchSkipped = 0;
+    let batchFetched = 0;
+    let batchStartTime = Date.now();
 
-    for (const msg of messages) {
+    for await (const msg of tg.iterMessages(`@${channelUsername}`, { minId: minId, reverse: true })) {
       const result = await processMessage(msg, channelUsername);
-      result ? indexed++ : skipped++;
+      result ? batchIndexed++ : batchSkipped++;
+      batchFetched++;
+      totalFetched++;
+
+      if (batchFetched >= 100) {
+        indexed += batchIndexed;
+        skipped += batchSkipped;
+        const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
+        console.log(`  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`);
+        
+        // Reset batch
+        batchIndexed = 0;
+        batchSkipped = 0;
+        batchFetched = 0;
+        batchStartTime = Date.now();
+        
+        // Delay to avoid rate limiting
+        await new Promise((r) => setTimeout(r, 1500));
+      }
     }
 
-    const photos = await tg.getMessages(`@${channelUsername}`, {
-      limit: 100,
-      filter: new Api.InputMessagesFilterPhotos(),
-    });
-
-    for (const msg of photos) {
-      const result = await processMessage(msg, channelUsername);
-      result ? indexed++ : skipped++;
+    // Flush remaining batch
+    if (batchFetched > 0) {
+      indexed += batchIndexed;
+      skipped += batchSkipped;
+      const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
+      console.log(`  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`);
     }
+
+    const totalTime = ((Date.now() - channelStartTime) / 1000).toFixed(2);
 
     // Success: Reset failures and mark as ACTIVE
     await TelegramChannel.updateOne(
@@ -227,7 +282,7 @@ async function indexChannel(channelUsername, limit = 200) {
       }
     );
 
-    console.log(`  ✅ @${channelUsername}: ${indexed} indexed, ${skipped} skipped`);
+    console.log(`  ✅ @${channelUsername} COMPLETED: Fetched: ${totalFetched}, Indexed: ${indexed}, Skipped: ${skipped}, Total Time: ${totalTime}s`);
     return { indexed, skipped, error: null };
   } catch (err) {
     const errorMsg = err.message;

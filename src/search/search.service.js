@@ -1,14 +1,9 @@
 const CachedSearch = require("../db/models/CachedSearch");
 const TelegramResource = require("../db/models/TelegramResource");
-const { searchWeb } = require("./providers/websearch");
 const { searchGitHub } = require("./providers/github");
-const { searchYouTube } = require("./providers/youtube");
 const { expandQuery } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
-const { deduplicateResources, getDuplicateStats } = require("./deduplicator");
 const { groupExamImages } = require("./examGrouper");
-const { parseIntent } = require("./intentParser");
-const { scoreAndRankResources, getScoringStats } = require("./relevanceScorer");
 
 // Search debugging logger
 class SearchLogger {
@@ -68,54 +63,19 @@ class SearchService {
   }
 
   /**
-   * Calculate priority score for Telegram resources
+   * Calculate priority score for Telegram resources based on textScore, tags, and type
    */
-  calculateTelegramScore(resource) {
-    let score = 0;
-    const combined = `${resource.title || ""} ${resource.caption || ""}`.toLowerCase();
+  calculateTelegramScore(resource, query, textScore) {
+    let score = (textScore || 0) * 10; // Base score from MongoDB text index
 
-    // Base score by file type
-    if (resource.fileType === "pdf") {
-      score = 100;
-    } else if (resource.fileType === "ppt") {
-      score = 90;
-    } else if (resource.fileType === "doc") {
-      score = 80;
-    } else if (resource.fileType === "image") {
-      score = 70;
-    } else {
-      score = 50;
+    const queryLower = query.toLowerCase();
+    const queryWords = queryLower.split(/\s+/);
+
+    // Tag intersection boost
+    if (resource.tags && resource.tags.length > 0) {
+      const intersection = resource.tags.filter(tag => queryWords.includes(tag.toLowerCase()));
+      score += intersection.length * 15; // +15 per matching tag
     }
-
-    // High priority keywords (+25 each)
-    const highPriorityKeywords = [
-      "exam",
-      "final",
-      "solution",
-      "past paper",
-      "mid",
-      "midterm",
-    ];
-    highPriorityKeywords.forEach((kw) => {
-      if (combined.includes(kw)) score += 25;
-    });
-
-    // Medium priority keywords (+10 each)
-    const mediumPriorityKeywords = ["notes", "lecture", "tutorial"];
-    mediumPriorityKeywords.forEach((kw) => {
-      if (combined.includes(kw)) score += 10;
-    });
-
-    // Negative keywords (-15 each) - reduce non-exam content
-    const negativeKeywords = [
-      "project",
-      "proposal",
-      "management system",
-      "software system",
-    ];
-    negativeKeywords.forEach((kw) => {
-      if (combined.includes(kw)) score -= 15;
-    });
 
     // Boost for exam flag (if detected)
     if (resource.isExam) {
@@ -125,6 +85,15 @@ class SearchService {
     // Boost by popularity
     if (resource.downloadCount && resource.downloadCount > 0) {
       score += Math.min(resource.downloadCount * 2, 50);
+    }
+
+    // Base score by file type
+    if (resource.fileType === "pdf") {
+      score += 30;
+    } else if (resource.fileType === "ppt") {
+      score += 20;
+    } else if (resource.fileType === "doc") {
+      score += 15;
     }
 
     return Math.max(0, score); // Don't go negative
@@ -138,7 +107,7 @@ class SearchService {
       console.log(`  📱 Searching Telegram resources...`);
 
       const results = await TelegramResource.find(
-        { $text: { $search: query } },
+        { $text: { $search: query }, isAvailable: { $ne: false } },
         { score: { $meta: "textScore" } }
       )
         .sort({ score: { $meta: "textScore" } })
@@ -151,7 +120,9 @@ class SearchService {
 
       // Score and prioritize results
       const scoredResults = results.map((resource) => {
-        const telegramScore = this.calculateTelegramScore(resource);
+        const textScore = resource.get('score');
+        const telegramScore = this.calculateTelegramScore(resource, query, textScore);
+        
         return {
           title: resource.title || resource.fileName || "Unnamed",
           url: `https://t.me/${resource.channelUsername}/${resource.messageId}`,
@@ -175,13 +146,13 @@ class SearchService {
 
       scoredResults.sort((a, b) => b.score - a.score);
 
-      const top10 = scoredResults.slice(0, 10);
-      console.log(`  ✅ Telegram: ${top10.length} qualified results`);
-      if (top10.length > 0) {
-        console.log(`     Top: "${top10[0].title}" (score: ${top10[0].score})`);
+      const topResults = scoredResults.slice(0, 10);
+      console.log(`  ✅ Telegram: ${topResults.length} qualified results`);
+      if (topResults.length > 0) {
+        console.log(`     Top: "${topResults[0].title}" (score: ${topResults[0].score})`);
       }
 
-      return top10;
+      return topResults;
     } catch (error) {
       console.error(`  ❌ Telegram search error: ${error.message}`);
       return [];
@@ -189,8 +160,7 @@ class SearchService {
   }
 
   /**
-   * Calculate score based on title and type
-   * Priority: PDF/Exams > Notes/PPT > Videos > GitHub > Websites
+   * Calculate score based on title and type for GitHub fallback
    */
   calculateScore(title, type, source) {
     let score = 0;
@@ -206,9 +176,6 @@ class SearchService {
       "framework",
       "library",
       "api",
-      "database system",
-      "management system",
-      "operating system",
     ];
 
     const isExcluded = exclusionKeywords.some((keyword) =>
@@ -218,144 +185,17 @@ class SearchService {
       return 0; // Exclude non-academic content
     }
 
-    // 🥇 HIGHEST PRIORITY (100-80): PDFs, Exams, Past Papers, Solved Questions
-    if (type === "pdf") {
-      score = 100;
-
-      if (titleLower.includes("exam") || titleLower.includes("past paper")) {
-        score = 110; // Even higher for exam PDFs
-      }
-    } else if (type === "exam") {
-      score = 100;
-
-      if (titleLower.includes("solution") || titleLower.includes("solved")) {
-        score = 115; // Highest for solved exams
-      }
-    } else if (titleLower.includes("past paper")) {
-      score = 105;
-    } else if (
-      titleLower.includes("solved") ||
-      titleLower.includes("solution")
-    ) {
-      score = 100;
-
-      // 🥈 MEDIUM PRIORITY (80-50): Notes, PPTs, Lectures, Tutorials
-    } else if (type === "ppt") {
-      score = 85;
-
-      if (titleLower.includes("lecture") || titleLower.includes("slide")) {
-        score = 90;
-      }
-    } else if (type === "notes") {
-      score = 80;
-
-      if (titleLower.includes("lecture") || titleLower.includes("complete")) {
-        score = 85;
-      }
-    } else if (
-      titleLower.includes("lecture") ||
-      titleLower.includes("tutorial")
-    ) {
-      score = 75;
-    } else if (titleLower.includes("handout") || titleLower.includes("guide")) {
-      score = 70;
-
-      // 🥉 LOW PRIORITY (50-20): Videos, GitHub Repos
-    } else if (type === "video") {
-      score = 40;
-
-      if (
-        titleLower.includes("crash course") ||
-        titleLower.includes("full course")
-      ) {
-        score = 50;
-      }
-    } else if (type === "github") {
+    if (type === "github") {
       score = 30;
 
       if (titleLower.includes("university")) {
         score = 40;
       }
     } else {
-      // Generic website result
       score = 20;
     }
 
-    // Additional keyword boosts (small increments)
-    if (titleLower.includes("final")) {
-      score += 15;
-    } else if (titleLower.includes("mid")) {
-      score += 10;
-    }
-
-    if (
-      titleLower.includes("complete") ||
-      titleLower.includes("comprehensive")
-    ) {
-      score += 5;
-    }
-
-    if (titleLower.includes("official")) {
-      score += 10;
-    }
-
-    return Math.max(0, score); // Ensure score is not negative
-  }
-
-  /**
-   * Search all sources: Web, GitHub, YouTube (No API keys!)
-   */
-  async searchAllSources(query) {
-    try {
-      console.log(`⏳ Searching multiple sources for: "${query}"`);
-
-      const [webResults, gitHubResults, youtubeResults] = await Promise.all([
-        searchWeb(query).catch((err) => {
-          console.error("❌ Web search error:", err.message);
-          return [];
-        }),
-        searchGitHub(query).catch((err) => {
-          console.error("❌ GitHub search error:", err.message);
-          return [];
-        }),
-        searchYouTube(query).catch((err) => {
-          console.error("❌ YouTube search error:", err.message);
-          return [];
-        }),
-      ]);
-
-      console.log(`🌐 WEB Results: ${webResults.length} items`);
-      if (webResults.length > 0) {
-        console.log(
-          "  Sample:",
-          webResults.slice(0, 2).map((r) => r.title),
-        );
-      }
-
-      console.log(`🐙 GITHUB Results: ${gitHubResults.length} items`);
-      if (gitHubResults.length > 0) {
-        console.log(
-          "  Sample:",
-          gitHubResults.slice(0, 2).map((r) => r.title),
-        );
-      }
-
-      console.log(`📺 YOUTUBE Results: ${youtubeResults.length} items`);
-      if (youtubeResults.length > 0) {
-        console.log(
-          "  Sample:",
-          youtubeResults.slice(0, 2).map((r) => r.title),
-        );
-      }
-
-      const merged = [...webResults, ...gitHubResults, ...youtubeResults];
-      console.log(`✅ MERGED: ${merged.length} total results before dedup`);
-
-      return merged;
-    } catch (error) {
-      console.error("Error searching all sources:", error);
-      return [];
-    }
+    return Math.max(0, score);
   }
 
   /**
@@ -376,7 +216,6 @@ class SearchService {
       return await cachedSearch.save();
     } catch (error) {
       console.error("Error caching search results:", error);
-      // Don't throw - caching failure shouldn't break search
       return null;
     }
   }
@@ -405,13 +244,11 @@ class SearchService {
 
   /**
    * Main search function with intelligence
-   * Typo correction → Query expansion → Deduplication → Grouping
    */
   async searchResources(query, user) {
     try {
       const logger = new SearchLogger();
       
-      // Original query
       const normalizedQuery = this.normalizeQuery(query);
       logger.log("Original", query);
       console.log(`\n🔎 SEARCH START - Original: "${query}"`);
@@ -459,87 +296,35 @@ class SearchService {
         const aliasQuery = expanded.appliedAliases.join(" ");
         if (aliasQuery) {
           allResults = await this.searchTelegramResources(aliasQuery);
-          if (allResults.length > 0) {
-            console.log(`  ✓ Found ${allResults.length} results via aliases`);
-          }
         }
 
         // Try partial keyword match
         if (allResults.length === 0 && correctedQuery !== normalizedQuery) {
           allResults = await this.searchTelegramResources(normalizedQuery);
-          if (allResults.length > 0) {
-            console.log(
-              `  ✓ Found ${allResults.length} results (original query)`
-            );
-          }
         }
-
-        // Finally, try web search
-        if (allResults.length === 0) {
-          console.log(`\n🌐 PHASE 2: Web search fallback...`);
-          logger.log("Fallback used", "web_search");
-          const webResults = await this.searchAllSources(correctedQuery);
-          allResults = webResults.map((result) => ({
-            ...result,
-            score: this.calculateScore(result.title, result.type, result.source),
-          }));
-        }
+      }
+      
+      // Finally, try GitHub search if less than 3 results from Telegram
+      if (allResults.length < 3) {
+        console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
+        logger.log("Fallback used", "github_search");
+        const gitHubResults = await searchGitHub(correctedQuery).catch(err => []);
+        
+        const scoredGitHub = gitHubResults.map((result) => ({
+          ...result,
+          score: this.calculateScore(result.title, result.type, result.source),
+        }));
+        
+        allResults = [...allResults, ...scoredGitHub];
       } else {
         console.log(`✅ Telegram results found (${allResults.length})`);
       }
 
-      // Step 4: Deduplication with intelligent grouping
-      console.log(`\n📊 Deduplicating results...`);
-      const beforeDedup = allResults.length;
-      
-      // Separate telegram and non-telegram results for proper deduplication
-      const telegramResults = allResults.filter((r) => r._telegramResource);
-      const nonTelegramResults = allResults.filter((r) => !r._telegramResource);
-
-      // Deduplicate telegram resources
-      const deduplicatedTelegram = deduplicateResources(telegramResults);
-      const stats = getDuplicateStats(telegramResults.length, deduplicatedTelegram);
-      if (stats.removed > 0) {
-        logger.log("Duplicates removed", stats.removed);
-        console.log(`  Removed ${stats.removed} duplicates`);
-      }
-
-      // Combine and sort
-      allResults = [...deduplicatedTelegram, ...nonTelegramResults];
+      // Combine Telegram and fallback results
       allResults.sort((a, b) => b.score - a.score);
 
-      // STEP: Intent-aware relevance filtering
-      console.log(`\n🧠 Intent-aware filtering...`);
-      const intent = parseIntent(query);
-      logger.log("Parsed intent", {
-        subject: intent.subject,
-        resourceType: intent.resourceType,
-        department: intent.department,
-        isExam: intent.isExam,
-      });
-
-      if (intent.subject || intent.resourceType) {
-        console.log(`  Subject: ${intent.subject || "any"}`);
-        console.log(`  Type: ${intent.resourceType || "any"}`);
-        console.log(`  Department: ${intent.department || "any"}`);
-
-        const beforeIntentFilter = allResults.length;
-        const scoredResults = scoreAndRankResources(allResults, intent);
-        const intentStats = getScoringStats(allResults, scoredResults);
-
-        console.log(
-          `  Filtered: ${intentStats.before} → ${intentStats.after} (removed ${intentStats.filtered})`
-        );
-        if (intentStats.topScore > 0) {
-          console.log(`  Top score: ${intentStats.topScore}`);
-        }
-        logger.log("Intent filtered", `${intentStats.before} → ${intentStats.after}`);
-        logger.log("Intent stats", intentStats);
-
-        allResults = scoredResults;
-      }
-
-      // Step 5: Smart image grouping
+      const telegramResults = allResults.filter((r) => r._telegramResource);
+      // Step 4: Smart image grouping
       if (telegramResults.length > 0) {
         console.log(`\n📸 Grouping exam images...`);
         const imageResults = allResults.filter((r) => r.fileType === "image");
@@ -550,14 +335,11 @@ class SearchService {
         }
       }
 
-      // Return top 10
-      const topResults = allResults.slice(0, 10);
+      // Return top 8
+      const topResults = allResults.slice(0, 8);
       console.log(
-        `\n✨ FINAL: ${topResults.length} results | ${beforeDedup} → ${topResults.length}`
+        `\n✨ FINAL: ${topResults.length} results`
       );
-      if (topResults.length > 0) {
-        console.log(`   Sources: ${topResults.map((r) => r.source).join(", ")}\n`);
-      }
 
       logger.log("Results returned", topResults.length);
       logger.print();

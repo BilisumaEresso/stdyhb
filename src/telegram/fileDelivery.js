@@ -1,462 +1,339 @@
-const TelegramResource = require("../db/models/TelegramResource");
-const DownloadHistory = require("../db/models/DownloadHistory");
-const User = require("../db/models/User");
 const { Markup } = require("telegraf");
 
 /**
- * Track download/preview action
+ * Escape HTML characters
  */
-async function trackDownload(telegramId, resource, action = "download", searchQuery = null) {
-  try {
-    const user = await User.findOne({ telegramId });
-    if (!user) return;
-
-    await DownloadHistory.create({
-      userId: user._id,
-      telegramId,
-      resourceId: resource._id,
-      fileId: resource.fileId,
-      resourceTitle: resource.fileName || "Unnamed",
-      fileType: resource.fileType,
-      channelUsername: resource.channelUsername,
-      searchQuery,
-      action,
-      downloadedAt: new Date(),
-    });
-
-    // Increment download count on resource
-    await TelegramResource.updateOne(
-      { _id: resource._id },
-      { $inc: { downloadCount: 1 } }
-    );
-  } catch (error) {
-    console.error("Error tracking download:", error.message);
-  }
-}
-
-/**
- * Escape special Markdown characters
- */
-function escapeMarkdown(text) {
+function escapeHTML(text) {
   if (!text) return "";
   return text
-    .replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&")
-    .substring(0, 1000); // Limit length
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .substring(0, 1000);
 }
 
 /**
- * Format resource result for display with inline buttons
- */
-function formatResourceResult(resource, index) {
-  const typeEmoji =
-    {
-      pdf: "📄",
-      ppt: "📊",
-      image: "🖼️",
-      video: "🎥",
-      doc: "📝",
-    }[resource.fileType] || "📎";
-
-  let text = `${index}. ${typeEmoji} *${escapeMarkdown(resource.title)}*\n`;
-
-  if (resource.channelUsername) {
-    text += `   📌 Channel: @${resource.channelUsername}\n`;
-  }
-
-  if (resource.isExam) {
-    text += `   🎓 Exam Material\n`;
-  }
-
-  if (resource.groupId && resource.fileType === "image") {
-    text += `   📸 Image Set\n`;
-  }
-
-  if (resource.caption) {
-    const caption = escapeMarkdown(resource.caption.substring(0, 60));
-    text += `   📝 "${caption}..."\n`;
-  }
-
-  text += `   Score: ${resource.score || 0}`;
-
-  return text;
-}
-
-/**
- * Create inline buttons for resource
- */
-function getResourceButtons(resourceId, fileType, groupId) {
-  const buttons = [
-    [
-      Markup.button.callback("📥 Download", `download_${resourceId}`),
-      Markup.button.callback("👀 Preview", `preview_${resourceId}`),
-    ],
-    [Markup.button.callback("🔁 More like this", `more_${resourceId}`)],
-  ];
-
-  return Markup.inlineKeyboard(buttons);
-}
-
-/**
- * Send document file (PDF, PPT, DOC) with validation and fallback
- */
-async function sendResourceFile(ctx, resource) {
-  try {
-    // Validate fileId exists
-    if (!resource.fileId) {
-      console.warn(`⚠️ Missing fileId for resource: ${resource._id}`);
-      return await ctx.reply("❌ File unavailable. The resource has no file ID.");
-    }
-
-    console.log(`📤 Sending ${resource.fileType}: ${resource.fileName}`);
-    console.log(`   fileId: ${resource.fileId.substring(0, 30)}...`);
-    console.log(`   messageId: ${resource.messageId}`);
-    console.log(`   fileType: ${resource.fileType}`);
-
-    const caption =
-      `📥 ${resource.title || resource.fileName}\n\n${resource.caption || ""}`.substring(0, 1024);
-
-    if (resource.fileType === "pdf" || resource.fileType === "doc") {
-      await ctx.replyWithDocument(resource.fileId, {
-        caption,
-        parse_mode: "Markdown",
-      });
-    } else if (resource.fileType === "ppt") {
-      await ctx.replyWithDocument(resource.fileId, {
-        caption,
-        parse_mode: "Markdown",
-      });
-    } else {
-      await ctx.reply(`❌ Unsupported file type: ${resource.fileType}`);
-      return;
-    }
-
-    console.log(`✅ File sent successfully`);
-  } catch (error) {
-    console.error(`❌ Error sending file: ${error.message}`);
-    
-    // Fallback: Try forwarding original message if file send fails
-    if (resource.messageId && resource.chatId) {
-      try {
-        console.log(`📤 Attempting fallback: forwarding original message...`);
-        console.log(`   from chatId: ${resource.chatId}, messageId: ${resource.messageId}`);
-        
-        await ctx.telegram.forwardMessage(
-          ctx.chat.id,
-          resource.chatId,
-          resource.messageId
-        );
-        
-        console.log(`✅ Message forwarded as fallback`);
-        await ctx.answerCbQuery("✅ Sending file...", true);
-        return;
-      } catch (fallbackError) {
-        console.error(`❌ Fallback forward failed: ${fallbackError.message}`);
-      }
-    }
-    
-    await ctx.reply(
-      "❌ Failed to send file. The resource may have been deleted or is no longer available.",
-    );
-  }
-}
-
-/**
- * Send media group (grouped images for exam sets) with validation and fallback
- */
-async function sendImageGroup(ctx, groupId) {
-  try {
-    console.log(`📸 Sending image group: ${groupId}`);
-
-    const images = await TelegramResource.find({
-      groupId,
-      fileType: "image",
-    }).sort({ createdAt: 1 });
-
-    if (images.length === 0) {
-      await ctx.reply("❌ Image group not found");
-      return;
-    }
-
-    // Validate all images have fileIds
-    const validImages = images.filter(img => {
-      if (!img.fileId) {
-        console.warn(`⚠️ Image missing fileId: ${img._id}`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validImages.length === 0) {
-      await ctx.reply("❌ All images in group are unavailable.");
-      return;
-    }
-
-    // Track first image in group
-    if (validImages.length > 0) {
-      await trackDownload(ctx.from.id, validImages[0], "view_set");
-    }
-
-    const media = validImages.map((img, idx) => ({
-      type: "photo",
-      media: img.fileId,
-      caption:
-        idx === 0
-          ? `📸 Exam Set (${validImages.length} pages)\n${img.caption || ""}`
-          : img.caption,
-    }));
-
-    await ctx.replyWithMediaGroup(media);
-
-    console.log(`✅ Image group sent (${validImages.length} images)`);
-  } catch (error) {
-    console.error(`❌ Error sending image group: ${error.message}`);
-    await ctx.reply("❌ Failed to send image set.");
-  }
-}
-
-/**
- * Send video file with validation and fallback
- */
-async function sendVideo(ctx, resource) {
-  try {
-    // Validate fileId exists
-    if (!resource.fileId) {
-      console.warn(`⚠️ Missing fileId for video resource: ${resource._id}`);
-      return await ctx.reply("❌ Video unavailable. The resource has no file ID.");
-    }
-
-    console.log(`🎥 Sending video: ${resource.fileName}`);
-    console.log(`   fileId: ${resource.fileId.substring(0, 30)}...`);
-    console.log(`   messageId: ${resource.messageId}`);
-
-    const caption =
-      `🎥 ${resource.title || resource.fileName}\n\n${resource.caption || ""}`.substring(0, 1024);
-
-    await ctx.replyWithVideo(resource.fileId, {
-      caption,
-      parse_mode: "Markdown",
-    });
-
-    console.log(`✅ Video sent successfully`);
-  } catch (error) {
-    console.error(`❌ Error sending video: ${error.message}`);
-    
-    // Fallback: Try forwarding original message
-    if (resource.messageId && resource.chatId) {
-      try {
-        console.log(`📤 Attempting fallback: forwarding video message...`);
-        
-        await ctx.telegram.forwardMessage(
-          ctx.chat.id,
-          resource.chatId,
-          resource.messageId
-        );
-        
-        console.log(`✅ Video message forwarded as fallback`);
-        await ctx.answerCbQuery("✅ Sending video...", true);
-        return;
-      } catch (fallbackError) {
-        console.error(`❌ Fallback forward failed: ${fallbackError.message}`);
-      }
-    }
-    
-    await ctx.reply("❌ Failed to send video.");
-  }
-}
-
-/**
- * Generate "More like this" query
- */
-function generateMoreLikeThisQuery(resource) {
-  const queries = [];
-
-  // Use title/caption and tags
-  if (resource.title) {
-    queries.push(resource.title.split(/\s+/).slice(0, 3).join(" "));
-  }
-
-  if (resource.tags && resource.tags.length > 0) {
-    queries.push(resource.tags[0]);
-  }
-
-  if (resource.caption) {
-    queries.push(resource.caption.split(/\s+/).slice(0, 2).join(" "));
-  }
-
-  return queries[0] || "exam";
-}
-
-/**
- * Handle download button callback
- */
-async function handleDownload(ctx, resourceId) {
-  try {
-    console.log(`\n📥 Download requested for: ${resourceId}`);
-
-    const resource = await TelegramResource.findOne({ fileId: resourceId });
-
-    if (!resource) {
-      console.warn(`⚠️ Resource not found for fileId: ${resourceId}`);
-      return await ctx.reply("❌ Resource not found");
-    }
-
-    // Validate resource has required fields
-    console.log(`   Found resource: ${resource.fileName}`);
-    console.log(`   fileId: ${resource.fileId?.substring(0, 30)}...`);
-    console.log(`   fileType: ${resource.fileType}`);
-    console.log(`   messageId: ${resource.messageId}`);
-    console.log(`   chatId: ${resource.chatId}`);
-
-    if (!resource.fileId) {
-      console.error(`❌ Resource missing fileId: ${resource._id}`);
-      return await ctx.reply("❌ File unavailable - no file ID stored.");
-    }
-
-    // Track download
-    await trackDownload(ctx.from.id, resource, "download");
-
-    if (resource.fileType === "image" && resource.groupId) {
-      await sendImageGroup(ctx, resource.groupId);
-    } else if (resource.fileType === "video") {
-      await sendVideo(ctx, resource);
-    } else {
-      await sendResourceFile(ctx, resource);
-    }
-
-    await ctx.answerCbQuery("✅ Sending file...");
-  } catch (error) {
-    console.error("❌ Error handling download:", error);
-    await ctx.answerCbQuery("❌ Error downloading");
-  }
-}
-
-/**
- * Handle preview button callback
- */
-async function handlePreview(ctx, resourceId) {
-  try {
-    console.log(`👀 Preview requested for: ${resourceId}`);
-
-    const resource = await TelegramResource.findOne({ fileId: resourceId });
-
-    if (!resource) {
-      return await ctx.reply("❌ Resource not found");
-    }
-
-    // Track preview
-    await trackDownload(ctx.from.id, resource, "preview");
-
-    let previewText = `🔍 *Preview: ${escapeMarkdown(resource.title)}*\n\n`;
-    previewText += `📌 Type: ${resource.fileType}\n`;
-    previewText += `🎓 Exam: ${resource.isExam ? "Yes" : "No"}\n`;
-
-    if (resource.tags && resource.tags.length > 0) {
-      previewText += `🏷️  Tags: ${resource.tags.map(t => escapeMarkdown(t)).join(", ")}\n`;
-    }
-
-    if (resource.channelUsername) {
-      previewText += `📢 Channel: @${resource.channelUsername}\n`;
-    }
-
-    if (resource.caption) {
-      previewText += `\n📝 *Description:*\n${escapeMarkdown(resource.caption.substring(0, 200))}...`;
-    }
-
-    await ctx.reply(previewText, {
-      parse_mode: "Markdown",
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback("📥 Download", `download_${resourceId}`)],
-        [Markup.button.callback("🔁 More like this", `more_${resourceId}`)],
-      ]).reply_markup,
-    });
-
-    await ctx.answerCbQuery();
-  } catch (error) {
-    console.error("Error handling preview:", error);
-    await ctx.answerCbQuery("❌ Error loading preview");
-  }
-}
-
-/**
- * Handle "more like this" callback
- */
-async function handleMoreLikeThis(ctx, resourceId) {
-  try {
-    console.log(`🔁 More like this requested for: ${resourceId}`);
-
-    // resourceId is actually the fileId, not MongoDB ObjectId
-    const resource = await TelegramResource.findOne({ fileId: resourceId });
-
-    if (!resource) {
-      return await ctx.reply("❌ Resource not found");
-    }
-
-    const query = generateMoreLikeThisQuery(resource);
-    console.log(`🔍 Searching similar: "${query}"`);
-
-    // Trigger search command with new query
-    ctx.message = { text: `/search ${query}` };
-    ctx.update.message.text = `/search ${query}`;
-
-    // Re-run search (will be handled by search command)
-    await ctx.reply(`🔍 Searching for similar materials: *${query}*`, {
-      parse_mode: "Markdown",
-    });
-
-    // Import search command and run it
-    const searchCommand = require("./search");
-    await searchCommand(ctx);
-
-    await ctx.answerCbQuery("🔁 Finding similar materials...");
-  } catch (error) {
-    console.error("Error handling more like this:", error);
-    await ctx.answerCbQuery("❌ Error searching");
-  }
-}
-
-/**
- * Format and send search results with file delivery buttons
+ * Format and send search results as individual cards
  */
 async function sendSearchResultsWithButtons(ctx, results) {
   if (!results || results.length === 0) {
     return await ctx.reply("❌ No results found. Try a different search term.");
   }
 
-  let message = `✅ Found ${results.length} results:\n\n`;
+  await ctx.reply(`✅ <b>Found ${results.length} results.</b> Displaying top matches:\n👇👇👇`, { parse_mode: "HTML" });
 
-  // Build results message
-  for (let i = 0; i < Math.min(results.length, 5); i++) {
-    const result = results[i];
-
-    if (result._telegramResource) {
-      // Telegram resource - show with download button
-      message += formatResourceResult(result, i + 1);
-      message += "\n\n";
-    }
-  }
-
-  // If we have Telegram resources, add individual buttons for each
-  if (results.some((r) => r._telegramResource)) {
-    // Send first result with full buttons
-    const resource = results[0];
+  for (let i = 0; i < Math.min(results.length, 10); i++) {
+    const resource = results[i];
 
     if (resource._telegramResource) {
-      const text = `✅ *Top Result:*\n\n${formatResourceResult(resource, 1)}\n\n*Download below:*`;
+      let cardText = "";
+      const typeEmoji =
+        {
+          pdf: "📄",
+          ppt: "📊",
+          image: "🖼️",
+          video: "🎥",
+          doc: "📝",
+        }[resource.fileType] || "📎";
 
-      return await ctx.reply(text, {
-        parse_mode: "Markdown",
-        ...getResourceButtons(
-          resource.fileId,
-          resource.fileType,
-          resource.groupId,
-        ),
-      });
+      const isGroup = resource._isGrouped;
+      let title = resource.title || resource.fileName;
+      if (!title && resource.caption) {
+        title = resource.caption.substring(0, 30) + "...";
+      } else if (!title) {
+        title = "Unnamed Resource";
+      }
+      
+      if (isGroup) {
+         cardText += `🖼️ <b>${escapeHTML(title)}</b>\n`;
+      } else {
+         cardText += `${typeEmoji} <b>${escapeHTML(title)}</b>\n`;
+      }
+
+      if (resource.isExam) {
+        cardText += `🎓 <b>Exam Material</b>\n`;
+      }
+
+      if (resource.tags && resource.tags.length > 0) {
+        cardText += `🏷️ ${escapeHTML(resource.tags.join(", "))}\n`;
+      }
+
+      if (resource.channelUsername) {
+        cardText += `📌 Channel: @${escapeHTML(resource.channelUsername)}\n`;
+      }
+
+      if (resource.caption) {
+        let cleanCaption = resource.caption.replace(/\n/g, ' ');
+        let desc = Array.from(cleanCaption).slice(0, 100).join('');
+        if (cleanCaption.length > desc.length) desc += '...';
+        cardText += `\n📝 <i>${escapeHTML(desc)}</i>\n`;
+      }
+      
+      const resourceIdStr = resource._id.toString();
+      
+      let buttonText = isGroup ? `📥 Get all ${resource.groupSize} images` : `📥 Get file`;
+
+      const buttons = Markup.inlineKeyboard([
+        [Markup.button.callback(buttonText, `get_${resourceIdStr}`)]
+      ]);
+
+      await ctx.reply(cardText, { parse_mode: "HTML", reply_markup: buttons.reply_markup });
+    } else {
+      // Github fallback handling
+      const title = resource.title || "GitHub Repository";
+      let desc = "";
+      if (resource.description) {
+        let cleanDesc = resource.description.replace(/\n/g, ' ');
+        let truncDesc = Array.from(cleanDesc).slice(0, 100).join('');
+        if (cleanDesc.length > truncDesc.length) truncDesc += '...';
+        desc = `\n📝 <i>${escapeHTML(truncDesc)}</i>`;
+      }
+      
+      let cardText = `🐙 <b>${escapeHTML(title)}</b>\n📌 Source: GitHub${desc}`;
+      
+      const buttons = Markup.inlineKeyboard([
+        [Markup.button.url("🔗 View on GitHub", resource.url)]
+      ]);
+      await ctx.reply(cardText, { parse_mode: "HTML", reply_markup: buttons.reply_markup });
     }
+    
+    // Add small delay to avoid hitting rate limits
+    await new Promise(r => setTimeout(r, 200));
   }
 
-  // Fallback for web results
-  message += "_Reply with a number to save or get more info_";
-  return await ctx.reply(message, { parse_mode: "Markdown" });
+  await ctx.reply(`🏁 <b>End of search results</b>`, { parse_mode: "HTML" });
+}
+
+const { getClient } = require("../../src/search/telegramIndexer");
+const TelegramResource = require("../db/models/TelegramResource");
+
+// Simple mutex queue to prevent race conditions during relay delivery
+let deliveryQueue = Promise.resolve();
+
+function runInQueue(fn) {
+  return new Promise((resolve, reject) => {
+    deliveryQueue = deliveryQueue.then(async () => {
+      try {
+        resolve(await fn());
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
+
+/**
+ * Handle Single File Download
+ */
+async function handleDownload(ctx, resourceId) {
+  try {
+    console.log(`\n[DELIVERY] Attempting to deliver single file: ${resourceId}`);
+    const resource = await TelegramResource.findById(resourceId);
+    if (!resource) {
+      console.log(`[DELIVERY FAIL] Resource not found in DB`);
+      return await ctx.answerCbQuery("❌ Resource not found.", { show_alert: true });
+    }
+
+    if (!process.env.RELAY_GROUP_ID) {
+      console.log(`[DELIVERY FAIL] RELAY_GROUP_ID not configured`);
+      return await ctx.reply("❌ Bot configuration error: RELAY_GROUP_ID not set.");
+    }
+
+    const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
+    
+    // Prevent copying the message to the Relay Group if the user is testing inside the Relay Group
+    const destinationChatId = ctx.chat.id;
+    if (destinationChatId === relayGroupId) {
+      return await ctx.answerCbQuery("❌ You cannot test delivery inside the Relay Group itself! Test in the bot's private chat.", { show_alert: true });
+    }
+
+    await ctx.answerCbQuery("📥 Fetching file...");
+    const statusMsg = await ctx.reply("⏳ <i>Securely retrieving your file...</i>", { parse_mode: "HTML" });
+
+    await runInQueue(async () => {
+      // 1. GramJS forwards message from source channel to Relay Group
+      const tg = await getClient();
+      let forwardedMessages;
+      let usedArchive = false;
+
+      try {
+        forwardedMessages = await tg.forwardMessages(relayGroupId, {
+          messages: [resource.messageId],
+          fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
+        });
+      } catch (gramError) {
+        console.error(`[DELIVERY WARN] GramJS Forward Error:`, gramError.message);
+        
+        // Archive Fallback
+        if (resource.archiveMessageId && process.env.ARCHIVE_CHAT_ID) {
+          console.log(`[DELIVERY] Falling back to Archive Channel for msg ${resource.archiveMessageId}`);
+          try {
+            const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+            forwardedMessages = await tg.forwardMessages(relayGroupId, {
+              messages: [resource.archiveMessageId],
+              fromPeer: archiveChatId
+            });
+            usedArchive = true;
+          } catch (archiveErr) {
+            console.error(`[DELIVERY FAIL] Archive Fallback Error:`, archiveErr.message);
+          }
+        }
+
+        if (!usedArchive) {
+          await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+          await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+          throw new Error("This resource is no longer available in the source channel or archive.");
+        }
+      }
+
+      if (!forwardedMessages || forwardedMessages.length === 0) {
+        console.log(`[DELIVERY FAIL] GramJS returned empty messages array`);
+        if (!usedArchive) await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+        await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+        throw new Error("This resource is no longer available.");
+      }
+
+      // Safe fallback to fetch the message ID if forwardMessages doesn't return it
+      let newMsgId = forwardedMessages[0].id;
+      if (!newMsgId) {
+        console.log(`[DELIVERY WARN] forwardedMessages[0].id is undefined. Fetching last message from Relay Group...`);
+        const history = await tg.getMessages(relayGroupId, { limit: 1 });
+        if (history && history.length > 0) {
+          newMsgId = history[0].id;
+        }
+      }
+
+      if (!newMsgId) {
+         throw new Error("Could not extract message ID from Relay Group.");
+      }
+
+      // 2. Telegraf copies the message from the Relay Group to the User
+      await ctx.telegram.copyMessage(destinationChatId, relayGroupId, newMsgId);
+      console.log(`[DELIVERY SUCCESS] Delivered message ${newMsgId} to ${destinationChatId}`);
+    });
+
+    // Delete the loading message
+    await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+
+  } catch (error) {
+    console.error("[DELIVERY FAIL] Unexpected Error:", error);
+    await ctx.reply(`❌ Delivery failed. Unexpected error: ${error.message}`);
+  }
+}
+
+/**
+ * Handle Grouped Images Download
+ */
+async function handleGroupDownload(ctx, resourceId) {
+  try {
+    console.log(`\n[DELIVERY] Attempting to deliver image group: ${resourceId}`);
+    const resource = await TelegramResource.findById(resourceId);
+    if (!resource) {
+      console.log(`[DELIVERY FAIL] Resource not found in DB`);
+      return await ctx.answerCbQuery("❌ Resource not found.", { show_alert: true });
+    }
+
+    if (!process.env.RELAY_GROUP_ID) {
+      console.log(`[DELIVERY FAIL] RELAY_GROUP_ID not configured`);
+      return await ctx.reply("❌ Bot configuration error: RELAY_GROUP_ID not set.");
+    }
+
+    const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
+    
+    // Prevent copying the message to the Relay Group if the user is testing inside the Relay Group
+    const destinationChatId = ctx.chat.id;
+    if (destinationChatId === relayGroupId) {
+      return await ctx.answerCbQuery("❌ You cannot test delivery inside the Relay Group itself! Test in the bot's private chat.", { show_alert: true });
+    }
+
+    // Fetch all images belonging to this group
+    const images = await TelegramResource.find({ groupId: resource.groupId }).sort({ messageDate: 1 });
+    
+    if (images.length === 0) {
+      console.log(`[DELIVERY FAIL] No images found for groupId: ${resource.groupId}`);
+      return await ctx.reply("❌ Group images not found.");
+    }
+
+    await ctx.answerCbQuery("📥 Fetching image set...");
+    const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${images.length} images...</i>`, { parse_mode: "HTML" });
+
+    await runInQueue(async () => {
+      const messageIds = images.map(img => img.messageId);
+
+      // 1. GramJS forwards all messages to Relay Group in one batch
+      const tg = await getClient();
+      let forwardedMessages;
+      let usedArchive = false;
+
+      try {
+        forwardedMessages = await tg.forwardMessages(relayGroupId, {
+          messages: messageIds,
+          fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
+        });
+      } catch (gramError) {
+        console.error(`[DELIVERY WARN] GramJS Forward Error (Group):`, gramError.message);
+        
+        // Archive Fallback
+        const archiveIds = images.map(img => img.archiveMessageId).filter(id => id);
+        if (archiveIds.length === images.length && process.env.ARCHIVE_CHAT_ID) {
+           console.log(`[DELIVERY] Falling back to Archive Channel for group`);
+           try {
+             const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+             forwardedMessages = await tg.forwardMessages(relayGroupId, {
+               messages: archiveIds,
+               fromPeer: archiveChatId
+             });
+             usedArchive = true;
+           } catch (archiveErr) {
+             console.error(`[DELIVERY FAIL] Archive Group Fallback Error:`, archiveErr.message);
+           }
+        }
+
+        if (!usedArchive) {
+          await TelegramResource.updateMany({ groupId: resource.groupId }, { $set: { isAvailable: false } });
+          await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+          throw new Error("These images are no longer available in the source channel or archive.");
+        }
+      }
+
+      if (!forwardedMessages || forwardedMessages.length === 0) {
+        console.log(`[DELIVERY FAIL] GramJS returned empty array for group`);
+        if (!usedArchive) await TelegramResource.updateMany({ groupId: resource.groupId }, { $set: { isAvailable: false } });
+        await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+        throw new Error("These images are no longer available.");
+      }
+
+      // Safe fallback for group messages
+      let msgIdsToCopy = forwardedMessages.map(m => m && m.id).filter(id => id);
+      if (msgIdsToCopy.length === 0) {
+         console.log(`[DELIVERY WARN] forwardedMessages missing IDs for group. Fetching last ${messageIds.length} messages...`);
+         const history = await tg.getMessages(relayGroupId, { limit: messageIds.length });
+         // Re-reverse history since getMessages returns newest first
+         msgIdsToCopy = history.map(m => m.id).reverse();
+      }
+
+      // 2. Telegraf copies all messages to the User
+      let successCount = 0;
+      for (const newMsgId of msgIdsToCopy) {
+        try {
+          await ctx.telegram.copyMessage(destinationChatId, relayGroupId, newMsgId);
+          successCount++;
+          await new Promise(r => setTimeout(r, 200)); // Sleep to prevent flood
+        } catch (copyErr) {
+          console.error(`[DELIVERY WARN] Failed to copy a message in group:`, copyErr.message);
+        }
+      }
+      
+      console.log(`[DELIVERY SUCCESS] Delivered ${successCount}/${messageIds.length} images to ${destinationChatId}`);
+    });
+
+    // Delete the loading message
+    await ctx.telegram.deleteMessage(destinationChatId, statusMsg.message_id).catch(() => {});
+
+  } catch (error) {
+    console.error("[DELIVERY FAIL] Unexpected Group Error:", error);
+    await ctx.reply(`❌ Delivery failed for image set. Error: ${error.message}`);
+  }
 }
 
 /**
@@ -465,33 +342,48 @@ async function sendSearchResultsWithButtons(ctx, results) {
 function registerFileDeliveryHandlers(bot) {
   console.log("📦 Registering file delivery handlers...");
 
-  // Download callback
-  bot.action(/download_(.+)/, async (ctx) => {
+  bot.action(/get_(.+)/, async (ctx) => {
     const resourceId = ctx.match[1];
-    await handleDownload(ctx, resourceId);
+    
+    // Check if it's a grouped resource by checking the button text (we can't easily pass two params, so we fetch it)
+    const resource = await TelegramResource.findById(resourceId);
+    if (resource && resource.groupId && resource.fileType === "image") {
+       await handleGroupDownload(ctx, resourceId);
+    } else {
+       await handleDownload(ctx, resourceId);
+    }
   });
 
-  // Preview callback
-  bot.action(/preview_(.+)/, async (ctx) => {
-    const resourceId = ctx.match[1];
-    await handlePreview(ctx, resourceId);
+  bot.on('message', async (ctx, next) => {
+    // Small debug listener to capture Relay Group ID if needed
+    if (ctx.message.text === '/get_chat_id') {
+      console.log(`[Chat ID Debug] ID: ${ctx.chat.id}`);
+      await ctx.reply(`This chat ID is: \`${ctx.chat.id}\``, { parse_mode: "Markdown" });
+    }
+    
+    // Debug listener to capture Archive Channel ID from forwarded messages
+    if (ctx.message.forward_from_chat && ctx.message.forward_from_chat.type === 'channel') {
+      const forwardedChatId = ctx.message.forward_from_chat.id;
+      console.log(`[Archive Chat ID Debug] Forwarded from ID: ${forwardedChatId}`);
+      await ctx.reply(`The ID of that forwarded channel is: \`${forwardedChatId}\``, { parse_mode: "Markdown" });
+    }
+    
+    return next();
   });
 
-  // More like this callback
-  bot.action(/more_(.+)/, async (ctx) => {
-    const resourceId = ctx.match[1];
-    await handleMoreLikeThis(ctx, resourceId);
+  bot.on('channel_post', async (ctx, next) => {
+    // Debug listener for Archive Channel ID
+    if (ctx.channelPost && ctx.channelPost.text === '/get_archive_id') {
+      console.log(`[Archive Chat ID Debug] ID: ${ctx.chat.id}`);
+      await ctx.telegram.sendMessage(ctx.chat.id, `This Archive Chat ID is: \`${ctx.chat.id}\``, { parse_mode: "Markdown" }).catch(() => {});
+    }
+    return next();
   });
 
   console.log("✅ File delivery handlers registered");
 }
 
 module.exports = {
-  sendResourceFile,
-  sendImageGroup,
-  sendVideo,
   sendSearchResultsWithButtons,
   registerFileDeliveryHandlers,
-  formatResourceResult,
-  getResourceButtons,
 };

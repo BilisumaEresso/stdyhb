@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const TelegramResourceSchema = new mongoose.Schema({
   // Telegram identifiers
-  fileId: { type: String, required: true, unique: true },
-  fileUniqueId: { type: String, required: true },
+  fileId: { type: String, required: true },
+  fileUniqueId: { type: String },
   messageId: { type: Number, required: true },
   chatId: { type: Number, required: true },
   channelUsername: { type: String, required: true },
@@ -32,14 +32,22 @@ const TelegramResourceSchema = new mongoose.Schema({
   // Scoring
   relevanceScore: { type: Number, default: 0 },
   downloadCount: { type: Number, default: 0 },
+  isAvailable: { type: Boolean, default: true },
+  archiveMessageId: { type: Number, default: null },
 
   indexedAt: { type: Date, default: Date.now },
   messageDate: { type: Date, default: null },
 });
 
 TelegramResourceSchema.index({ tags: 1 });
-TelegramResourceSchema.index({ channelUsername: 1 });
+TelegramResourceSchema.index({ channelUsername: 1, messageId: 1 }, { unique: true });
 TelegramResourceSchema.index({ courseCode: 1 });
 TelegramResourceSchema.index({ isExam: 1, fileType: 1 });
+
+// Text index for optimized search
+TelegramResourceSchema.index(
+  { fileName: "text", caption: "text", tags: "text", courseCode: "text" },
+  { weights: { fileName: 5, tags: 4, courseCode: 3, caption: 1 } }
+);
 
 module.exports = mongoose.model("TelegramResource", TelegramResourceSchema);

@@ -45,7 +45,7 @@ const resourceSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { _id: false },
+  { _id: false, strict: false },
 );
 
 const cachedSearchSchema = new mongoose.Schema(

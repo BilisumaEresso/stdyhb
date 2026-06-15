@@ -6,7 +6,7 @@ const { sendSearchResultsWithButtons } = require("../../telegram/fileDelivery");
 const SEARCHING_MESSAGE = `🔍 Searching for: **{query}**
 
 📚 Finding study resources...
-⚙️ Aggregating from Telegram, Google...`;
+⚙️ Aggregating from Telegram...`;
 
 /**
  * Format search results for web results
