@@ -5,15 +5,13 @@ const cron = require("node-cron");
 const bot = require("./src/bot");
 const { indexAllChannels } = require("./src/search/telegramIndexer");
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
 // Setup Express server for Render webhooks
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+const server = app.listen(PORT, () => {
+  console.log(`🌐 Server running on port ${PORT}`);
+});
 
 app.get("/", (req, res) => res.send("StudyHub Bot is running."));
 app.get("/health", (req, res) => res.status(200).send("OK"));
@@ -29,9 +27,11 @@ if (webhookUrl) {
   console.warn("⚠️ WEBHOOK_URL not set in .env! Bot will not receive updates.");
 }
 
-const server = app.listen(PORT, () => {
-  console.log(`🌐 Server running on port ${PORT}`);
-});
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
 
 // Graceful shutdown
 const shutdown = () => {
