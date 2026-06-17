@@ -28,6 +28,8 @@ const TelegramResourceSchema = new mongoose.Schema({
   isExam: { type: Boolean, default: false },
   courseCode: { type: String, default: "" }, // e.g. "CS301", "DBMS"
   year: { type: Number, default: null }, // e.g. 2023
+  university: { type: String, default: "" }, // e.g. "ASTU"
+  semester: { type: String, default: "" }, // e.g. "semester 1"
 
   // Scoring
   relevanceScore: { type: Number, default: 0 },

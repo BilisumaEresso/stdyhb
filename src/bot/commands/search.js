@@ -1,12 +1,9 @@
 const userService = require("../../services/user.service");
 const recordSearchService = require("../../services/search.service");
 const orchestrationService = require("../../search/search.service");
-const { sendSearchResultsWithButtons } = require("../../telegram/fileDelivery");
+const { sendPaginatedResults } = require("../../telegram/fileDelivery");
 
-const SEARCHING_MESSAGE = `🔍 Searching for: **{query}**
 
-📚 Finding study resources...
-⚙️ Aggregating from Telegram...`;
 
 /**
  * Format search results for web results
@@ -43,18 +40,20 @@ function formatWebResults(results) {
 
 async function searchCommand(ctx) {
   try {
-    // Extract query from message: "/search query here"
     const messageText = ctx.message.text;
     const query = messageText.split(" ").slice(1).join(" ").trim();
-
-    // Validate query
     if (!query) {
-      return await ctx.reply(
-        "❌ Please provide a search term. Example: /search dbms exam",
-      );
+      return await ctx.reply("❌ Please provide a search term. Example: /search dbms exam");
     }
+    await performSearch(ctx, query);
+  } catch (error) {
+    console.error("Error in /search command:", error);
+    await ctx.reply("❌ An error occurred. Please try again later.");
+  }
+}
 
-    // Get user from database by telegramId
+async function performSearch(ctx, query) {
+  try {
     const user = await userService.findByTelegramId(ctx.from.id);
 
     if (!user) {
@@ -66,21 +65,19 @@ async function searchCommand(ctx) {
     // Record search in database
     await recordSearchService.recordSearch(user._id, query);
 
-    // Send searching message
-    const searchingMsg = SEARCHING_MESSAGE.replace("{query}", query);
-    const statusMessage = await ctx.reply(searchingMsg, {
-      parse_mode: "Markdown",
-    });
+    // Send typing chat action
+    await ctx.telegram.sendChatAction(ctx.chat.id, 'typing').catch(() => {});
 
     // Perform actual search (prioritizes Telegram resources)
     const results = await orchestrationService.searchResources(query, user);
 
     // Check if results contain Telegram resources
-    const hasTelegramResults = results.some((r) => r._telegramResource);
+    const hasTelegramResults = results && results.length > 0 && results.some((r) => r._telegramResource);
 
     if (hasTelegramResults) {
       // Use file delivery system for Telegram results
-      await sendSearchResultsWithButtons(ctx, results);
+      const queryHash = require("crypto").createHash('md5').update(query).digest('hex').substring(0, 8);
+      await sendPaginatedResults(ctx, results, query, queryHash, 1);
     } else {
       // Use web results formatting
       const resultsMessage = formatWebResults(results);
@@ -88,12 +85,15 @@ async function searchCommand(ctx) {
         parse_mode: "Markdown",
       });
     }
+
+    // Clear typing action
+    await ctx.telegram.sendChatAction(ctx.chat.id, 'cancel').catch(() => {});
   } catch (error) {
-    console.error("Error in /search command:", error);
+    console.error("Error in performSearch:", error);
     await ctx.reply(
       "❌ An error occurred while processing your search. Please try again later.",
     );
   }
 }
 
-module.exports = searchCommand;
+module.exports = { searchCommand, performSearch };

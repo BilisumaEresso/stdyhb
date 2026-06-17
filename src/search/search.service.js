@@ -3,13 +3,13 @@ const TelegramResource = require("../db/models/TelegramResource");
 const { searchGitHub } = require("./providers/github");
 const { expandQuery } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
-const { groupExamImages } = require("./examGrouper");
+
 
 // Search debugging logger
 class SearchLogger {
   constructor() {
     this.logs = [];
-  }
+  }  
 
   log(key, value) {
     this.logs.push({ key, value });
@@ -63,9 +63,42 @@ class SearchService {
   }
 
   /**
+   * Detect search intent from query
+   */
+  detectIntent(query) {
+    const intent = {
+      exam: false,
+      notes: false,
+      simple: false,
+      assignmentLab: false,
+      year: null,
+    };
+
+    if (/\b(mid|midterm|final|exam|exam paper|past paper|previous exam|test|quiz)\b/i.test(query)) {
+      intent.exam = true;
+    }
+    if (/\b(note|notes|slide|slides|ppt|handout|lecture note|lecture notes|pdf)\b/i.test(query)) {
+      intent.notes = true;
+    }
+    if (/\b(summary|short|easy|cheat sheet|quick review|revision|compact|brief)\b/i.test(query)) {
+      intent.simple = true;
+    }
+    if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(query)) {
+      intent.assignmentLab = true;
+    }
+    
+    const yearMatch = query.match(/\b(201\d|202\d)\b/);
+    if (yearMatch) {
+      intent.year = yearMatch[0];
+    }
+
+    return intent;
+  }
+
+  /**
    * Calculate priority score for Telegram resources based on textScore, tags, and type
    */
-  calculateTelegramScore(resource, query, textScore) {
+  calculateTelegramScore(resource, query, textScore, intent, user) {
     let score = (textScore || 0) * 10; // Base score from MongoDB text index
 
     const queryLower = query.toLowerCase();
@@ -77,9 +110,34 @@ class SearchService {
       score += intersection.length * 15; // +15 per matching tag
     }
 
-    // Boost for exam flag (if detected)
-    if (resource.isExam) {
-      score += 50;
+    // Intent scoring
+    if (intent.exam && resource.isExam) {
+      score += 150; // Massively boost exams
+    }
+
+    if (intent.notes && (resource.fileType === "ppt" || resource.fileType === "doc" || resource.fileType === "pdf")) {
+      score += 40;
+    }
+
+    if (intent.simple) {
+      if (resource.tags && (resource.tags.includes("summary") || resource.tags.includes("short"))) score += 50;
+    }
+
+    if (intent.assignmentLab) {
+      if (resource.tags && (resource.tags.includes("assignment") || resource.tags.includes("project") || resource.tags.includes("lab"))) score += 60;
+    }
+
+    if (intent.year) {
+      if (resource.tags && resource.tags.includes(intent.year)) score += 100;
+      else if (resource.messageDate && resource.messageDate.getFullYear().toString() === intent.year) score += 50;
+    }
+
+    // Personalization scoring
+    if (user && user.university && resource.tags && resource.tags.includes(user.university.toLowerCase())) {
+      score += 80; // Boost own university
+    }
+    if (user && user.department && resource.tags && resource.tags.includes(user.department.toLowerCase())) {
+      score += 50; // Boost own department
     }
 
     // Boost by popularity
@@ -102,7 +160,7 @@ class SearchService {
   /**
    * Search Telegram indexed resources with intelligence
    */
-  async searchTelegramResources(query, logger = null) {
+  async searchTelegramResources(query, intent, user, logger = null) {
     try {
       console.log(`  📱 Searching Telegram resources...`);
 
@@ -111,7 +169,7 @@ class SearchService {
         { score: { $meta: "textScore" } }
       )
         .sort({ score: { $meta: "textScore" } })
-        .limit(20);
+        .limit(200);
 
       if (results.length === 0) {
         console.log(`  📱 Telegram: No results found`);
@@ -121,8 +179,8 @@ class SearchService {
       // Score and prioritize results
       const scoredResults = results.map((resource) => {
         const textScore = resource.get('score');
-        const telegramScore = this.calculateTelegramScore(resource, query, textScore);
-        
+        const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user);
+
         return {
           title: resource.title || resource.fileName || "Unnamed",
           url: `https://t.me/${resource.channelUsername}/${resource.messageId}`,
@@ -146,7 +204,7 @@ class SearchService {
 
       scoredResults.sort((a, b) => b.score - a.score);
 
-      const topResults = scoredResults.slice(0, 10);
+      const topResults = scoredResults.slice(0, 200);
       console.log(`  ✅ Telegram: ${topResults.length} qualified results`);
       if (topResults.length > 0) {
         console.log(`     Top: "${topResults[0].title}" (score: ${topResults[0].score})`);
@@ -248,7 +306,7 @@ class SearchService {
   async searchResources(query, user) {
     try {
       const logger = new SearchLogger();
-      
+
       const normalizedQuery = this.normalizeQuery(query);
       logger.log("Original", query);
       console.log(`\n🔎 SEARCH START - Original: "${query}"`);
@@ -283,9 +341,42 @@ class SearchService {
       console.log(`💾 Cache MISS - fetching fresh results...`);
       logger.log("Cache hit", false);
 
+      const intent = this.detectIntent(normalizedQuery);
+      logger.log("Intent", intent);
+
       // Primary search with corrected & expanded query
       console.log(`\n📱 PHASE 1: Telegram search...`);
-      let allResults = await this.searchTelegramResources(expanded.expanded);
+      let allResults = [];
+      const queriesToRun = new Set([expanded.expanded]);
+
+      const queryWords = normalizedQuery.split(/\s+/);
+      if (queryWords.length >= 3) {
+        // Multi-word combinatorics
+        for (let i = 0; i < queryWords.length - 1; i++) {
+          queriesToRun.add(`${queryWords[i]} ${queryWords[i+1]}`);
+        }
+        for (const w of queryWords) {
+          if (w.length > 2) queriesToRun.add(w);
+        }
+      }
+
+      console.log(`Executing ${queriesToRun.size} searches concurrently...`);
+      const searchPromises = Array.from(queriesToRun).map(q => this.searchTelegramResources(q, intent, user, logger));
+      const resultsArrays = await Promise.all(searchPromises);
+
+      for (const resArray of resultsArrays) {
+        allResults = allResults.concat(resArray);
+      }
+
+      // Deduplicate by _id, keeping highest score
+      const dedupMap = new Map();
+      for (const res of allResults) {
+        const existing = dedupMap.get(res._id.toString());
+        if (!existing || res.score > existing.score) {
+          dedupMap.set(res._id.toString(), res);
+        }
+      }
+      allResults = Array.from(dedupMap.values());
 
       // Step 3: Search fallback strategy
       if (allResults.length === 0) {
@@ -295,26 +386,28 @@ class SearchService {
         // Try alias search if we haven't already
         const aliasQuery = expanded.appliedAliases.join(" ");
         if (aliasQuery) {
-          allResults = await this.searchTelegramResources(aliasQuery);
+          const res = await this.searchTelegramResources(aliasQuery, intent, user, logger);
+          allResults = allResults.concat(res);
         }
 
         // Try partial keyword match
         if (allResults.length === 0 && correctedQuery !== normalizedQuery) {
-          allResults = await this.searchTelegramResources(normalizedQuery);
+          const res = await this.searchTelegramResources(normalizedQuery, intent, user, logger);
+          allResults = allResults.concat(res);
         }
       }
-      
+
       // Finally, try GitHub search if less than 3 results from Telegram
       if (allResults.length < 3) {
         console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
         logger.log("Fallback used", "github_search");
         const gitHubResults = await searchGitHub(correctedQuery).catch(err => []);
-        
+
         const scoredGitHub = gitHubResults.map((result) => ({
           ...result,
           score: this.calculateScore(result.title, result.type, result.source),
         }));
-        
+
         allResults = [...allResults, ...scoredGitHub];
       } else {
         console.log(`✅ Telegram results found (${allResults.length})`);
@@ -324,19 +417,26 @@ class SearchService {
       allResults.sort((a, b) => b.score - a.score);
 
       const telegramResults = allResults.filter((r) => r._telegramResource);
-      // Step 4: Smart image grouping
+      // Step 4: Deduplicate and collapse DB-assigned groups
       if (telegramResults.length > 0) {
-        console.log(`\n📸 Grouping exam images...`);
-        const imageResults = allResults.filter((r) => r.fileType === "image");
-        if (imageResults.length > 1) {
-          const grouped = groupExamImages(allResults);
-          console.log(`  Grouped into ${grouped.length} result sets`);
-          allResults = grouped;
+        console.log(`\n📸 Collapsing grouped images...`);
+        const collapsed = [];
+        const seenGroups = new Set();
+
+        for (const r of allResults) {
+          if (r.groupId && r.fileType === "image") {
+             if (seenGroups.has(r.groupId)) continue;
+             seenGroups.add(r.groupId);
+             r._isGrouped = true;
+             r.groupSize = r.groupTotal;
+          }
+          collapsed.push(r);
         }
+        allResults = collapsed;
       }
 
-      // Return top 8
-      const topResults = allResults.slice(0, 8);
+      // Return top 200 for pagination
+      const topResults = allResults.slice(0, 200);
       console.log(
         `\n✨ FINAL: ${topResults.length} results`
       );
