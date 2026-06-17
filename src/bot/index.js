@@ -1,4 +1,5 @@
 const { Telegraf, session, Scenes } = require("telegraf");
+const { setBot } = require("./botInstance");
 const startCommand = require("./commands/start");
 const { searchCommand, performSearch } = require("./commands/search");
 const adminCommands = require("./commands/admin");
@@ -11,6 +12,8 @@ const { registerFileDeliveryHandlers } = require("../telegram/fileDelivery");
 const { rateLimitMiddleware } = require("../middleware/rateLimiter");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+setBot(bot);
+
 
 // Apply session and scene middleware
 const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);

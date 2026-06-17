@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const TelegramResource = require("../db/models/TelegramResource");
 const TelegramChannel = require("../db/models/TelegramChannel");
 const { notifyAdmin } = require("../services/notify.service");
-const bot = require("../bot/index");
+const { getBot } = require("../bot/botInstance");
 
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
@@ -221,6 +221,7 @@ async function processMessageGroup(msgs, channelUsername) {
   // Archive NEW resources in one batch using Bot API copyMessage
   if (newResources.length > 0) {
     if (process.env.ARCHIVE_CHAT_ID) {
+      const bot = getBot();
       const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
       const isGroup = newResources.length > 1 && newResources[0].groupId;
       const groupArchiveIds = [];

@@ -1,5 +1,12 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
+const { Telegraf } = require("telegraf");
+const { setBot } = require("../src/bot/botInstance");
+
+// Initialize minimal bot purely for API access during archival copies
+const bot = new Telegraf(process.env.BOT_TOKEN);
+setBot(bot);
+
 const TelegramChannel = require("../src/db/models/TelegramChannel");
 const { indexChannel, getClient } = require("../src/search/telegramIndexer");
 
