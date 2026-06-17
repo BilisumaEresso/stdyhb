@@ -1,4 +1,5 @@
 const TelegramChannel = require("../../db/models/TelegramChannel");
+const ChannelRecommendation = require("../../db/models/ChannelRecommendation");
 const { indexChannel } = require("../../search/telegramIndexer");
 
 /**
@@ -138,7 +139,6 @@ const forceScanCommand = async (ctx) => {
 
     const statusMsg = await ctx.reply(`⏳ Forcing scan on @${username}... This might take a while depending on channel size.`);
 
-    // Trigger the indexer directly but do not await it here, so Telegraf doesn't timeout!
     indexChannel(username).then(async (results) => {
       let report = `✅ <b>Force Scan Complete: @${username}</b>\n\n`;
       report += `📑 Total Parsed: ${results.indexed + results.skipped}\n`;
@@ -151,11 +151,82 @@ const forceScanCommand = async (ctx) => {
       await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ Failed to force scan @${username}. Error: ${error.message}`).catch(() => {});
     });
 
-    return; // Resolve the command immediately
+    return;
   } catch (error) {
     console.error("[Admin] Error forcing scan:", error);
     await ctx.reply(`❌ Failed to force scan @${username}. Error: ${error.message}`);
   }
+};
+
+const registerAdminActionHandlers = (bot) => {
+  bot.action(/approve_rec_(.+)/, async (ctx) => {
+    try {
+      const recId = ctx.match[1];
+      const rec = await ChannelRecommendation.findById(recId).populate('recommendedBy');
+      if (!rec || rec.status !== "pending") {
+        return await ctx.answerCbQuery("Recommendation already processed or not found.", { show_alert: true });
+      }
+
+      rec.status = "approved";
+      await rec.save();
+
+      await TelegramChannel.findOneAndUpdate(
+        { username: rec.channelUsername },
+        {
+          username: rec.channelUsername,
+          university: rec.university === "All Universities" ? "" : rec.university,
+          department: "",
+          type: "general",
+          priority: 1,
+          active: true,
+          lastScannedAt: null,
+          totalIndexed: 0
+        },
+        { upsert: true, new: true }
+      );
+
+      await ctx.editMessageText(ctx.callbackQuery.message.text + "\n\n✅ <b>APPROVED</b>", { parse_mode: "HTML" }).catch(()=>{});
+      
+      if (rec.recommendedBy && rec.recommendedBy.telegramId) {
+        await bot.telegram.sendMessage(
+          rec.recommendedBy.telegramId, 
+          `✅ Thanks! Your recommendation for @${rec.channelUsername} has been approved and added to StudyHub!`
+        ).catch(()=>{});
+      }
+
+      await ctx.answerCbQuery("Approved!");
+    } catch (err) {
+      console.error("Error approving rec:", err);
+      await ctx.answerCbQuery("Error processing approval", { show_alert: true });
+    }
+  });
+
+  bot.action(/reject_rec_(.+)/, async (ctx) => {
+    try {
+      const recId = ctx.match[1];
+      const rec = await ChannelRecommendation.findById(recId).populate('recommendedBy');
+      if (!rec || rec.status !== "pending") {
+        return await ctx.answerCbQuery("Recommendation already processed or not found.", { show_alert: true });
+      }
+
+      rec.status = "rejected";
+      await rec.save();
+
+      await ctx.editMessageText(ctx.callbackQuery.message.text + "\n\n❌ <b>REJECTED</b>", { parse_mode: "HTML" }).catch(()=>{});
+
+      if (rec.recommendedBy && rec.recommendedBy.telegramId) {
+        await bot.telegram.sendMessage(
+          rec.recommendedBy.telegramId, 
+          `Thanks for the suggestion! We reviewed @${rec.channelUsername} but it didn't meet our criteria right now.`
+        ).catch(()=>{});
+      }
+
+      await ctx.answerCbQuery("Rejected!");
+    } catch (err) {
+      console.error("Error rejecting rec:", err);
+      await ctx.answerCbQuery("Error processing rejection", { show_alert: true });
+    }
+  });
 };
 
 module.exports = {
@@ -163,5 +234,6 @@ module.exports = {
   addChannelCommand,
   removeChannelCommand,
   listChannelsCommand,
-  forceScanCommand
+  forceScanCommand,
+  registerAdminActionHandlers
 };

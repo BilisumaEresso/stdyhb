@@ -1,33 +1,34 @@
 const userService = require("../../services/user.service");
+const { Markup } = require("telegraf");
+const templates = require("../../telegram/templates");
 
-const WELCOME_MESSAGE = `🎓 Welcome to StudyHub!
-
-Find:
-📚 Past exams
-📄 PDFs & handouts
-📊 PPT slides
-🎥 YouTube learning resources
-💻 GitHub study materials
-
-Try:
-\`/search database systems\`
-\`/search networking ppt\`
-\`/search oop exam\``;
-
-async function startCommand(ctx) {
+async function startCommand(ctx, skipWizard = false) {
   try {
     const telegramUser = ctx.from;
+    const user = await userService.getOrCreateUser(telegramUser);
 
-    // Get or create user in database
-    await userService.getOrCreateUser(telegramUser);
+    // Enter onboarding wizard if no university is set and they didn't just skip it
+    if (!skipWizard && (!user.university || user.university === "")) {
+      return ctx.scene.enter("onboarding");
+    }
 
-    // Send welcome message
-    await ctx.reply(WELCOME_MESSAGE, {
-      parse_mode: "Markdown",
+    const keyboard = Markup.keyboard([
+      ["🔍 Search", "📚 My Saves"],
+      ["📢 Suggest Channel", "❓ Help"]
+    ]).resize();
+
+    // Decide which welcome message to send
+    const messageText = user.searchCount === 0 
+      ? templates.welcomeNew(user) 
+      : templates.welcomeReturning(user);
+
+    await ctx.reply(messageText, {
+      parse_mode: "HTML",
+      ...keyboard
     });
   } catch (error) {
     console.error("Error in /start command:", error);
-    await ctx.reply("❌ An error occurred. Please try again later.");
+    await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
   }
 }
 

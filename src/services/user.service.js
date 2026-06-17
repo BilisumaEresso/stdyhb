@@ -1,4 +1,5 @@
 const User = require("../db/models/User");
+const { notifyAdmin } = require("./notify.service");
 
 class UserService {
   /**
@@ -26,7 +27,17 @@ class UserService {
         lastActive: new Date(),
       });
 
-      return await user.save();
+      await user.save();
+      
+      notifyAdmin("NEW_USER", {
+        username: user.username,
+        firstName: user.firstName,
+        telegramId: user.telegramId,
+        university: user.university,
+        department: user.department
+      });
+
+      return user;
     } catch (error) {
       console.error("Error creating user:", error);
       throw error;

@@ -9,6 +9,12 @@ const savedResourceSchema = new mongoose.Schema(
       index: true,
     },
 
+    telegramResourceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TelegramResource",
+      default: null,
+    },
+
     title: {
       type: String,
       required: true,
