@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const TelegramResource = require("../db/models/TelegramResource");
 const TelegramChannel = require("../db/models/TelegramChannel");
 const { notifyAdmin } = require("../services/notify.service");
-const { getBot } = require("../bot/botInstance");
 
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
@@ -218,32 +217,47 @@ async function processMessageGroup(msgs, channelUsername) {
     else newResources.push(r);
   }
 
-  // Archive NEW resources in one batch using Bot API copyMessage
+  // Archive NEW resources using GramJS forwardMessages
   if (newResources.length > 0) {
     if (process.env.ARCHIVE_CHAT_ID) {
-      const bot = getBot();
+      const tg = await getClient();
       const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
       const isGroup = newResources.length > 1 && newResources[0].groupId;
-      const groupArchiveIds = [];
+      const peer = channelUsername ? `@${channelUsername}` : parseInt(newResources[0].chatId);
 
-      for (let i = 0; i < newResources.length; i++) {
-         const r = newResources[i];
-         try {
-           const result = await bot.telegram.copyMessage(archiveChatId, `@${channelUsername}`, r._rawMsgId);
-           if (isGroup) groupArchiveIds.push(result.message_id);
-           else r.archiveMessageId = result.message_id;
-           await new Promise(resolve => setTimeout(resolve, 150));
-         } catch (e) {
-           console.warn(`⚠️ Failed to archive message ${r._rawMsgId} from @${channelUsername}:`, e.message);
-         }
-      }
+      try {
+        if (isGroup) {
+          const msgIds = newResources.map(r => r._rawMsgId);
+          const result = await tg.forwardMessages(archiveChatId, {
+            messages: msgIds,
+            fromPeer: peer
+          });
+          
+          const fwdMsgs = normalizeForwarded(result);
+          const groupArchiveIds = fwdMsgs.map(m => m.id);
 
-      if (isGroup) {
-         for (let i = 0; i < newResources.length; i++) {
-           newResources[i].archiveMessageIds = groupArchiveIds;
-           // Keep individual for fallback compatibility
-           newResources[i].archiveMessageId = groupArchiveIds[i] || groupArchiveIds[0]; 
-         }
+          for (let i = 0; i < newResources.length; i++) {
+            newResources[i].archiveMessageIds = groupArchiveIds;
+            newResources[i].archiveMessageId = groupArchiveIds[i] || groupArchiveIds[0];
+          }
+        } else {
+          for (let i = 0; i < newResources.length; i++) {
+             const r = newResources[i];
+             try {
+               const result = await tg.forwardMessages(archiveChatId, {
+                 messages: [r._rawMsgId],
+                 fromPeer: peer
+               });
+               const fwdMsgs = normalizeForwarded(result);
+               r.archiveMessageId = fwdMsgs[0]?.id;
+               await new Promise(resolve => setTimeout(resolve, 150));
+             } catch (e) {
+               console.warn(`⚠️ Failed to archive message ${r._rawMsgId} from @${channelUsername}:`, e.message);
+             }
+          }
+        }
+      } catch (e) {
+        console.warn(`⚠️ Failed to archive group from @${channelUsername}:`, e.message);
       }
     }
 
