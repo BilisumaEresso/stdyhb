@@ -160,7 +160,7 @@ class SearchService {
   /**
    * Search Telegram indexed resources with intelligence
    */
-  async searchTelegramResources(query, intent, user, logger = null) {
+  async searchTelegramResources(query, intent, user, logger = null, limit = 200) {
     try {
       console.log(`  📱 Searching Telegram resources...`);
 
@@ -169,7 +169,7 @@ class SearchService {
         { score: { $meta: "textScore" } }
       )
         .sort({ score: { $meta: "textScore" } })
-        .limit(200);
+        .limit(limit);
 
       if (results.length === 0) {
         console.log(`  📱 Telegram: No results found`);
@@ -304,6 +304,7 @@ class SearchService {
    * Main search function with intelligence
    */
   async searchResources(query, user) {
+    const startTimeMs = Date.now();
     try {
       const logger = new SearchLogger();
 
@@ -344,28 +345,46 @@ class SearchService {
       const intent = this.detectIntent(normalizedQuery);
       logger.log("Intent", intent);
 
+      // Kick off GitHub search in parallel so its timeout overlaps with Telegram searches
+      const githubPromise = searchGitHub(correctedQuery).catch(err => []);
+
       // Primary search with corrected & expanded query
-      console.log(`\n📱 PHASE 1: Telegram search...`);
-      let allResults = [];
-      const queriesToRun = new Set([expanded.expanded]);
+      console.log(`\n📱 PHASE 1: Primary Telegram search...`);
+      let allResults = await this.searchTelegramResources(expanded.expanded, intent, user, logger, 200);
 
       const queryWords = normalizedQuery.split(/\s+/);
-      if (queryWords.length >= 3) {
-        // Multi-word combinatorics
-        for (let i = 0; i < queryWords.length - 1; i++) {
-          queriesToRun.add(`${queryWords[i]} ${queryWords[i+1]}`);
+      if (allResults.length < 5 && queryWords.length >= 3) {
+        console.log(`\n⚠️  Primary returned < 5 results. Triggering fallback fan-out...`);
+        const fallbackQueries = new Set();
+        let addedCount = 0;
+        
+        // Multi-word combinatorics - prioritize word-pairs first
+        for (let i = 0; i < queryWords.length - 1 && addedCount < 5; i++) {
+          const q = `${queryWords[i]} ${queryWords[i+1]}`;
+          if (q !== expanded.expanded) {
+            fallbackQueries.add(q);
+            addedCount++;
+          }
         }
+        // Then individual words > 2 chars, up to 5 total fallbacks
         for (const w of queryWords) {
-          if (w.length > 2) queriesToRun.add(w);
+          if (addedCount >= 5) break;
+          if (w.length > 2 && w !== expanded.expanded && !fallbackQueries.has(w)) {
+            fallbackQueries.add(w);
+            addedCount++;
+          }
         }
-      }
 
-      console.log(`Executing ${queriesToRun.size} searches concurrently...`);
-      const searchPromises = Array.from(queriesToRun).map(q => this.searchTelegramResources(q, intent, user, logger));
-      const resultsArrays = await Promise.all(searchPromises);
+        if (fallbackQueries.size > 0) {
+          console.log(`Executing ${fallbackQueries.size} fallback searches concurrently...`);
+          // Use smaller limit=50 for fallback queries
+          const searchPromises = Array.from(fallbackQueries).map(q => this.searchTelegramResources(q, intent, user, logger, 50));
+          const resultsArrays = await Promise.all(searchPromises);
 
-      for (const resArray of resultsArrays) {
-        allResults = allResults.concat(resArray);
+          for (const resArray of resultsArrays) {
+            allResults = allResults.concat(resArray);
+          }
+        }
       }
 
       // Deduplicate by _id, keeping highest score
@@ -401,7 +420,8 @@ class SearchService {
       if (allResults.length < 3) {
         console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
         logger.log("Fallback used", "github_search");
-        const gitHubResults = await searchGitHub(correctedQuery).catch(err => []);
+        // Await the promise we started at the top
+        const gitHubResults = await githubPromise;
 
         const scoredGitHub = gitHubResults.map((result) => ({
           ...result,
@@ -448,6 +468,9 @@ class SearchService {
       this.cacheResults(query, correctedQuery, topResults).catch((err) => {
         console.error("Caching failed (non-blocking):", err);
       });
+
+      const durationMs = Date.now() - startTimeMs;
+      console.log(`⏱ Total search time: ${durationMs}ms`);
 
       return topResults;
     } catch (error) {

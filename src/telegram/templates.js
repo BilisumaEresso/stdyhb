@@ -176,5 +176,6 @@ module.exports = {
   renderNoResults,
   renderError,
   welcomeNew,
-  welcomeReturning
+  welcomeReturning,
+  escapeHTML
 };

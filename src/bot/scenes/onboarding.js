@@ -89,7 +89,7 @@ const onboardingWizard = new Scenes.WizardScene(
       
       // We also trigger the normal start command to ensure they see the persistent Reply Keyboard
       // The startCommand should now have a check to avoid re-triggering the wizard!
-      return await startCommand(ctx, true); 
+      await startCommand(ctx, true); 
     } catch (error) {
       console.error("Error saving onboarding data:", error);
       await ctx.reply("❌ There was an error saving your profile, but you can still use the bot!");

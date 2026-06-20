@@ -13,8 +13,8 @@ async function startCommand(ctx, skipWizard = false) {
     }
 
     const keyboard = Markup.keyboard([
-      ["🔍 Search", "📚 My Saves"],
-      ["📢 Suggest Channel", "❓ Help"]
+      ["🔍 Search Resources", "📚 My Saves"],
+      ["📢 Recommend Channel", "❓ Help"]
     ]).resize();
 
     // Decide which welcome message to send

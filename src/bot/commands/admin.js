@@ -3,13 +3,18 @@ const ChannelRecommendation = require("../../db/models/ChannelRecommendation");
 const { indexChannel } = require("../../search/telegramIndexer");
 
 /**
+ * Helper to synchronously check if a user is an admin
+ */
+const isAdminUser = (userId) => {
+  const adminIds = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(",") : [];
+  return adminIds.includes(userId?.toString());
+};
+
+/**
  * Middleware to restrict commands to ADMIN_ID from .env
  */
 const isAdmin = async (ctx, next) => {
-  const adminIds = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(",") : [];
-  const userId = ctx.from?.id?.toString();
-
-  if (!adminIds.includes(userId)) {
+  if (!isAdminUser(ctx.from?.id)) {
     return ctx.reply("❌ Admin only. You are not authorized to use this command.");
   }
   return next();
@@ -84,10 +89,10 @@ const removeChannelCommand = async (ctx) => {
 /**
  * /listchannels
  */
-const listChannelsCommand = async (ctx) => {
+const listChannelsCommand = async (ctx) => { 
   try {
     const channels = await TelegramChannel.find({}).sort({ active: -1, username: 1 });
-    
+
     if (channels.length === 0) {
       return ctx.reply("No channels found in database.");
     }
@@ -99,13 +104,13 @@ const listChannelsCommand = async (ctx) => {
       const statusEmoji = channel.active ? "✅" : "❌";
       const lastScan = channel.lastScannedAt ? channel.lastScannedAt.toISOString().split('T')[0] : "Never";
       const line = `${index}. @${channel.username} | ${statusEmoji} | Indexed: ${channel.totalIndexed} | Scan: ${lastScan}\n`;
-      
+
       // Prevent exceeding Telegram's 4096 character limit
       if ((responseText.length + line.length) > 4000) {
         await ctx.reply(responseText, { parse_mode: "HTML" });
         responseText = "";
       }
-      
+
       responseText += line;
       index++;
     }
@@ -186,10 +191,10 @@ const registerAdminActionHandlers = (bot) => {
       );
 
       await ctx.editMessageText(ctx.callbackQuery.message.text + "\n\n✅ <b>APPROVED</b>", { parse_mode: "HTML" }).catch(()=>{});
-      
+
       if (rec.recommendedBy && rec.recommendedBy.telegramId) {
         await bot.telegram.sendMessage(
-          rec.recommendedBy.telegramId, 
+          rec.recommendedBy.telegramId,
           `✅ Thanks! Your recommendation for @${rec.channelUsername} has been approved and added to StudyHub!`
         ).catch(()=>{});
       }
@@ -216,7 +221,7 @@ const registerAdminActionHandlers = (bot) => {
 
       if (rec.recommendedBy && rec.recommendedBy.telegramId) {
         await bot.telegram.sendMessage(
-          rec.recommendedBy.telegramId, 
+          rec.recommendedBy.telegramId,
           `Thanks for the suggestion! We reviewed @${rec.channelUsername} but it didn't meet our criteria right now.`
         ).catch(()=>{});
       }
@@ -230,6 +235,7 @@ const registerAdminActionHandlers = (bot) => {
 };
 
 module.exports = {
+  isAdminUser,
   isAdmin,
   addChannelCommand,
   removeChannelCommand,

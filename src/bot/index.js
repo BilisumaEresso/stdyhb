@@ -16,8 +16,36 @@ setBot(bot);
 
 
 // Apply session and scene middleware
-const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);
-bot.use(session());
+const stage = new Scenes.Stage([onboardingWizard, recommendWizard]); 
+
+// Global Error Handler for Telegraf
+bot.catch((err, ctx) => {
+  console.error(`[FATAL-TELEGRAF] Error for ${ctx.updateType}`, err);
+  if (ctx && ctx.reply) {
+    ctx.reply("⚠️ Something went wrong processing your request. Please try again.").catch(() => {});
+  }
+});
+
+const BotSession = require("../db/models/BotSession");
+
+const mongoSessionStore = {
+  get: async (key) => {
+    const sessionDoc = await BotSession.findOne({ key });
+    return sessionDoc ? sessionDoc.data : undefined;
+  },
+  set: async (key, value) => {
+    await BotSession.findOneAndUpdate(
+      { key },
+      { key, data: value, updatedAt: new Date() },
+      { upsert: true }
+    );
+  },
+  delete: async (key) => {
+    await BotSession.deleteOne({ key });
+  }
+};
+
+bot.use(session({ store: mongoSessionStore }));
 bot.use(stage.middleware());
 
 // Apply rate limiting middleware

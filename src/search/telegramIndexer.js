@@ -9,6 +9,7 @@ const { notifyAdmin } = require("../services/notify.service");
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 let client = null;
+let archiveQueue = [];
 
 // ─── client management ────────────────────────────────────────────────────────
 async function getClient() {
@@ -217,53 +218,28 @@ async function processMessageGroup(msgs, channelUsername) {
     else newResources.push(r);
   }
 
-  // Archive NEW resources using GramJS forwardMessages
+  // Queue NEW resources for archiving later and save to DB
   if (newResources.length > 0) {
+    newResources.forEach(r => { r._id = new mongoose.Types.ObjectId(); });
+
     if (process.env.ARCHIVE_CHAT_ID) {
-      const tg = await getClient();
-      const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
-      const isGroup = newResources.length > 1 && newResources[0].groupId;
       const peer = channelUsername ? `@${channelUsername}` : parseInt(newResources[0].chatId);
-
-      try {
-        if (isGroup) {
-          const msgIds = newResources.map(r => r._rawMsgId);
-          const result = await tg.forwardMessages(archiveChatId, {
-            messages: msgIds,
-            fromPeer: peer
-          });
-          
-          const fwdMsgs = normalizeForwarded(result);
-          const groupArchiveIds = fwdMsgs.map(m => m.id);
-
-          for (let i = 0; i < newResources.length; i++) {
-            newResources[i].archiveMessageIds = groupArchiveIds;
-            newResources[i].archiveMessageId = groupArchiveIds[i] || groupArchiveIds[0];
-          }
-        } else {
-          for (let i = 0; i < newResources.length; i++) {
-             const r = newResources[i];
-             try {
-               const result = await tg.forwardMessages(archiveChatId, {
-                 messages: [r._rawMsgId],
-                 fromPeer: peer
-               });
-               const fwdMsgs = normalizeForwarded(result);
-               r.archiveMessageId = fwdMsgs[0]?.id;
-               await new Promise(resolve => setTimeout(resolve, 150));
-             } catch (e) {
-               console.warn(`⚠️ Failed to archive message ${r._rawMsgId} from @${channelUsername}:`, e.message);
-             }
-          }
-        }
-      } catch (e) {
-        console.warn(`⚠️ Failed to archive group from @${channelUsername}:`, e.message);
+      for (const r of newResources) {
+        archiveQueue.push({
+          dbId: r._id,
+          rawMsgId: r._rawMsgId,
+          peer: peer
+        });
       }
     }
 
     try {
-      newResources.forEach(r => delete r._rawMsgId);
-      await TelegramResource.insertMany(newResources, { ordered: false });
+      const docsToInsert = newResources.map(r => {
+        const copy = { ...r };
+        delete copy._rawMsgId;
+        return copy;
+      });
+      await TelegramResource.insertMany(docsToInsert, { ordered: false });
       bIndexed += newResources.length;
     } catch (err) {
       bIndexed += (err.insertedDocs ? err.insertedDocs.length : 0);
@@ -288,19 +264,19 @@ async function processMessage(msg, channelUsername) {
 
 // ─── index one channel ────────────────────────────────────────────────────────
 async function indexChannel(channelUsername) {
-  const tg = await getClient();
-
   const maxResource = await TelegramResource.findOne({ channelUsername }).sort({ messageId: -1 });
   const minId = maxResource ? maxResource.messageId : 0;
 
   console.log(`\nIndexing @${channelUsername} (Incremental from msgId: ${minId})...`);
 
+  archiveQueue = [];
   let indexed = 0;
   let skipped = 0;
   let totalFetched = 0;
   const channelStartTime = Date.now();
 
   try {
+    const tg = await getClient();
     let batchIndexed = 0;
     let batchSkipped = 0;
     let batchFetched = 0;
@@ -370,6 +346,65 @@ async function indexChannel(channelUsername) {
 
     const totalTime = ((Date.now() - channelStartTime) / 1000).toFixed(2);
 
+    let archivedCount = 0;
+    let archiveFailedCount = 0;
+
+    if (archiveQueue.length > 0) {
+      console.log(`  📦 Processing archive queue for @${channelUsername} (${archiveQueue.length} items)...`);
+      const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+
+      for (let i = 0; i < archiveQueue.length; i += 10) {
+        const batch = archiveQueue.slice(i, i + 10);
+        const msgIds = batch.map(q => q.rawMsgId);
+        const peer = batch[0].peer;
+
+        let retries = 1;
+        let success = false;
+        while (retries >= 0 && !success) {
+          try {
+            const result = await tg.forwardMessages(archiveChatId, {
+              messages: msgIds,
+              fromPeer: peer
+            });
+
+            const fwdMsgs = normalizeForwarded(result);
+            const bulkOps = [];
+            for (let j = 0; j < batch.length; j++) {
+              if (fwdMsgs[j]) {
+                bulkOps.push({
+                  updateOne: {
+                    filter: { _id: batch[j].dbId },
+                    update: { $set: { archiveMessageId: fwdMsgs[j].id } }
+                  }
+                });
+                archivedCount++;
+              }
+            }
+            if (bulkOps.length > 0) {
+              await TelegramResource.bulkWrite(bulkOps);
+            }
+            success = true;
+          } catch (e) {
+            const match = e.message.match(/A wait of (\d+) seconds is required/);
+            if (match && retries > 0) {
+              const waitSecs = parseInt(match[1], 10);
+              console.warn(`  ⏳ Archive batch hit FloodWait. Waiting ${waitSecs + 5}s...`);
+              await new Promise(r => setTimeout(r, Math.max(0, (waitSecs + 5) * 1000)));
+              retries--;
+            } else {
+              console.warn(`  ⚠️ Failed to archive batch:`, e.message);
+              archiveFailedCount += batch.length;
+              break;
+            }
+          }
+        }
+
+        if (i + 10 < archiveQueue.length) {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+    }
+
     await TelegramChannel.updateOne(
       { username: channelUsername },
       {
@@ -384,7 +419,7 @@ async function indexChannel(channelUsername) {
       }
     );
 
-    console.log(`  ✅ @${channelUsername} COMPLETED: Fetched: ${totalFetched}, Indexed: ${indexed}, Skipped: ${skipped}, Total Time: ${totalTime}s`);
+    console.log(`  ✅ @${channelUsername} COMPLETED: Indexed: ${indexed}, Archived: ${archivedCount}, Archive failed: ${archiveFailedCount} (will retry next scan)`);
     return { indexed, skipped, error: null };
   } catch (err) {
     const errorMsg = err.message;
@@ -429,8 +464,13 @@ async function indexAllChannels() {
   const results = [];
   for (const ch of channels) {
     await new Promise((r) => setTimeout(r, 1500));
-    const r = await indexChannel(ch.username);
-    results.push({ channel: ch.username, ...r });
+    try {
+      const r = await indexChannel(ch.username);
+      results.push({ channel: ch.username, ...r });
+    } catch (err) {
+      console.error(`[FATAL-UNHANDLED] Unexpected error in indexChannel for @${ch.username}:`, err);
+      results.push({ channel: ch.username, indexed: 0, skipped: 0, error: err.message });
+    }
   }
 
   const total = results.reduce((sum, r) => sum + r.indexed, 0);

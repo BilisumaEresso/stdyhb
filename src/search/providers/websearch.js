@@ -10,7 +10,7 @@ const THROTTLE_DELAY_MS = 1500; // 1.5 seconds between requests
  * Sleep for specified milliseconds
  */
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
 
 /**

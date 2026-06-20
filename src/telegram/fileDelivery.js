@@ -5,10 +5,32 @@ const TelegramResource = require("../db/models/TelegramResource");
 const orchestrationService = require("../search/search.service");
 const userService = require("../services/user.service");
 const SavedResource = require("../db/models/SavedResource");
+const CachedSearch = require("../db/models/CachedSearch");
+const QuerySession = require("../db/models/QuerySession");
 
 const templates = require("./templates");
 
-const queryHashMap = new Map();
+async function markResourceUnavailable(resourceId, groupId = null) {
+  try {
+    if (groupId) {
+      await TelegramResource.updateMany({ groupId }, { $set: { isAvailable: false } });
+      await CachedSearch.updateMany(
+        { "resources.groupId": groupId },
+        { $pull: { resources: { groupId } } }
+      );
+    } else {
+      await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+      await CachedSearch.updateMany(
+        { "resources._id": resourceId },
+        { $pull: { resources: { _id: resourceId } } }
+      );
+    }
+  } catch (err) {
+    console.error("Error marking resource unavailable:", err);
+  }
+}
+
+
 
 async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
   if (!results || results.length === 0) {
@@ -16,7 +38,11 @@ async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
     return await ctx.reply(text, { parse_mode: "HTML" });
   }
 
-  queryHashMap.set(queryHash, query);
+  await QuerySession.findOneAndUpdate(
+    { queryHash },
+    { queryHash, query },
+    { upsert: true }
+  );
 
   const ITEMS_PER_PAGE = 10;
   const totalItems = results.length;
@@ -46,7 +72,8 @@ async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
 }
 
 async function renderDetailCardHandler(ctx, results, queryHash, page, resultIndex) {
-  const query = queryHashMap.get(queryHash) || "";
+  const session = await QuerySession.findOne({ queryHash });
+  const query = session ? session.query : "";
   const ITEMS_PER_PAGE = 10;
   const startIdx = (page - 1) * ITEMS_PER_PAGE;
   const currentBatch = results.slice(startIdx, startIdx + ITEMS_PER_PAGE);
@@ -169,6 +196,14 @@ const pendingGroups = new Map();
 const activeUserRequests = new Set();
 const recentRelayMessages = new Map();
 
+async function getPendingDeliveryDebugInfo() {
+  return {
+    pendingDeliveries: pendingDeliveries.size,
+    pendingGroups: pendingGroups.size,
+    activeUserRequests: activeUserRequests.size
+  };
+}
+
 function normalizeForwarded(fwd) {
    if (Array.isArray(fwd) && Array.isArray(fwd[0])) return fwd[0];
    if (fwd && fwd.updates && Array.isArray(fwd.updates)) {
@@ -235,7 +270,7 @@ async function handleDownload(ctx, resourceId) {
 
       if (!usedArchive) {
         clearInterval(actionInterval);
-        await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+        await markResourceUnavailable(resourceId);
         activeUserRequests.delete(requestKey);
         await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
@@ -244,7 +279,7 @@ async function handleDownload(ctx, resourceId) {
 
     if (!forwardedMessages || forwardedMessages.length === 0 || !forwardedMessages[0].id) {
        clearInterval(actionInterval);
-       if (!usedArchive) await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+       if (!usedArchive) await markResourceUnavailable(resourceId);
        activeUserRequests.delete(requestKey);
        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
        return;
@@ -352,7 +387,7 @@ async function handleGroupDownload(ctx, resourceId) {
 
       if (!usedArchive) {
         clearInterval(actionInterval);
-        await TelegramResource.updateMany({ groupId: resource.groupId }, { $set: { isAvailable: false } });
+        await markResourceUnavailable(null, resource.groupId);
         activeUserRequests.delete(requestKey);
         await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
@@ -361,7 +396,7 @@ async function handleGroupDownload(ctx, resourceId) {
 
     if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
-        if (!usedArchive) await TelegramResource.updateMany({ groupId: resource.groupId }, { $set: { isAvailable: false } });
+        if (!usedArchive) await markResourceUnavailable(null, resource.groupId);
         activeUserRequests.delete(requestKey);
         await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
@@ -456,7 +491,8 @@ function registerFileDeliveryHandlers(bot) {
       return await sendPaginatedSaves(ctx, saves, page);
     }
 
-    const query = queryHashMap.get(queryHash);
+    const session = await QuerySession.findOne({ queryHash });
+    const query = session ? session.query : null;
     if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
 
     const user = await userService.findByTelegramId(ctx.from.id);
@@ -477,7 +513,8 @@ function registerFileDeliveryHandlers(bot) {
       return await renderSavedDetailCard(ctx, saves, page, resultIndex);
     }
 
-    const query = queryHashMap.get(queryHash);
+    const session = await QuerySession.findOne({ queryHash });
+    const query = session ? session.query : null;
     if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
 
     const user = await userService.findByTelegramId(ctx.from.id);
@@ -497,7 +534,8 @@ function registerFileDeliveryHandlers(bot) {
       return await sendPaginatedSaves(ctx, saves, page);
     }
 
-    const query = queryHashMap.get(queryHash);
+    const session = await QuerySession.findOne({ queryHash });
+    const query = session ? session.query : null;
     if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
 
     const user = await userService.findByTelegramId(ctx.from.id);
@@ -613,4 +651,5 @@ module.exports = {
   sendPaginatedResults,
   sendPaginatedSaves,
   registerFileDeliveryHandlers,
+  getPendingDeliveryDebugInfo,
 };
