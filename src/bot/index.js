@@ -10,13 +10,14 @@ const onboardingWizard = require("./scenes/onboarding");
 const recommendWizard = require("./scenes/recommend");
 const { registerFileDeliveryHandlers } = require("../telegram/fileDelivery");
 const { rateLimitMiddleware } = require("../middleware/rateLimiter");
+const LABELS = require("./keyboardLabels");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 setBot(bot);
 
 
 // Apply session and scene middleware
-const stage = new Scenes.Stage([onboardingWizard, recommendWizard]); 
+const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);
 
 // Global Error Handler for Telegraf
 bot.catch((err, ctx) => {
@@ -81,15 +82,17 @@ bot.on("text", async (ctx, next) => {
   if (text.startsWith("/")) return next();
   if (ctx.chat.id === relayGroupId) return next();
 
-  if (text === "🔍 Search Resources") {
-    return ctx.reply("Type anything to search — e.g. 'dbms exam' or 'networking notes'");
-  } else if (text === "📚 My Saves") {
-    return savesCommand(ctx);
-  } else if (text === "📢 Recommend Channel") {
-    return ctx.scene.enter("recommendChannel");
-  } else if (text === "❓ Help") {
-    return helpCommand(ctx);
-  }
+ if (text === LABELS.SEARCH) {
+   return ctx.reply(
+     "Type anything to search — e.g. 'dbms exam' or 'networking notes'",
+   );
+ } else if (text === LABELS.SAVES) {
+   return savesCommand(ctx);
+ } else if (text === LABELS.RECOMMEND) {
+   return ctx.scene.enter("recommendChannel");
+ } else if (text === LABELS.HELP) {
+   return helpCommand(ctx);
+ }
 
   if (text.length < 2) return next();
 

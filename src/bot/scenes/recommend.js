@@ -4,6 +4,15 @@ const TelegramChannel = require("../../db/models/TelegramChannel");
 const userService = require("../../services/user.service");
 const { notifyAdmin } = require("../../services/notify.service");
 
+const { getBot } = require("../botInstance");
+const LABELS = require("../keyboardLabels");
+const RESERVED_TEXTS = Object.values(LABELS);
+
+function isEscapeText(ctx) {
+  const text = ctx.message?.text?.trim();
+  return !!text && (text.startsWith("/") || RESERVED_TEXTS.includes(text));
+}
+
 const recommendWizard = new Scenes.WizardScene(
   "recommendChannel",
   // Step 1: Channel Username
@@ -19,11 +28,11 @@ const recommendWizard = new Scenes.WizardScene(
     }
     let username = ctx.message.text.trim().replace("@", "").toLowerCase();
     if (username.startsWith("https://t.me/")) username = username.replace("https://t.me/", "");
-    
+
     // Check duplicates
     const existingRec = await ChannelRecommendation.findOne({ channelUsername: username, status: "pending" });
     const existingChan = await TelegramChannel.findOne({ username });
-    
+
     if (existingRec || existingChan) {
       await ctx.reply(`⚠️ The channel @${username} has already been recommended or is already active in our system! Thanks anyway!`);
       return ctx.scene.leave();
@@ -72,7 +81,7 @@ const recommendWizard = new Scenes.WizardScene(
 
     try {
       const user = await userService.findByTelegramId(ctx.from.id);
-      
+
       const rec = new ChannelRecommendation({
         channelUsername: ctx.session.recUsername,
         type: ctx.session.recType,
@@ -99,6 +108,14 @@ const recommendWizard = new Scenes.WizardScene(
     return ctx.scene.leave();
   }
 );
+
+recommendWizard.use(async (ctx, next) => {
+  if (isEscapeText(ctx)) {
+    await ctx.scene.leave();
+    return getBot().handleUpdate(ctx.update);
+  }
+  return next();
+});
 
 recommendWizard.action(/rectype_.*/, async (ctx, next) => {
     if (ctx.wizard.cursor === 2) return ctx.wizard.steps[ctx.wizard.cursor](ctx);

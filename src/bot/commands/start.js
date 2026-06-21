@@ -1,4 +1,5 @@
 const userService = require("../../services/user.service");
+const LABELS = require("../keyboardLabels");
 const { Markup } = require("telegraf");
 const templates = require("../../telegram/templates");
 
@@ -12,14 +13,14 @@ async function startCommand(ctx, skipWizard = false) {
       return ctx.scene.enter("onboarding");
     }
 
-    const keyboard = Markup.keyboard([
-      ["🔍 Search Resources", "📚 My Saves"],
-      ["📢 Recommend Channel", "❓ Help"]
-    ]).resize();
+   const keyboard = Markup.keyboard([
+     [LABELS.SEARCH, LABELS.SAVES],
+     [LABELS.RECOMMEND, LABELS.HELP],
+   ]).resize();
 
     // Decide which welcome message to send
-    const messageText = user.searchCount === 0 
-      ? templates.welcomeNew(user) 
+    const messageText = user.searchCount === 0
+      ? templates.welcomeNew(user)
       : templates.welcomeReturning(user);
 
     await ctx.reply(messageText, {

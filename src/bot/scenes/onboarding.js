@@ -1,6 +1,13 @@
 const { Scenes, Markup } = require("telegraf");
 const User = require("../../db/models/User");
-const startCommand = require("../commands/start");
+const startCommand = require("../commands/start");const { getBot } = require("../botInstance");
+const LABELS = require("../keyboardLabels");
+const RESERVED_TEXTS = Object.values(LABELS);
+
+function isEscapeText(ctx) {
+  const text = ctx.message?.text?.trim();
+  return !!text && (text.startsWith("/") || RESERVED_TEXTS.includes(text));
+}
 
 const onboardingWizard = new Scenes.WizardScene(
   "onboarding",
@@ -84,12 +91,12 @@ const onboardingWizard = new Scenes.WizardScene(
           year: ctx.session.year
         }
       );
-      
+
       await ctx.reply("✅ You're all set! Just type anything to search for resources.");
-      
+
       // We also trigger the normal start command to ensure they see the persistent Reply Keyboard
       // The startCommand should now have a check to avoid re-triggering the wizard!
-      await startCommand(ctx, true); 
+      await startCommand(ctx, true);
     } catch (error) {
       console.error("Error saving onboarding data:", error);
       await ctx.reply("❌ There was an error saving your profile, but you can still use the bot!");
@@ -98,6 +105,14 @@ const onboardingWizard = new Scenes.WizardScene(
     return ctx.scene.leave();
   }
 );
+
+onboardingWizard.use(async (ctx, next) => {
+  if (isEscapeText(ctx)) {
+    await ctx.scene.leave();
+    return getBot().handleUpdate(ctx.update);
+  }
+  return next();
+});
 
 // We need an action listener on the wizard to catch the callbacks cleanly
 onboardingWizard.action(/uni_.*/, async (ctx, next) => {
