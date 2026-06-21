@@ -31,8 +31,14 @@ function getActiveUserCount() {
 function rateLimitMiddleware() {
   return async (ctx, next) => {
     const telegramId = ctx.from?.id;
+    if (process.env.RATE_LIMIT_ENABLED === "false") return next();
     if (!telegramId) return next();
 
+    const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
+    const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+    if (ctx.chat?.id === relayGroupId || ctx.chat?.id === archiveChatId) {
+      return next();
+    }
     // Fast-path bypass for admins
     if (isAdminUser(telegramId)) {
       return next();
