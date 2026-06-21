@@ -9,7 +9,7 @@ const { correctTypos } = require("./typoCorrector");
 class SearchLogger {
   constructor() {
     this.logs = [];
-  }  
+  }
 
   log(key, value) {
     this.logs.push({ key, value });
@@ -86,7 +86,7 @@ class SearchService {
     if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(query)) {
       intent.assignmentLab = true;
     }
-    
+
     const yearMatch = query.match(/\b(201\d|202\d)\b/);
     if (yearMatch) {
       intent.year = yearMatch[0];
@@ -133,13 +133,14 @@ class SearchService {
     }
 
     // Personalization scoring
-    if (user && user.university && resource.tags && resource.tags.includes(user.university.toLowerCase())) {
-      score += 80; // Boost own university
-    }
-    if (user && user.department && resource.tags && resource.tags.includes(user.department.toLowerCase())) {
-      score += 50; // Boost own department
-    }
-
+if (
+  user &&
+  user.university &&
+  resource.university &&
+  resource.university.toLowerCase() === user.university.toLowerCase()
+) {
+  score += 80; // Boost own university
+}
     // Boost by popularity
     if (resource.downloadCount && resource.downloadCount > 0) {
       score += Math.min(resource.downloadCount * 2, 50);
@@ -357,7 +358,7 @@ class SearchService {
         console.log(`\n⚠️  Primary returned < 5 results. Triggering fallback fan-out...`);
         const fallbackQueries = new Set();
         let addedCount = 0;
-        
+
         // Multi-word combinatorics - prioritize word-pairs first
         for (let i = 0; i < queryWords.length - 1 && addedCount < 5; i++) {
           const q = `${queryWords[i]} ${queryWords[i+1]}`;
@@ -417,7 +418,7 @@ class SearchService {
       }
 
       // Finally, try GitHub search if less than 3 results from Telegram
-      if (allResults.length < 3) {
+      if (allResults.length < 0) {
         console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
         logger.log("Fallback used", "github_search");
         // Await the promise we started at the top

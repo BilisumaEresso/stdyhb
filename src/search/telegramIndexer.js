@@ -33,7 +33,7 @@ function normalizeForwarded(fwd) {
        return fwd.updates.filter(u => u.className === 'UpdateNewMessage' || u.className === 'UpdateNewChannelMessage').map(u => u.message);
    }
    return fwd;
-} 
+}
 
 // ─── tag / metadata extraction ────────────────────────────────────────────────
 const EXAM_KEYWORDS = [
@@ -85,8 +85,11 @@ function extractYear(text = "") {
 
 function extractCourseCode(text = "") {
   const m1 = text.match(/\b([A-Za-z]{2,5})[\s\-]?(\d{2,4})\b/);
-  if (m1) return `${m1[1].toUpperCase()}${m1[2]}`;
-
+  if (m1) {
+    const num = parseInt(m1[2], 10);
+    const looksLikeYear = m1[2].length === 4 && num >= 2010 && num <= 2039;
+    if (!looksLikeYear) return `${m1[1].toUpperCase()}${m1[2]}`;
+  }
   const m2 = text.match(/\b(DBMS|OOP|DSA|HCI|OS|AI|ML)\b/i);
   return m2 ? m2[0].toUpperCase() : "";
 }
