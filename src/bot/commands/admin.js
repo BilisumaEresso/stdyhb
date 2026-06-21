@@ -1,6 +1,6 @@
 const TelegramChannel = require("../../db/models/TelegramChannel");
 const ChannelRecommendation = require("../../db/models/ChannelRecommendation");
-const { indexChannel } = require("../../search/telegramIndexer");
+const { indexChannel, isIndexingInProgress } = require("../../search/telegramIndexer");
 
 /**
  * Helper to synchronously check if a user is an admin
@@ -89,7 +89,7 @@ const removeChannelCommand = async (ctx) => {
 /**
  * /listchannels
  */
-const listChannelsCommand = async (ctx) => { 
+const listChannelsCommand = async (ctx) => {
   try {
     const channels = await TelegramChannel.find({}).sort({ active: -1, username: 1 });
 
@@ -141,7 +141,11 @@ const forceScanCommand = async (ctx) => {
     if (!channel) {
       return ctx.reply(`⚠️ Channel @${username} not found in database. Add it first with /addchannel.`);
     }
-
+if (isIndexingInProgress()) {
+  await ctx.reply(
+    `ℹ️ Heads up: a scheduled full scan is currently running. This force-scan will run alongside it — that's safe, but may be slower than usual.`,
+  );
+}
     const statusMsg = await ctx.reply(`⏳ Forcing scan on @${username}... This might take a while depending on channel size.`);
 
     indexChannel(username).then(async (results) => {

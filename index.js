@@ -8,9 +8,13 @@ const { indexAllChannels, getClient } = require("./src/search/telegramIndexer");
 async function bootstrap() {
   // Connect to MongoDB
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 20000,
+      connectTimeoutMS: 8000,
+    });
     console.log("✅ MongoDB connected");
-    
+
     mongoose.connection.on('error', (err) => console.error('[MongoDB error]', err));
     mongoose.connection.on('disconnected', () => console.warn('[MongoDB] disconnected'));
   } catch (err) {
@@ -31,7 +35,7 @@ async function bootstrap() {
   const PORT = process.env.PORT || 3000;
 
   app.get("/", (req, res) => res.send("StudyHub Bot is running."));
-  
+
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
@@ -54,7 +58,9 @@ async function bootstrap() {
     }
     console.log('✅ Bot started in WEBHOOK mode');
   } else {
-    bot.launch().catch(err => console.error("❌ Polling failed:", err));
+    bot
+      .launch({ dropPendingUpdates: true })
+      .catch((err) => console.error("❌ Polling failed:", err));
     console.log('✅ Bot started in POLLING mode');
   }
 
@@ -73,7 +79,7 @@ const { getPendingDeliveryDebugInfo } = require("./src/telegram/fileDelivery");
 // Graceful shutdown
 const shutdown = async () => {
   console.log("🛑 Shutting down gracefully...");
-  
+
   try {
     const debugInfo = await getPendingDeliveryDebugInfo();
     if (debugInfo.pendingDeliveries > 0 || debugInfo.pendingGroups > 0) {

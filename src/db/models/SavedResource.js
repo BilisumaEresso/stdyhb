@@ -51,6 +51,7 @@ const savedResourceSchema = new mongoose.Schema(
         "github",
         "document",
         "other",
+        "image",
       ],
       default: "other",
     },

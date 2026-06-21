@@ -9,7 +9,7 @@ const { notifyAdmin } = require("../services/notify.service");
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 let client = null;
-let archiveQueue = [];
+let isIndexing = false;
 
 // ─── client management ────────────────────────────────────────────────────────
 async function getClient() {
@@ -19,7 +19,7 @@ async function getClient() {
     new StringSession(process.env.TELEGRAM_SESSION),
     apiId,
     apiHash,
-    { connectionRetries: 3 }
+    { connectionRetries: 3 },
   );
 
   await client.connect();
@@ -28,49 +28,133 @@ async function getClient() {
 }
 
 function normalizeForwarded(fwd) {
-   if (Array.isArray(fwd) && Array.isArray(fwd[0])) return fwd[0];
-   if (fwd && fwd.updates && Array.isArray(fwd.updates)) {
-       return fwd.updates.filter(u => u.className === 'UpdateNewMessage' || u.className === 'UpdateNewChannelMessage').map(u => u.message);
-   }
-   return fwd;
+  if (Array.isArray(fwd) && Array.isArray(fwd[0])) return fwd[0];
+  if (fwd && fwd.updates && Array.isArray(fwd.updates)) {
+    return fwd.updates
+      .filter(
+        (u) =>
+          u.className === "UpdateNewMessage" ||
+          u.className === "UpdateNewChannelMessage",
+      )
+      .map((u) => u.message);
+  }
+  return fwd;
 }
 
 // ─── tag / metadata extraction ────────────────────────────────────────────────
 const EXAM_KEYWORDS = [
-  "exam", "final", "mid", "midterm", "quiz", "test", "past", "previous", "solved", "assignment",
+  "exam",
+  "final",
+  "mid",
+  "midterm",
+  "quiz",
+  "test",
+  "past",
+  "previous",
+  "solved",
+  "assignment",
 ];
 
 const COURSE_KEYWORDS = [
-  "dbms", "database", "oop", "data structure", "networking", "calculus", "physics", "chemistry",
-  "compiler", "operating system", "algorithms", "linear algebra", "statistics", "thermodynamics",
-  "circuit", "mechanics", "programming", "software engineering",
-  "fluid mechanics", "structural analysis", "control systems", "digital electronics", "signal processing",
-  "electromagnetic", "material science", "engineering drawing", "hydraulics",
-  "java", "python", "c++", "web development", "mobile development", "artificial intelligence",
-  "machine learning", "computer graphics", "software testing", "human computer interaction",
-  "computer architecture", "discrete mathematics", "numerical methods", "computer networks",
-  "anatomy", "physiology", "pharmacology", "pathology", "biochemistry", "microbiology",
-  "nursing", "public health", "epidemiology",
-  "accounting", "economics", "marketing", "finance", "management", "business law",
-  "entrepreneurship", "microeconomics", "macroeconomics", "auditing",
-  "constitutional law", "criminal law", "civil law", "contract", "tort", "jurisprudence",
-  "family law", "commercial law",
-  "biology", "organic chemistry", "inorganic chemistry", "geology", "environmental science",
-  "differential equations", "complex analysis", "probability", "real analysis", "abstract algebra", "graph theory",
-  "applied mathematics", "communicative english", "logic", "civics", "introduction to computing",
-  "general physics", "general chemistry"
+  "dbms",
+  "database",
+  "oop",
+  "data structure",
+  "networking",
+  "calculus",
+  "physics",
+  "chemistry",
+  "compiler",
+  "operating system",
+  "algorithms",
+  "linear algebra",
+  "statistics",
+  "thermodynamics",
+  "circuit",
+  "mechanics",
+  "programming",
+  "software engineering",
+  "fluid mechanics",
+  "structural analysis",
+  "control systems",
+  "digital electronics",
+  "signal processing",
+  "electromagnetic",
+  "material science",
+  "engineering drawing",
+  "hydraulics",
+  "java",
+  "python",
+  "c++",
+  "web development",
+  "mobile development",
+  "artificial intelligence",
+  "machine learning",
+  "computer graphics",
+  "software testing",
+  "human computer interaction",
+  "computer architecture",
+  "discrete mathematics",
+  "numerical methods",
+  "computer networks",
+  "anatomy",
+  "physiology",
+  "pharmacology",
+  "pathology",
+  "biochemistry",
+  "microbiology",
+  "nursing",
+  "public health",
+  "epidemiology",
+  "accounting",
+  "economics",
+  "marketing",
+  "finance",
+  "management",
+  "business law",
+  "entrepreneurship",
+  "microeconomics",
+  "macroeconomics",
+  "auditing",
+  "constitutional law",
+  "criminal law",
+  "civil law",
+  "contract",
+  "tort",
+  "jurisprudence",
+  "family law",
+  "commercial law",
+  "biology",
+  "organic chemistry",
+  "inorganic chemistry",
+  "geology",
+  "environmental science",
+  "differential equations",
+  "complex analysis",
+  "probability",
+  "real analysis",
+  "abstract algebra",
+  "graph theory",
+  "applied mathematics",
+  "communicative english",
+  "logic",
+  "civics",
+  "introduction to computing",
+  "general physics",
+  "general chemistry",
 ];
 
 function extractTags(caption = "", fileName = "", channelUsername = "") {
   const cleanFileName = fileName.replace(/[_\-\.]/g, " ");
-  const combinedText = `${caption} ${cleanFileName} ${channelUsername}`.toLowerCase();
+  const combinedText =
+    `${caption} ${cleanFileName} ${channelUsername}`.toLowerCase();
   const rawTags = [];
 
   [...EXAM_KEYWORDS, ...COURSE_KEYWORDS].forEach((k) => {
     if (combinedText.includes(k)) rawTags.push(k.replace(/\s+/g, "_"));
   });
 
-  return [...new Set(rawTags)].filter(t => t.length >= 2);
+  return [...new Set(rawTags)].filter((t) => t.length >= 2);
 }
 
 function isExam(text = "", fileName = "") {
@@ -95,21 +179,32 @@ function extractCourseCode(text = "") {
 }
 
 function extractSemester(text = "") {
-  const m = text.match(/\b(semester\s*[1-8]|sem\s*[1-8]|[1-4](st|nd|rd|th)\s*year|first\s*year|second\s*year|third\s*year|fourth\s*year|fifth\s*year)\b/i);
+  const m = text.match(
+    /\b(semester\s*[1-8]|sem\s*[1-8]|[1-4](st|nd|rd|th)\s*year|first\s*year|second\s*year|third\s*year|fourth\s*year|fifth\s*year)\b/i,
+  );
   return m ? m[0].trim() : "";
 }
 
 function extractUniversity(text = "") {
   const lower = text.toLowerCase();
   const unis = {
-    "astu": "ASTU", "aau": "AAU", "addis ababa": "AAU", "ju": "JU", "jimma": "Jimma",
-    "gondar": "Gondar", "haramaya": "Haramaya", "bahir dar": "Bahir Dar", "bdu": "Bahir Dar",
-    "mekelle": "Mekelle", "mu": "Mekelle", "hawassa": "Hawassa"
+    astu: "ASTU",
+    aau: "AAU",
+    "addis ababa": "AAU",
+    ju: "JU",
+    jimma: "Jimma",
+    gondar: "Gondar",
+    haramaya: "Haramaya",
+    "bahir dar": "Bahir Dar",
+    bdu: "Bahir Dar",
+    mekelle: "Mekelle",
+    mu: "Mekelle",
+    hawassa: "Hawassa",
   };
 
   for (const [key, val] of Object.entries(unis)) {
     if (key.length <= 4) {
-      const regex = new RegExp(`\\b${key}\\b`, 'i');
+      const regex = new RegExp(`\\b${key}\\b`, "i");
       if (regex.test(lower)) return val;
     } else {
       if (lower.includes(key)) return val;
@@ -125,12 +220,13 @@ function getFileType(fileName = "") {
 }
 
 // ─── process message group ────────────────────────────────────────────────────
-async function processMessageGroup(msgs, channelUsername) {
+async function processMessageGroup(msgs, channelUsername, archiveQueue) {
   let bIndexed = 0;
   let bSkipped = 0;
 
   if (!msgs || msgs.length === 0) return { bIndexed, bSkipped };
-
+const groupCaption =
+  msgs.find((m) => m.message && m.message.trim().length > 0)?.message || "";
   const resources = [];
   for (const msg of msgs) {
     const hasDoc = !!msg.document;
@@ -140,21 +236,37 @@ async function processMessageGroup(msgs, channelUsername) {
       continue;
     }
 
-    let fileId, fileUniqueId, fileName = "", fileType, fileSize;
+    let fileId,
+      fileUniqueId,
+      fileName = "",
+      fileType,
+      fileSize;
 
     if (hasDoc) {
       const media = msg.media?.document;
-      if (!media) { bSkipped++; continue; }
+      if (!media) {
+        bSkipped++;
+        continue;
+      }
 
       fileId = media.id?.toString();
       fileUniqueId = media.accessHash?.toString();
-      fileName = media.attributes?.find(a => a.className === "DocumentAttributeFilename")?.fileName || "";
+      fileName =
+        media.attributes?.find(
+          (a) => a.className === "DocumentAttributeFilename",
+        )?.fileName || "";
       fileSize = media.size || 0;
       fileType = getFileType(fileName);
-      if (fileType === "other") { bSkipped++; continue; }
+      if (fileType === "other") {
+        bSkipped++;
+        continue;
+      }
     } else {
       const media = msg.media?.photo;
-      if (!media) { bSkipped++; continue; }
+      if (!media) {
+        bSkipped++;
+        continue;
+      }
 
       const sizes = media.sizes || [];
       const large = sizes[sizes.length - 1];
@@ -164,15 +276,21 @@ async function processMessageGroup(msgs, channelUsername) {
       fileType = "image";
     }
 
-    if (!fileId) { bSkipped++; continue; }
+    if (!fileId) {
+      bSkipped++;
+      continue;
+    }
 
-    const caption = msg.message || "";
+    const caption = msgs.length > 1 ? groupCaption : msg.message || "";
     const textToAnalyze = `${caption} ${fileName} ${channelUsername}`;
 
     const tags = extractTags(caption, fileName, channelUsername);
     const exam = isExam(caption, fileName);
 
-    if (fileType === "image" && tags.length === 0 && !exam) { bSkipped++; continue; }
+    if (fileType === "image" && tags.length === 0 && !exam) {
+      bSkipped++;
+      continue;
+    }
 
     resources.push({
       fileId,
@@ -192,7 +310,7 @@ async function processMessageGroup(msgs, channelUsername) {
       semester: extractSemester(textToAnalyze),
       messageDate: msg.date ? new Date(msg.date * 1000) : null,
       relevanceScore: tags.length + (exam ? 5 : 0),
-      _rawMsgId: msg.id
+      _rawMsgId: msg.id,
     });
   }
 
@@ -209,9 +327,12 @@ async function processMessageGroup(msgs, channelUsername) {
   }
 
   // Split into existing vs new
-  const msgIds = resources.map(r => r.messageId);
-  const existingDocs = await TelegramResource.find({ channelUsername, messageId: { $in: msgIds } });
-  const existingMap = new Map(existingDocs.map(d => [d.messageId, d]));
+  const msgIds = resources.map((r) => r.messageId);
+  const existingDocs = await TelegramResource.find({
+    channelUsername,
+    messageId: { $in: msgIds },
+  });
+  const existingMap = new Map(existingDocs.map((d) => [d.messageId, d]));
 
   const newResources = [];
   const existingResources = [];
@@ -223,21 +344,25 @@ async function processMessageGroup(msgs, channelUsername) {
 
   // Queue NEW resources for archiving later and save to DB
   if (newResources.length > 0) {
-    newResources.forEach(r => { r._id = new mongoose.Types.ObjectId(); });
+    newResources.forEach((r) => {
+      r._id = new mongoose.Types.ObjectId();
+    });
 
-    if (process.env.ARCHIVE_CHAT_ID) {
-      const peer = channelUsername ? `@${channelUsername}` : parseInt(newResources[0].chatId);
+    if (process.env.ARCHIVE_CHAT_ID && archiveQueue) {
+      const peer = channelUsername
+        ? `@${channelUsername}`
+        : parseInt(newResources[0].chatId);
       for (const r of newResources) {
         archiveQueue.push({
           dbId: r._id,
           rawMsgId: r._rawMsgId,
-          peer: peer
+          peer: peer,
         });
       }
     }
 
     try {
-      const docsToInsert = newResources.map(r => {
+      const docsToInsert = newResources.map((r) => {
         const copy = { ...r };
         delete copy._rawMsgId;
         return copy;
@@ -245,7 +370,7 @@ async function processMessageGroup(msgs, channelUsername) {
       await TelegramResource.insertMany(docsToInsert, { ordered: false });
       bIndexed += newResources.length;
     } catch (err) {
-      bIndexed += (err.insertedDocs ? err.insertedDocs.length : 0);
+      bIndexed += err.insertedDocs ? err.insertedDocs.length : 0;
     }
   }
 
@@ -253,7 +378,10 @@ async function processMessageGroup(msgs, channelUsername) {
   for (const r of existingResources) {
     const rId = r._rawMsgId;
     delete r._rawMsgId;
-    await TelegramResource.updateOne({ channelUsername, messageId: rId }, { $set: r });
+    await TelegramResource.updateOne(
+      { channelUsername, messageId: rId },
+      { $set: r },
+    );
     bIndexed++;
   }
 
@@ -261,18 +389,22 @@ async function processMessageGroup(msgs, channelUsername) {
 }
 
 async function processMessage(msg, channelUsername) {
-  const result = await processMessageGroup([msg], channelUsername);
+  const result = await processMessageGroup([msg], channelUsername, []);
   return result.bIndexed > 0;
 }
 
 // ─── index one channel ────────────────────────────────────────────────────────
 async function indexChannel(channelUsername) {
-  const maxResource = await TelegramResource.findOne({ channelUsername }).sort({ messageId: -1 });
+  const maxResource = await TelegramResource.findOne({ channelUsername }).sort({
+    messageId: -1,
+  });
   const minId = maxResource ? maxResource.messageId : 0;
 
-  console.log(`\nIndexing @${channelUsername} (Incremental from msgId: ${minId})...`);
+  console.log(
+    `\nIndexing @${channelUsername} (Incremental from msgId: ${minId})...`,
+  );
 
-  archiveQueue = [];
+  const archiveQueue = [];
   let indexed = 0;
   let skipped = 0;
   let totalFetched = 0;
@@ -287,8 +419,23 @@ async function indexChannel(channelUsername) {
 
     let currentGroup = [];
     let currentGroupId = null;
+    let loggedFirstMsg = false;
 
-    for await (const msg of tg.iterMessages(`@${channelUsername}`, { minId: minId, reverse: true })) {
+    for await (const msg of tg.iterMessages(`@${channelUsername}`, {
+      minId: minId,
+      reverse: true,
+    })) {
+      if (!loggedFirstMsg) {
+        loggedFirstMsg = true;
+        if (minId === 0) {
+          const seenDate = msg.date
+            ? new Date(msg.date * 1000).toISOString()
+            : "unknown date";
+          console.log(
+            `  🔎 First visible message for @${channelUsername}: ID ${msg.id}, dated ${seenDate}. If this isn't close to the channel's real founding date, GramJS likely can't see full history here (check "Chat history for new members" on that channel).`,
+          );
+        }
+      }
       const gIdStr = msg.groupedId ? msg.groupedId.toString() : null;
 
       if (gIdStr) {
@@ -296,7 +443,11 @@ async function indexChannel(channelUsername) {
           currentGroup.push(msg);
         } else {
           if (currentGroup.length > 0) {
-            const res = await processMessageGroup(currentGroup, channelUsername);
+            const res = await processMessageGroup(
+              currentGroup,
+              channelUsername,
+              archiveQueue,
+            );
             batchIndexed += res.bIndexed;
             batchSkipped += res.bSkipped;
           }
@@ -305,13 +456,21 @@ async function indexChannel(channelUsername) {
         }
       } else {
         if (currentGroup.length > 0) {
-          const res = await processMessageGroup(currentGroup, channelUsername);
+          const res = await processMessageGroup(
+            currentGroup,
+            channelUsername,
+            archiveQueue,
+          );
           batchIndexed += res.bIndexed;
           batchSkipped += res.bSkipped;
           currentGroup = [];
           currentGroupId = null;
         }
-        const res = await processMessageGroup([msg], channelUsername);
+        const res = await processMessageGroup(
+          [msg],
+          channelUsername,
+          archiveQueue,
+        );
         batchIndexed += res.bIndexed;
         batchSkipped += res.bSkipped;
       }
@@ -323,7 +482,9 @@ async function indexChannel(channelUsername) {
         indexed += batchIndexed;
         skipped += batchSkipped;
         const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-        console.log(`  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`);
+        console.log(
+          `  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`,
+        );
 
         batchIndexed = 0;
         batchSkipped = 0;
@@ -335,7 +496,11 @@ async function indexChannel(channelUsername) {
     }
 
     if (currentGroup.length > 0) {
-      const res = await processMessageGroup(currentGroup, channelUsername);
+      const res = await processMessageGroup(
+        currentGroup,
+        channelUsername,
+        archiveQueue,
+      );
       batchIndexed += res.bIndexed;
       batchSkipped += res.bSkipped;
     }
@@ -344,7 +509,9 @@ async function indexChannel(channelUsername) {
       indexed += batchIndexed;
       skipped += batchSkipped;
       const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-      console.log(`  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`);
+      console.log(
+        `  [Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`,
+      );
     }
 
     const totalTime = ((Date.now() - channelStartTime) / 1000).toFixed(2);
@@ -353,12 +520,14 @@ async function indexChannel(channelUsername) {
     let archiveFailedCount = 0;
 
     if (archiveQueue.length > 0) {
-      console.log(`  📦 Processing archive queue for @${channelUsername} (${archiveQueue.length} items)...`);
+      console.log(
+        `  📦 Processing archive queue for @${channelUsername} (${archiveQueue.length} items)...`,
+      );
       const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
 
       for (let i = 0; i < archiveQueue.length; i += 10) {
         const batch = archiveQueue.slice(i, i + 10);
-        const msgIds = batch.map(q => q.rawMsgId);
+        const msgIds = batch.map((q) => q.rawMsgId);
         const peer = batch[0].peer;
 
         let retries = 1;
@@ -367,7 +536,7 @@ async function indexChannel(channelUsername) {
           try {
             const result = await tg.forwardMessages(archiveChatId, {
               messages: msgIds,
-              fromPeer: peer
+              fromPeer: peer,
             });
 
             const fwdMsgs = normalizeForwarded(result);
@@ -377,8 +546,8 @@ async function indexChannel(channelUsername) {
                 bulkOps.push({
                   updateOne: {
                     filter: { _id: batch[j].dbId },
-                    update: { $set: { archiveMessageId: fwdMsgs[j].id } }
-                  }
+                    update: { $set: { archiveMessageId: fwdMsgs[j].id } },
+                  },
                 });
                 archivedCount++;
               }
@@ -388,11 +557,17 @@ async function indexChannel(channelUsername) {
             }
             success = true;
           } catch (e) {
-            const match = e.message.match(/A wait of (\d+) seconds is required/);
+            const match = e.message.match(
+              /A wait of (\d+) seconds is required/,
+            );
             if (match && retries > 0) {
               const waitSecs = parseInt(match[1], 10);
-              console.warn(`  ⏳ Archive batch hit FloodWait. Waiting ${waitSecs + 5}s...`);
-              await new Promise(r => setTimeout(r, Math.max(0, (waitSecs + 5) * 1000)));
+              console.warn(
+                `  ⏳ Archive batch hit FloodWait. Waiting ${waitSecs + 5}s...`,
+              );
+              await new Promise((r) =>
+                setTimeout(r, Math.max(0, (waitSecs + 5) * 1000)),
+              );
               retries--;
             } else {
               console.warn(`  ⚠️ Failed to archive batch:`, e.message);
@@ -403,7 +578,7 @@ async function indexChannel(channelUsername) {
         }
 
         if (i + 10 < archiveQueue.length) {
-          await new Promise(r => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 3000));
         }
       }
     }
@@ -419,28 +594,42 @@ async function indexChannel(channelUsername) {
           lastError: null,
         },
         $inc: { totalIndexed: indexed },
-      }
+      },
     );
 
-    console.log(`  ✅ @${channelUsername} COMPLETED: Indexed: ${indexed}, Archived: ${archivedCount}, Archive failed: ${archiveFailedCount} (will retry next scan)`);
+    console.log(
+      `  ✅ @${channelUsername} COMPLETED: Indexed: ${indexed}, Archived: ${archivedCount}, Archive failed: ${archiveFailedCount} (will retry next scan)`,
+    );
     return { indexed, skipped, error: null };
   } catch (err) {
     const errorMsg = err.message;
     console.error(`  ❌ @${channelUsername}: ${errorMsg}`);
 
-    const channel = await TelegramChannel.findOne({ username: channelUsername });
+    const channel = await TelegramChannel.findOne({
+      username: channelUsername,
+    });
     if (channel) {
       const newFailureCount = (channel.failureCount || 0) + 1;
       let newStatus = "ACTIVE";
 
       if (newFailureCount >= 5) {
         newStatus = "DEAD";
-        console.error(`  💀 @${channelUsername} DEAD (${newFailureCount} failures) - DISABLING`);
-        notifyAdmin("CHANNEL_DEAD", { channelUsername, failureCount: newFailureCount });
+        console.error(
+          `  💀 @${channelUsername} DEAD (${newFailureCount} failures) - DISABLING`,
+        );
+        notifyAdmin("CHANNEL_DEAD", {
+          channelUsername,
+          failureCount: newFailureCount,
+        });
       } else if (newFailureCount >= 3) {
         newStatus = "DEGRADED";
-        console.warn(`  ⚠️  @${channelUsername} DEGRADED (${newFailureCount} failures)`);
-        notifyAdmin("CHANNEL_DEGRADED", { channelUsername, failureCount: newFailureCount });
+        console.warn(
+          `  ⚠️  @${channelUsername} DEGRADED (${newFailureCount} failures)`,
+        );
+        notifyAdmin("CHANNEL_DEGRADED", {
+          channelUsername,
+          failureCount: newFailureCount,
+        });
       }
 
       await TelegramChannel.updateOne(
@@ -453,7 +642,7 @@ async function indexChannel(channelUsername) {
             lastScannedAt: new Date(),
             active: newStatus === "DEAD" ? false : true,
           },
-        }
+        },
       );
     }
     return { indexed, skipped, error: errorMsg };
@@ -461,24 +650,51 @@ async function indexChannel(channelUsername) {
 }
 
 async function indexAllChannels() {
-  const channels = await TelegramChannel.find({ active: true, healthStatus: "ACTIVE" }).sort({ priority: -1 });
-  console.log(`Starting indexer — ${channels.length} ACTIVE channels`);
-
-  const results = [];
-  for (const ch of channels) {
-    await new Promise((r) => setTimeout(r, 1500));
-    try {
-      const r = await indexChannel(ch.username);
-      results.push({ channel: ch.username, ...r });
-    } catch (err) {
-      console.error(`[FATAL-UNHANDLED] Unexpected error in indexChannel for @${ch.username}:`, err);
-      results.push({ channel: ch.username, indexed: 0, skipped: 0, error: err.message });
-    }
+  if (isIndexing) {
+    console.warn(
+      "⚠️ indexAllChannels() called while a scan is already in progress — skipping this run.",
+    );
+    return { skipped: true, reason: "already_running" };
   }
+  isIndexing = true;
 
-  const total = results.reduce((sum, r) => sum + r.indexed, 0);
-  console.log(`\nDone. Total indexed: ${total}`);
-  return results;
+  try {
+    const channels = await TelegramChannel.find({
+      active: true,
+      healthStatus: "ACTIVE",
+    }).sort({ priority: -1 });
+    console.log(`Starting indexer — ${channels.length} ACTIVE channels`);
+
+    const results = [];
+    for (const ch of channels) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const r = await indexChannel(ch.username);
+        results.push({ channel: ch.username, ...r });
+      } catch (err) {
+        console.error(
+          `[FATAL-UNHANDLED] Unexpected error in indexChannel for @${ch.username}:`,
+          err,
+        );
+        results.push({
+          channel: ch.username,
+          indexed: 0,
+          skipped: 0,
+          error: err.message,
+        });
+      }
+    }
+
+    const total = results.reduce((sum, r) => sum + r.indexed, 0);
+    console.log(`\nDone. Total indexed: ${total}`);
+    return results;
+  } finally {
+    isIndexing = false;
+  }
+}
+
+function isIndexingInProgress() {
+  return isIndexing;
 }
 
 module.exports = {
@@ -492,4 +708,5 @@ module.exports = {
   extractUniversity,
   extractSemester,
   getClient,
+  isIndexingInProgress
 };

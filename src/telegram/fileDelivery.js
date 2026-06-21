@@ -570,6 +570,7 @@ function registerFileDeliveryHandlers(bot) {
       await newSave.save();
       await ctx.answerCbQuery("✅ Resource saved!", { show_alert: false });
     } catch (e) {
+      console.error("Error on saving resource: ", e)
       await ctx.answerCbQuery("❌ Error saving resource.", { show_alert: true });
     }
   });

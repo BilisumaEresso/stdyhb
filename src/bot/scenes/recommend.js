@@ -109,8 +109,11 @@ const recommendWizard = new Scenes.WizardScene(
   }
 );
 
+const _escapedUpdates = new WeakSet();
+
 recommendWizard.use(async (ctx, next) => {
-  if (isEscapeText(ctx)) {
+  if (isEscapeText(ctx) && !_escapedUpdates.has(ctx.update)) {
+    _escapedUpdates.add(ctx.update);
     await ctx.scene.leave();
     return getBot().handleUpdate(ctx.update);
   }

@@ -418,7 +418,7 @@ if (
       }
 
       // Finally, try GitHub search if less than 3 results from Telegram
-      if (allResults.length < 0) {
+      if (allResults.length === 0) {
         console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
         logger.log("Fallback used", "github_search");
         // Await the promise we started at the top
