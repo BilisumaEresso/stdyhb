@@ -245,11 +245,12 @@ async function handleDownload(ctx, resourceId) {
     const actionInterval = startChatAction(ctx, userId, resource.fileType === 'image' ? 'upload_photo' : 'upload_document');
     const statusMsg = await ctx.reply("⏳ <i>Securely retrieving your file...</i>", { parse_mode: "HTML" });
 
-    const tg = await getClient();
+
     let forwardedMessages;
     let usedArchive = false;
 
     try {
+      const tg = await getClient();
       forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
         messages: [resource.messageId],
         fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
@@ -360,12 +361,13 @@ async function handleGroupDownload(ctx, resourceId) {
     const actionInterval = startChatAction(ctx, userId, 'upload_photo');
     const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${images.length} images...</i>`, { parse_mode: "HTML" });
 
-    const tg = await getClient();
+
     const messageIds = images.map(img => img.messageId);
     let forwardedMessages;
     let usedArchive = false;
 
     try {
+      const tg = await getClient();
       forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
         messages: messageIds,
         fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
