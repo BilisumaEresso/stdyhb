@@ -35,16 +35,16 @@ function renderListTemplate(query, total, current, totalPages, batch) {
   let msg = `🔍 <b>${escapeHTML(query)}</b>\n`;
   msg += `📦 ${total} resources found · Page ${current} of ${totalPages}\n`;
   msg += `<code>──────────────────────</code>\n`;
-  
+
   batch.forEach((resource, idx) => {
     const numEmoji = numberEmojis[idx] || `${idx + 1}.`;
     const title = getTitle(resource);
     const typeEmoji = getTypeEmoji(resource);
     const examBadge = resource.isExam ? " 🎓" : "";
-    
+
     msg += `${numEmoji}  ${title} ${typeEmoji}${examBadge}\n`;
   });
-  
+
   msg += `<code>──────────────────────</code>`;
   return msg;
 }
@@ -53,59 +53,59 @@ function renderNumberButtons(queryHash, page, batchLength) {
   const keyboard = [];
   let numberRow1 = [];
   let numberRow2 = [];
-  
+
   for (let idx = 0; idx < batchLength; idx++) {
     const btn = Markup.button.callback(`${idx + 1}`, `num_${queryHash}_${page}_${idx}`);
     if (idx < 5) numberRow1.push(btn);
     else numberRow2.push(btn);
   }
-  
+
   if (numberRow1.length > 0) keyboard.push(numberRow1);
   if (numberRow2.length > 0) keyboard.push(numberRow2);
-  
+
   return keyboard;
 }
 
 function renderNavButtons(queryHash, currentPage, totalPages) {
   const navRow = [];
-  
+
   if (currentPage > 1) {
     navRow.push(Markup.button.callback("◀", `pg_${queryHash}_${currentPage - 1}`));
   } else {
     navRow.push(Markup.button.callback("◀", `noop`));
   }
-  
+
   navRow.push(Markup.button.callback(`Page ${currentPage} of ${totalPages}`, `noop`));
-  
+
   if (currentPage < totalPages) {
     navRow.push(Markup.button.callback("▶", `pg_${queryHash}_${currentPage + 1}`));
   } else {
     navRow.push(Markup.button.callback("▶", `noop`));
   }
-  
+
   return navRow;
 }
 
 function renderDetailCard(resource) {
   const typeEmoji = getTypeEmoji(resource);
   const title = getTitle(resource);
-  
+
   let msg = `<code>──────────────────────</code>\n`;
   msg += `${typeEmoji} <b>${title}</b>\n`;
-  
+
   if (resource.isExam) {
     msg += `🎓 <b>Exam Material</b>\n`;
   }
-  
+
   if (resource.tags && resource.tags.length > 0) {
     const formattedTags = resource.tags.slice(0, 5).map(t => `#${t.replace(/\s+/g, "_")}`).join(" ");
     msg += `${formattedTags}\n`;
   }
-  
+
   if (resource.channelUsername) {
     msg += `📢 @${resource.channelUsername}\n`;
   }
-  
+
   if (resource.caption) {
     if (resource.caption.length > 120) {
       msg += `<blockquote expandable>${escapeHTML(resource.caption)}</blockquote>\n`;
@@ -113,7 +113,7 @@ function renderDetailCard(resource) {
       msg += `<i>${escapeHTML(resource.caption)}</i>\n`;
     }
   }
-  
+
   msg += `<code>──────────────────────</code>`;
   return msg;
 }
@@ -161,8 +161,7 @@ function welcomeNew(user) {
 }
 
 function welcomeReturning(user) {
-  let msg = `Welcome back, <b>${escapeHTML(user.firstName || "Student")}</b>.\n`;
-  msg += `${user.searchCount || 0} searches so far.\n\n`;
+  let msg = `Welcome back, <b>${escapeHTML(user.firstName || "Student")}</b> 👋\n`;
   msg += `Type anything to search.`;
   return msg;
 }

@@ -26,15 +26,42 @@ const recommendWizard = new Scenes.WizardScene(
       await ctx.reply("Please send a valid text username.");
       return;
     }
-    let username = ctx.message.text.trim().replace("@", "").toLowerCase();
-    if (username.startsWith("https://t.me/")) username = username.replace("https://t.me/", "");
+    let raw = ctx.message.text.trim();
+    if (raw.startsWith("https://t.me/")) raw = raw.replace("https://t.me/", "");
+    let username = raw.replace(/^@/, "").toLowerCase();
+
+    // Validate: Telegram usernames are 5-32 chars, only letters/numbers/underscores
+    if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+      await ctx.reply(
+        `❌ <b>"${username}"</b> doesn't look like a valid Telegram channel username.\n\nChannel usernames only contain letters, numbers, and underscores — no spaces or special characters.\n\nExample: <code>@study_materials</code> or <code>https://t.me/study_materials</code>\n\nTry again or tap the button below to cancel:`,
+        {
+          parse_mode: "HTML",
+          ...require("telegraf").Markup.inlineKeyboard([
+            [
+              require("telegraf").Markup.button.callback(
+                "❌ Cancel",
+                "cancel_rec",
+              ),
+            ],
+          ]),
+        },
+      );
+      return; // stay on this step, let them retry
+    }
 
     // Check duplicates
-    const existingRec = await ChannelRecommendation.findOne({ channelUsername: username, status: "pending" });
+
+    // Check duplicates
+    const existingRec = await ChannelRecommendation.findOne({
+      channelUsername: username,
+      status: "pending",
+    });
     const existingChan = await TelegramChannel.findOne({ username });
 
     if (existingRec || existingChan) {
-      await ctx.reply(`⚠️ The channel @${username} has already been recommended or is already active in our system! Thanks anyway!`);
+      await ctx.reply(
+        `⚠️ The channel @${username} has already been recommended or is already active in our system! Thanks anyway!`,
+      );
       return ctx.scene.leave();
     }
 
@@ -43,9 +70,15 @@ const recommendWizard = new Scenes.WizardScene(
     await ctx.reply(
       "What kind of resources does it have?",
       Markup.inlineKeyboard([
-        [Markup.button.callback("Exams", "rectype_Exams"), Markup.button.callback("Lecture Notes", "rectype_Lecture Notes")],
-        [Markup.button.callback("Both", "rectype_Both"), Markup.button.callback("Other", "rectype_Other")]
-      ])
+        [
+          Markup.button.callback("Exams", "rectype_Exams"),
+          Markup.button.callback("Lecture Notes", "rectype_Lecture Notes"),
+        ],
+        [
+          Markup.button.callback("Both", "rectype_Both"),
+          Markup.button.callback("Other", "rectype_Other"),
+        ],
+      ]),
     );
     return ctx.wizard.next();
   },
@@ -127,6 +160,12 @@ recommendWizard.action(/rectype_.*/, async (ctx, next) => {
 recommendWizard.action(/recuni_.*/, async (ctx, next) => {
     if (ctx.wizard.cursor === 3) return ctx.wizard.steps[ctx.wizard.cursor](ctx);
     return next();
+});
+
+recommendWizard.action("cancel_rec", async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.reply("Cancelled. You can search or use the menu below.");
+  return ctx.scene.leave();
 });
 
 module.exports = recommendWizard;

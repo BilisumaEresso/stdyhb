@@ -75,6 +75,9 @@ adminCommands.registerAdminActionHandlers(bot);
 registerFileDeliveryHandlers(bot);
 
 // Catch plain text for searching
+const { detectChannelInput } = require("./channelDetector");
+const { quickRecommend } = require("./commands/quickRecommend");
+
 bot.on("text", async (ctx, next) => {
   const text = ctx.message.text.trim();
   const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
@@ -82,21 +85,54 @@ bot.on("text", async (ctx, next) => {
   if (text.startsWith("/")) return next();
   if (ctx.chat.id === relayGroupId) return next();
 
- if (text === LABELS.SEARCH) {
-   return ctx.reply(
-     "Type anything to search — e.g. 'dbms exam' or 'networking notes'",
-   );
- } else if (text === LABELS.SAVES) {
-   return savesCommand(ctx);
- } else if (text === LABELS.RECOMMEND) {
-   return ctx.scene.enter("recommendChannel");
- } else if (text === LABELS.HELP) {
-   return helpCommand(ctx);
- }
+  if (text === LABELS.SEARCH) {
+    return ctx.reply(
+      "Type anything to search — e.g. 'dbms exam' or 'networking notes'",
+    );
+  } else if (text === LABELS.SAVES) {
+    return savesCommand(ctx);
+  } else if (text === LABELS.RECOMMEND) {
+    return ctx.scene.enter("recommendChannel");
+  } else if (text === LABELS.HELP) {
+    return helpCommand(ctx);
+  }
 
   if (text.length < 2) return next();
 
+  // Smart channel detection — intercept before search
+  const detected = detectChannelInput(text);
+  if (detected.isChannel) {
+    return quickRecommend(ctx, detected.username);
+  }
+
   await performSearch(ctx, text);
+});
+
+// Handle forwarded messages from channels — extract channel username directly
+bot.on("message", async (ctx, next) => {
+  const msg = ctx.message;
+  const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
+  if (ctx.chat.id === relayGroupId) return next();
+
+  // Only care about forwarded channel messages
+  const origin = msg?.forward_origin;
+  if (!origin) return next();
+
+  // forward_origin.type === "channel" means it was forwarded from a public channel
+  if (origin.type === "channel" && origin.chat?.username) {
+    const username = origin.chat.username.toLowerCase();
+    return quickRecommend(ctx, username);
+  }
+
+  // forward_origin.type === "hidden_user" or "user" — forwarded from a person, not a channel
+  if (origin.type !== "channel") {
+    return ctx.reply(
+      "ℹ️ That message was forwarded from a person or a private source, not a public channel.\n\nTo recommend a channel, forward a message <b>directly from the channel</b> or send its username/link.",
+      { parse_mode: "HTML" },
+    );
+  }
+
+  return next();
 });
 
 module.exports = bot;

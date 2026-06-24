@@ -88,9 +88,21 @@ const onboardingWizard = new Scenes.WizardScene(
         {
           university: ctx.session.university || "",
           department: ctx.session.department || "",
-          year: ctx.session.year
-        }
+          year: ctx.session.year,
+        },
       );
+
+      // Notify admin now — we have full profile info
+      const { notifyAdmin } = require("../../services/notify.service");
+      notifyAdmin("NEW_USER", {
+        username: ctx.from.username,
+        firstName: ctx.from.first_name,
+        lastName: ctx.from.last_name,
+        telegramId: ctx.from.id,
+        university: ctx.session.university || "Not set",
+        department: ctx.session.department || "Not set",
+        year: ctx.session.year ? `Year ${ctx.session.year}` : "Not set",
+      });
 
       await ctx.reply("✅ You're all set! Just type anything to search for resources.");
 
