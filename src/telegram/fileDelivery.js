@@ -248,24 +248,25 @@ async function handleDownload(ctx, resourceId) {
 
     let forwardedMessages;
     let usedArchive = false;
+    let tg = null;
 
     try {
-      const tg = await getClient();
+      tg = await getClient();
       forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
         messages: [resource.messageId],
         fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
       }));
     } catch (gramError) {
-      if (resource.archiveMessageId && process.env.ARCHIVE_CHAT_ID) {
+      console.warn(`[DELIVERY] Primary forward failed: ${gramError.message}`);
+      if (resource.archiveMessageId && process.env.ARCHIVE_CHAT_ID && tg) {
         try {
-          const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
           forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
             messages: [resource.archiveMessageId],
-            fromPeer: archiveChatId
+            fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID)
           }));
           usedArchive = true;
-        } catch (err) {
-          console.warn('[ARCHIVE FALLBACK FAIL]', err.message);
+        } catch (archiveErr) {
+          console.warn('[ARCHIVE FALLBACK FAIL]', archiveErr.message);
         }
       }
 
@@ -365,21 +366,22 @@ async function handleGroupDownload(ctx, resourceId) {
     const messageIds = images.map(img => img.messageId);
     let forwardedMessages;
     let usedArchive = false;
+    let tg = null;
 
     try {
-      const tg = await getClient();
+      tg = await getClient();
       forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
         messages: messageIds,
         fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
       }));
     } catch (gramError) {
+      console.warn(`[DELIVERY] Primary group forward failed: ${gramError.message}`);
       const archiveIds = images[0].archiveMessageIds || images.map(img => img.archiveMessageId).filter(id => id);
-      if (archiveIds.length === images.length && process.env.ARCHIVE_CHAT_ID) {
+      if (archiveIds.length === images.length && process.env.ARCHIVE_CHAT_ID && tg) {
         try {
-          const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
           forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
             messages: archiveIds,
-            fromPeer: archiveChatId
+            fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID)
           }));
           usedArchive = true;
         } catch (err) {

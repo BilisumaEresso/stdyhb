@@ -4,6 +4,11 @@ const express = require("express");
 const cron = require("node-cron");
 const bot = require("./src/bot");
 const { indexAllChannels, getClient } = require("./src/search/telegramIndexer");
+const User = require("./src/db/models/User");
+const TelegramResource = require("./src/db/models/TelegramResource");
+const TelegramChannel = require("./src/db/models/TelegramChannel");
+const SearchHistory = require("./src/db/models/SearchHistory");
+const { notifyAdmin } = require("./src/services/notify.service");
 
 async function bootstrap() {
   // Connect to MongoDB
@@ -67,6 +72,20 @@ async function bootstrap() {
   const server = app.listen(PORT, () => {
     console.log(`🌐 Server running on port ${PORT}`);
   });
+
+  // Keep Render free tier alive — ping self every 10 minutes
+  if (process.env.NODE_ENV === "production") {
+    const https = require("https");
+    setInterval(() => {
+      const url = process.env.WEBHOOK_URL;
+      if (!url) return;
+      https.get(`${url}/health`, (res) => {
+        console.log(`[KeepAlive] Ping ${res.statusCode}`);
+      }).on("error", (err) => {
+        console.warn("[KeepAlive] Ping failed:", err.message);
+      });
+    }, 10 * 60 * 1000); // every 10 minutes
+  }
 
   // Export server for graceful shutdown reference
   return server;
