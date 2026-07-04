@@ -149,7 +149,7 @@ function expandQuery(query) {
     for (const alias of aliases) {
       const safeAlias = escapeRegExp(alias);
       const aliasRegex = new RegExp(`(^|\\W)${safeAlias}($|\\W)`, "i");
-      
+
       if (aliasRegex.test(lowerQuery)) {
         // Replace with: "alias OR all_alternatives"
         const orPhrase = [alias, ...aliases.filter(a => a !== alias)].join(" OR ");

@@ -159,10 +159,7 @@ function extractTags(caption = "", fileName = "", channelUsername = "") {
 
 function isExam(text = "", fileName = "") {
   const combined = `${text} ${fileName}`.toLowerCase();
-  if (EXAM_KEYWORDS.some((k) => combined.includes(k))) return true;
-  // Ethiopian exam sets often have only a year in the caption — treat as exam
-  if (/\b(201[5-9]|202[0-9])\b/.test(combined)) return true;
-  return false;
+  return EXAM_KEYWORDS.some((k) => combined.includes(k));
 }
 
 function extractYear(text = "") {
@@ -223,13 +220,13 @@ function getFileType(fileName = "") {
 }
 
 // ─── process message group ────────────────────────────────────────────────────
-async function processMessageGroup(msgs, channelUsername) {
+async function processMessageGroup(msgs, channelUsername, archiveQueue) {
   let bIndexed = 0;
   let bSkipped = 0;
 
   if (!msgs || msgs.length === 0) return { bIndexed, bSkipped };
-  const groupCaption =
-    msgs.find((m) => m.message && m.message.trim().length > 0)?.message || "";
+const groupCaption =
+  msgs.find((m) => m.message && m.message.trim().length > 0)?.message || "";
   const resources = [];
   for (const msg of msgs) {
     const hasDoc = !!msg.document;
@@ -287,21 +284,12 @@ async function processMessageGroup(msgs, channelUsername) {
     const caption = msgs.length > 1 ? groupCaption : msg.message || "";
     const textToAnalyze = `${caption} ${fileName} ${channelUsername}`;
 
-    let tags = extractTags(caption, fileName, channelUsername);
-    let exam = isExam(caption, fileName);
+    const tags = extractTags(caption, fileName, channelUsername);
+    const exam = isExam(caption, fileName);
 
-    const isGrouped = msgs.length > 1;
     if (fileType === "image" && tags.length === 0 && !exam) {
-      if (isGrouped) {
-        // Grouped with no tags = almost certainly a multi-page exam set
-        // Inject channel name as a searchable tag so it appears in channel searches
-        tags = [channelUsername.toLowerCase().replace(/[^a-z0-9]/g, "")];
-        exam = true;
-      } else {
-        // Solo image with nothing identifiable — skip
-        bSkipped++;
-        continue;
-      }
+      bSkipped++;
+      continue;
     }
 
     resources.push({
@@ -354,11 +342,24 @@ async function processMessageGroup(msgs, channelUsername) {
     else newResources.push(r);
   }
 
-  // Save NEW resources to DB
+  // Queue NEW resources for archiving later and save to DB
   if (newResources.length > 0) {
     newResources.forEach((r) => {
       r._id = new mongoose.Types.ObjectId();
     });
+
+    if (process.env.ARCHIVE_CHAT_ID && archiveQueue) {
+      const peer = channelUsername
+        ? `@${channelUsername}`
+        : parseInt(newResources[0].chatId);
+      for (const r of newResources) {
+        archiveQueue.push({
+          dbId: r._id,
+          rawMsgId: r._rawMsgId,
+          peer: peer,
+        });
+      }
+    }
 
     try {
       const docsToInsert = newResources.map((r) => {
@@ -388,7 +389,7 @@ async function processMessageGroup(msgs, channelUsername) {
 }
 
 async function processMessage(msg, channelUsername) {
-  const result = await processMessageGroup([msg], channelUsername);
+  const result = await processMessageGroup([msg], channelUsername, []);
   return result.bIndexed > 0;
 }
 
@@ -403,6 +404,7 @@ async function indexChannel(channelUsername) {
     `\nIndexing @${channelUsername} (Incremental from msgId: ${minId})...`,
   );
 
+  const archiveQueue = [];
   let indexed = 0;
   let skipped = 0;
   let totalFetched = 0;
@@ -444,6 +446,7 @@ async function indexChannel(channelUsername) {
             const res = await processMessageGroup(
               currentGroup,
               channelUsername,
+              archiveQueue,
             );
             batchIndexed += res.bIndexed;
             batchSkipped += res.bSkipped;
@@ -453,13 +456,21 @@ async function indexChannel(channelUsername) {
         }
       } else {
         if (currentGroup.length > 0) {
-          const res = await processMessageGroup(currentGroup, channelUsername);
+          const res = await processMessageGroup(
+            currentGroup,
+            channelUsername,
+            archiveQueue,
+          );
           batchIndexed += res.bIndexed;
           batchSkipped += res.bSkipped;
           currentGroup = [];
           currentGroupId = null;
         }
-        const res = await processMessageGroup([msg], channelUsername);
+        const res = await processMessageGroup(
+          [msg],
+          channelUsername,
+          archiveQueue,
+        );
         batchIndexed += res.bIndexed;
         batchSkipped += res.bSkipped;
       }
@@ -485,7 +496,11 @@ async function indexChannel(channelUsername) {
     }
 
     if (currentGroup.length > 0) {
-      const res = await processMessageGroup(currentGroup, channelUsername);
+      const res = await processMessageGroup(
+        currentGroup,
+        channelUsername,
+        archiveQueue,
+      );
       batchIndexed += res.bIndexed;
       batchSkipped += res.bSkipped;
     }
@@ -501,27 +516,90 @@ async function indexChannel(channelUsername) {
 
     const totalTime = ((Date.now() - channelStartTime) / 1000).toFixed(2);
 
-    // Update channel: mark as fullyIndexed if this was a from-scratch scan (minId === 0)
-    const updateObj = {
-      lastScannedAt: new Date(),
-      lastSuccessfulScan: new Date(),
-      healthStatus: "ACTIVE",
-      failureCount: 0,
-      lastError: null,
-    };
-    if (minId === 0) {
-      updateObj.fullyIndexed = true;
+    let archivedCount = 0;
+    let archiveFailedCount = 0;
+
+    if (archiveQueue.length > 0) {
+      console.log(
+        `  📦 Processing archive queue for @${channelUsername} (${archiveQueue.length} items)...`,
+      );
+      const archiveChatId = parseInt(process.env.ARCHIVE_CHAT_ID);
+
+      for (let i = 0; i < archiveQueue.length; i += 10) {
+        const batch = archiveQueue.slice(i, i + 10);
+        const msgIds = batch.map((q) => q.rawMsgId);
+        const peer = batch[0].peer;
+
+        let retries = 1;
+        let success = false;
+        while (retries >= 0 && !success) {
+          try {
+            const result = await tg.forwardMessages(archiveChatId, {
+              messages: msgIds,
+              fromPeer: peer,
+            });
+
+            const fwdMsgs = normalizeForwarded(result);
+            const bulkOps = [];
+            for (let j = 0; j < batch.length; j++) {
+              if (fwdMsgs[j]) {
+                bulkOps.push({
+                  updateOne: {
+                    filter: { _id: batch[j].dbId },
+                    update: { $set: { archiveMessageId: fwdMsgs[j].id } },
+                  },
+                });
+                archivedCount++;
+              }
+            }
+            if (bulkOps.length > 0) {
+              await TelegramResource.bulkWrite(bulkOps);
+            }
+            success = true;
+          } catch (e) {
+            const match = e.message.match(
+              /A wait of (\d+) seconds is required/,
+            );
+            if (match && retries > 0) {
+              const waitSecs = parseInt(match[1], 10);
+              console.warn(
+                `  ⏳ Archive batch hit FloodWait. Waiting ${waitSecs + 5}s...`,
+              );
+              await new Promise((r) =>
+                setTimeout(r, Math.max(0, (waitSecs + 5) * 1000)),
+              );
+              retries--;
+            } else {
+              console.warn(`  ⚠️ Failed to archive batch:`, e.message);
+              archiveFailedCount += batch.length;
+              break;
+            }
+          }
+        }
+
+        if (i + 10 < archiveQueue.length) {
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      }
     }
 
     await TelegramChannel.updateOne(
       { username: channelUsername },
       {
-        $set: updateObj,
+        $set: {
+          lastScannedAt: new Date(),
+          lastSuccessfulScan: new Date(),
+          healthStatus: "ACTIVE",
+          failureCount: 0,
+          lastError: null,
+        },
         $inc: { totalIndexed: indexed },
       },
     );
 
-    console.log(`  ✅ @${channelUsername} COMPLETED: Indexed: ${indexed}`);
+    console.log(
+      `  ✅ @${channelUsername} COMPLETED: Indexed: ${indexed}, Archived: ${archivedCount}, Archive failed: ${archiveFailedCount} (will retry next scan)`,
+    );
     return { indexed, skipped, error: null };
   } catch (err) {
     const errorMsg = err.message;
@@ -568,190 +646,6 @@ async function indexChannel(channelUsername) {
       );
     }
     return { indexed, skipped, error: errorMsg };
-  }
-}
-
-// ─── index one channel section (for full scans in batches) ────────────────────
-async function indexChannelSection(channelUsername, limit = 500) {
-  const maxResource = await TelegramResource.findOne({ channelUsername }).sort({
-    messageId: -1,
-  });
-  const minId = maxResource ? maxResource.messageId : 0;
-
-  console.log(
-    `\nIndexing @${channelUsername} [Section] (from msgId: ${minId}, limit: ${limit})...`,
-  );
-
-  let indexed = 0;
-  let skipped = 0;
-  let totalFetched = 0;
-  let reachedEnd = false;
-  const channelStartTime = Date.now();
-
-  try {
-    const tg = await getClient();
-    let batchIndexed = 0;
-    let batchSkipped = 0;
-    let batchFetched = 0;
-    let batchStartTime = Date.now();
-
-    let currentGroup = [];
-    let currentGroupId = null;
-    let loggedFirstMsg = false;
-
-    for await (const msg of tg.iterMessages(`@${channelUsername}`, {
-      minId: minId,
-      reverse: true,
-      limit: limit,
-    })) {
-      if (!loggedFirstMsg) {
-        loggedFirstMsg = true;
-        if (minId === 0) {
-          const seenDate = msg.date
-            ? new Date(msg.date * 1000).toISOString()
-            : "unknown date";
-          console.log(
-            `  🔎 First visible message for @${channelUsername}: ID ${msg.id}, dated ${seenDate}`,
-          );
-        }
-      }
-      const gIdStr = msg.groupedId ? msg.groupedId.toString() : null;
-
-      if (gIdStr) {
-        if (currentGroupId === gIdStr) {
-          currentGroup.push(msg);
-        } else {
-          if (currentGroup.length > 0) {
-            const res = await processMessageGroup(
-              currentGroup,
-              channelUsername,
-            );
-            batchIndexed += res.bIndexed;
-            batchSkipped += res.bSkipped;
-          }
-          currentGroupId = gIdStr;
-          currentGroup = [msg];
-        }
-      } else {
-        if (currentGroup.length > 0) {
-          const res = await processMessageGroup(currentGroup, channelUsername);
-          batchIndexed += res.bIndexed;
-          batchSkipped += res.bSkipped;
-          currentGroup = [];
-          currentGroupId = null;
-        }
-        const res = await processMessageGroup([msg], channelUsername);
-        batchIndexed += res.bIndexed;
-        batchSkipped += res.bSkipped;
-      }
-
-      batchFetched++;
-      totalFetched++;
-
-      if (batchFetched >= 100) {
-        indexed += batchIndexed;
-        skipped += batchSkipped;
-        const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-        console.log(
-          `  [Section-Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`,
-        );
-
-        batchIndexed = 0;
-        batchSkipped = 0;
-        batchFetched = 0;
-        batchStartTime = Date.now();
-
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-    }
-
-    if (currentGroup.length > 0) {
-      const res = await processMessageGroup(currentGroup, channelUsername);
-      batchIndexed += res.bIndexed;
-      batchSkipped += res.bSkipped;
-    }
-
-    if (batchFetched > 0) {
-      indexed += batchIndexed;
-      skipped += batchSkipped;
-      const batchTime = ((Date.now() - batchStartTime) / 1000).toFixed(2);
-      console.log(
-        `  [Section-Batch] Fetched: ${batchFetched}, Indexed: ${batchIndexed}, Skipped: ${batchSkipped}, Time: ${batchTime}s`,
-      );
-    }
-
-    // Check if we reached the end: if fetched < limit, we've caught up
-    reachedEnd = totalFetched < limit;
-
-    const totalTime = ((Date.now() - channelStartTime) / 1000).toFixed(2);
-
-    // Update channel with progress
-    const updateObj = {
-      lastScannedAt: new Date(),
-    };
-    // Only set fullyIndexed if we reached the end (caught up to present)
-    if (reachedEnd) {
-      updateObj.fullyIndexed = true;
-      console.log(`  ✅ @${channelUsername} reached end of history`);
-    }
-
-    await TelegramChannel.updateOne(
-      { username: channelUsername },
-      {
-        $set: updateObj,
-        $inc: { totalIndexed: indexed },
-      },
-    );
-
-    console.log(
-      `  ✅ @${channelUsername} [Section] COMPLETED: Indexed: ${indexed}, reachedEnd: ${reachedEnd}`,
-    );
-    return { indexed, skipped, reachedEnd, error: null };
-  } catch (err) {
-    const errorMsg = err.message;
-    console.error(`  ❌ @${channelUsername} [Section]: ${errorMsg}`);
-
-    const channel = await TelegramChannel.findOne({
-      username: channelUsername,
-    });
-    if (channel) {
-      const newFailureCount = (channel.failureCount || 0) + 1;
-      let newStatus = "ACTIVE";
-
-      if (newFailureCount >= 5) {
-        newStatus = "DEAD";
-        console.error(
-          `  💀 @${channelUsername} DEAD (${newFailureCount} failures) - DISABLING`,
-        );
-        notifyAdmin("CHANNEL_DEAD", {
-          channelUsername,
-          failureCount: newFailureCount,
-        });
-      } else if (newFailureCount >= 3) {
-        newStatus = "DEGRADED";
-        console.warn(
-          `  ⚠️  @${channelUsername} DEGRADED (${newFailureCount} failures)`,
-        );
-        notifyAdmin("CHANNEL_DEGRADED", {
-          channelUsername,
-          failureCount: newFailureCount,
-        });
-      }
-
-      await TelegramChannel.updateOne(
-        { username: channelUsername },
-        {
-          $set: {
-            failureCount: newFailureCount,
-            healthStatus: newStatus,
-            lastError: errorMsg,
-            lastScannedAt: new Date(),
-            active: newStatus === "DEAD" ? false : true,
-          },
-        },
-      );
-    }
-    return { indexed, skipped, reachedEnd: false, error: errorMsg };
   }
 }
 
@@ -806,7 +700,6 @@ function isIndexingInProgress() {
 module.exports = {
   indexAllChannels,
   indexChannel,
-  indexChannelSection,
   processMessage,
   processMessageGroup,
   extractTags,
@@ -815,5 +708,5 @@ module.exports = {
   extractUniversity,
   extractSemester,
   getClient,
-  isIndexingInProgress,
+  isIndexingInProgress
 };

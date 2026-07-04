@@ -3,13 +3,7 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cron = require("node-cron");
 const bot = require("./src/bot");
-const {
-  indexAllChannels,
-  indexChannel,
-  indexChannelSection,
-  getClient,
-  isIndexingInProgress,
-} = require("./src/search/telegramIndexer");
+const { indexAllChannels, getClient } = require("./src/search/telegramIndexer");
 const User = require("./src/db/models/User");
 const TelegramResource = require("./src/db/models/TelegramResource");
 const TelegramChannel = require("./src/db/models/TelegramChannel");
@@ -26,12 +20,8 @@ async function bootstrap() {
     });
     console.log("✅ MongoDB connected");
 
-    mongoose.connection.on("error", (err) =>
-      console.error("[MongoDB error]", err),
-    );
-    mongoose.connection.on("disconnected", () =>
-      console.warn("[MongoDB] disconnected"),
-    );
+    mongoose.connection.on('error', (err) => console.error('[MongoDB error]', err));
+    mongoose.connection.on('disconnected', () => console.warn('[MongoDB] disconnected'));
   } catch (err) {
     console.error("❌ MongoDB error:", err);
   }
@@ -39,12 +29,10 @@ async function bootstrap() {
   // GramJS crash protection
   try {
     await getClient();
-    console.log("✅ GramJS connected");
+    console.log('✅ GramJS connected');
   } catch (err) {
-    console.error("❌ GramJS failed:", err.message);
-    console.warn(
-      "⚠️ Running without GramJS — file delivery disabled until session is fixed",
-    );
+    console.error('❌ GramJS failed:', err.message);
+    console.warn('⚠️ Running without GramJS — file delivery disabled until session is fixed');
   }
 
   // Setup Express server
@@ -53,12 +41,12 @@ async function bootstrap() {
 
   app.get("/", (req, res) => res.send("StudyHub Bot is running."));
 
-  app.get("/health", (req, res) => {
+  app.get('/health', (req, res) => {
     res.json({
-      status: "ok",
+      status: 'ok',
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
-      mode: process.env.NODE_ENV || "development",
+      mode: process.env.NODE_ENV || 'development'
     });
   });
 
@@ -67,23 +55,18 @@ async function bootstrap() {
   if (process.env.NODE_ENV === "production") {
     if (webhookUrl) {
       app.use(bot.webhookCallback("/webhook"));
-      bot.telegram
-        .setWebhook(`${webhookUrl}/webhook`)
-        .then(() =>
-          console.log(`✅ Webhook configured at ${webhookUrl}/webhook`),
-        )
-        .catch((err) => console.error("❌ Webhook configuration failed:", err));
+      bot.telegram.setWebhook(`${webhookUrl}/webhook`)
+        .then(() => console.log(`✅ Webhook configured at ${webhookUrl}/webhook`))
+        .catch(err => console.error("❌ Webhook configuration failed:", err));
     } else {
-      console.warn(
-        "⚠️ WEBHOOK_URL not set in .env! Bot will not receive updates.",
-      );
+      console.warn("⚠️ WEBHOOK_URL not set in .env! Bot will not receive updates.");
     }
-    console.log("✅ Bot started in WEBHOOK mode");
+    console.log('✅ Bot started in WEBHOOK mode');
   } else {
     bot
       .launch({ dropPendingUpdates: true })
       .catch((err) => console.error("❌ Polling failed:", err));
-    console.log("✅ Bot started in POLLING mode");
+    console.log('✅ Bot started in POLLING mode');
   }
 
   const server = app.listen(PORT, () => {
@@ -93,20 +76,15 @@ async function bootstrap() {
   // Keep Render free tier alive — ping self every 10 minutes
   if (process.env.NODE_ENV === "production") {
     const https = require("https");
-    setInterval(
-      () => {
-        const url = process.env.WEBHOOK_URL;
-        if (!url) return;
-        https
-          .get(`${url}/health`, (res) => {
-            console.log(`[KeepAlive] Ping ${res.statusCode}`);
-          })
-          .on("error", (err) => {
-            console.warn("[KeepAlive] Ping failed:", err.message);
-          });
-      },
-      10 * 60 * 1000,
-    ); // every 10 minutes
+    setInterval(() => {
+      const url = process.env.WEBHOOK_URL;
+      if (!url) return;
+      https.get(`${url}/health`, (res) => {
+        console.log(`[KeepAlive] Ping ${res.statusCode}`);
+      }).on("error", (err) => {
+        console.warn("[KeepAlive] Ping failed:", err.message);
+      });
+    }, 10 * 60 * 1000); // every 10 minutes
   }
 
   // Export server for graceful shutdown reference
@@ -124,9 +102,7 @@ const shutdown = async () => {
   try {
     const debugInfo = await getPendingDeliveryDebugInfo();
     if (debugInfo.pendingDeliveries > 0 || debugInfo.pendingGroups > 0) {
-      console.warn(
-        `⚠️ WARNING: Shutting down with in-flight deliveries! Abandoning ${debugInfo.pendingDeliveries} single files and ${debugInfo.pendingGroups} groups. (${debugInfo.activeUserRequests} active user requests). Relay messages may be left stranded.`,
-      );
+      console.warn(`⚠️ WARNING: Shutting down with in-flight deliveries! Abandoning ${debugInfo.pendingDeliveries} single files and ${debugInfo.pendingGroups} groups. (${debugInfo.activeUserRequests} active user requests). Relay messages may be left stranded.`);
     }
   } catch (err) {
     console.error("Failed to check pending deliveries during shutdown:", err);
@@ -135,7 +111,7 @@ const shutdown = async () => {
   try {
     const server = await serverPromise;
     server.close(() => console.log("HTTP server closed"));
-  } catch (e) {}
+  } catch(e) {}
   mongoose.connection.close(false).then(() => {
     console.log("MongoDB connection closed");
     process.exit(0);
@@ -153,69 +129,14 @@ process.on("unhandledRejection", (err) => {
   console.error("[FATAL-UNHANDLED] Unhandled Rejection:", err);
 });
 
-// Full scan job — processes new channels in sections (every 2 hours)
-if (process.env.DISABLE_AUTO_INDEX !== "true") {
-  cron.schedule("0 */2 * * *", async () => {
-    if (process.env.DISABLE_AUTO_INDEX === "true") return;
+// Re-index all channels every 6 hours
+if (process.env.DISABLE_AUTO_INDEX !== 'true') {
+  cron.schedule("0 */6 * * *", async () => {
     try {
-      const channels = await TelegramChannel.find({
-        active: true,
-        fullyIndexed: false,
-        healthStatus: { $ne: "DEAD" },
-      }).sort({ priority: -1 });
-
-      if (channels.length === 0) {
-        console.log("[FULL-SCAN] No channels needing full scan");
-        return;
-      }
-      console.log(
-        `[FULL-SCAN] ${channels.length} channels need sectioned scanning`,
-      );
-
-      for (const ch of channels) {
-        await new Promise((r) => setTimeout(r, 2000)); // 2s between channels
-        try {
-          const result = await indexChannelSection(ch.username, 500);
-          console.log(
-            `[FULL-SCAN] @${ch.username}: +${result.indexed} indexed, reachedEnd: ${result.reachedEnd}`,
-          );
-        } catch (err) {
-          console.error(`[FULL-SCAN] Error on @${ch.username}:`, err.message);
-        }
-      }
+      console.log("📅 Scheduled re-index starting...");
+      await indexAllChannels();
     } catch (err) {
-      console.error("[FULL-SCAN] Cron failed:", err);
-    }
-  });
-}
-
-// Incremental job — fast check for new messages on fully-scanned channels (every 8 hours)
-if (process.env.DISABLE_AUTO_INDEX !== "true") {
-  cron.schedule("0 */8 * * *", async () => {
-    if (process.env.DISABLE_AUTO_INDEX === "true") return;
-    if (isIndexingInProgress()) {
-      console.warn("[INCREMENTAL] Skipping — full scan in progress");
-      return;
-    }
-    try {
-      console.log("[INCREMENTAL] Starting incremental scan...");
-      const channels = await TelegramChannel.find({
-        active: true,
-        fullyIndexed: true,
-        healthStatus: { $ne: "DEAD" },
-      }).sort({ lastScannedAt: 1 }); // oldest scan first
-
-      for (const ch of channels) {
-        await new Promise((r) => setTimeout(r, 1500));
-        try {
-          await indexChannel(ch.username);
-        } catch (err) {
-          console.error(`[INCREMENTAL] Error on @${ch.username}:`, err.message);
-        }
-      }
-      console.log("[INCREMENTAL] Done.");
-    } catch (err) {
-      console.error("[INCREMENTAL] Cron failed:", err);
+      console.error("❌ Scheduled re-index failed:", err);
     }
   });
 } else {
@@ -230,48 +151,29 @@ cron.schedule("0 8 * * *", async () => {
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    const searchesToday = await SearchHistory.countDocuments({
-      createdAt: { $gte: startOfDay },
-    });
+    const searchesToday = await SearchHistory.countDocuments({ createdAt: { $gte: startOfDay } });
 
-    const deadChannelsObj = await TelegramChannel.find(
-      { healthStatus: "DEAD" },
-      "username",
-    );
-    const deadChannels = deadChannelsObj.map((c) => `@${c.username}`);
+    const deadChannelsObj = await TelegramChannel.find({ healthStatus: "DEAD" }, "username");
+    const deadChannels = deadChannelsObj.map(c => `@${c.username}`);
 
     notifyAdmin("DAILY_SUMMARY", {
       totalUsers,
       totalResources,
       searchesToday,
-      deadChannels,
+      deadChannels
     });
   } catch (error) {
     console.error("❌ Error generating daily summary:", error);
   }
 });
 
-// Run once on startup after a 10s delay — only if there are truly unindexed channels
-if (process.env.DISABLE_AUTO_INDEX !== "true") {
+// Run once on startup after a 10s delay
+if (process.env.DISABLE_AUTO_INDEX !== 'true') {
   setTimeout(async () => {
     try {
-      const TelegramChannel = require("./src/db/models/TelegramChannel");
-      const unindexed = await TelegramChannel.countDocuments({
-        active: true,
-        totalIndexed: 0,
-      });
-      if (unindexed > 0) {
-        console.log(
-          `🆕 ${unindexed} unindexed channels found — starting initial scan`,
-        );
-        await indexAllChannels();
-      } else {
-        console.log(
-          "✅ All channels have been indexed. Skipping startup scan.",
-        );
-      }
+      await indexAllChannels();
     } catch (err) {
-      console.error("❌ Startup scan check failed:", err);
+      console.error("❌ Startup re-index failed:", err);
     }
   }, 10000);
 }

@@ -3,8 +3,6 @@ const recordSearchService = require("../../services/search.service");
 const orchestrationService = require("../../search/search.service");
 const { sendPaginatedResults } = require("../../telegram/fileDelivery");
 
-
-
 /**
  * Format search results for web results
  */
@@ -16,17 +14,21 @@ function formatWebResults(results) {
   let message = `✅ Found ${results.length} results:\n\n`;
 
   results.forEach((result, index) => {
-    const typeEmoji = {
-      pdf: "📄",
-      ppt: "📊",
-      exam: "📝",
-      notes: "📓",
-      video: "🎥",
-      github: "💻",
-      website: "🌐",
-    }[result.type] || "📎";
+    const typeEmoji =
+      {
+        pdf: "📄",
+        ppt: "📊",
+        exam: "📝",
+        notes: "📓",
+        video: "🎥",
+        github: "💻",
+        website: "🌐",
+      }[result.type] || "📎";
 
-    const title = result.title.length > 50 ? result.title.substring(0, 50) + "..." : result.title;
+    const title =
+      result.title.length > 50
+        ? result.title.substring(0, 50) + "..."
+        : result.title;
 
     message += `${index + 1}. ${typeEmoji} *${title}*\n`;
     message += `   [Link](${result.url})\n`;
@@ -43,7 +45,9 @@ async function searchCommand(ctx) {
     const messageText = ctx.message.text;
     const query = messageText.split(" ").slice(1).join(" ").trim();
     if (!query) {
-      return await ctx.reply("❌ Please provide a search term. Example: /search dbms exam");
+      return await ctx.reply(
+        "❌ Please provide a search term. Example: /search dbms exam",
+      );
     }
     await performSearch(ctx, query);
   } catch (error) {
@@ -66,17 +70,22 @@ async function performSearch(ctx, query) {
     await recordSearchService.recordSearch(user._id, query);
 
     // Send typing chat action
-    await ctx.telegram.sendChatAction(ctx.chat.id, 'typing').catch(() => {});
+    await ctx.telegram.sendChatAction(ctx.chat.id, "typing").catch(() => {});
 
     // Perform actual search (prioritizes Telegram resources)
     const results = await orchestrationService.searchResources(query, user);
 
     // Check if results contain Telegram resources
-    const hasTelegramResults = results && results.length > 0 && results.some((r) => r._telegramResource);
+    const hasTelegramResults =
+      results && results.length > 0 && results.some((r) => r._telegramResource);
 
     if (hasTelegramResults) {
       // Use file delivery system for Telegram results
-      const queryHash = require("crypto").createHash('md5').update(query).digest('hex').substring(0, 8);
+      const queryHash = require("crypto")
+        .createHash("md5")
+        .update(query)
+        .digest("hex")
+        .substring(0, 8);
       await sendPaginatedResults(ctx, results, query, queryHash, 1);
     } else {
       // Use web results formatting
@@ -87,7 +96,7 @@ async function performSearch(ctx, query) {
     }
 
     // Clear typing action
-    await ctx.telegram.sendChatAction(ctx.chat.id, 'cancel').catch(() => {});
+    await ctx.telegram.sendChatAction(ctx.chat.id, "cancel").catch(() => {});
   } catch (error) {
     console.error("Error in performSearch:", error);
     await ctx.reply(

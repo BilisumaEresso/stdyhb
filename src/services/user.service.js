@@ -28,7 +28,6 @@ class UserService {
 
       await user.save();
 
-
       return user;
     } catch (error) {
       console.error("Error creating user:", error);

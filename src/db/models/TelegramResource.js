@@ -42,14 +42,17 @@ const TelegramResourceSchema = new mongoose.Schema({
 });
 
 TelegramResourceSchema.index({ tags: 1 });
-TelegramResourceSchema.index({ channelUsername: 1, messageId: 1 }, { unique: true });
+TelegramResourceSchema.index(
+  { channelUsername: 1, messageId: 1 },
+  { unique: true },
+);
 TelegramResourceSchema.index({ courseCode: 1 });
 TelegramResourceSchema.index({ isExam: 1, fileType: 1 });
 
 // Text index for optimized search
 TelegramResourceSchema.index(
   { fileName: "text", caption: "text", tags: "text", courseCode: "text" },
-  { weights: { fileName: 5, tags: 4, courseCode: 3, caption: 1 } }
+  { weights: { fileName: 5, tags: 4, courseCode: 3, caption: 1 } },
 );
 
 module.exports = mongoose.model("TelegramResource", TelegramResourceSchema);

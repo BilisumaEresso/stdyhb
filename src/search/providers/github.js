@@ -44,7 +44,7 @@ function isLearningMaterial(nameAndDesc) {
 function shouldExclude(nameAndDesc) {
   // Exclude if contains excluded keywords WITHOUT learning keywords
   const hasExcluded = EXCLUDED_KEYWORDS.some((keyword) =>
-    nameAndDesc.includes(keyword)
+    nameAndDesc.includes(keyword),
   );
   const hasPositive = isLearningMaterial(nameAndDesc);
 
@@ -137,7 +137,9 @@ async function searchGitHub(query) {
       timeout: 8000,
     });
 
-    console.log(`  📦 GitHub returned: ${response.data.items?.length || 0} repos (before filtering)`);
+    console.log(
+      `  📦 GitHub returned: ${response.data.items?.length || 0} repos (before filtering)`,
+    );
 
     const results = [];
 
@@ -160,7 +162,9 @@ async function searchGitHub(query) {
 
     console.log(`  ✅ GitHub: ${results.length} learning repos (filtered)`);
     if (results.length > 0) {
-      console.log(`     Top result: "${results[0].title}" (score: ${results[0].score})`);
+      console.log(
+        `     Top result: "${results[0].title}" (score: ${results[0].score})`,
+      );
     }
     return results;
   } catch (error) {
