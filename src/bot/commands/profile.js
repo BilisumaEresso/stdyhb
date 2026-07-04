@@ -5,12 +5,18 @@ async function profileCommand(ctx) {
   try {
     const user = await userService.findByTelegramId(ctx.from.id);
     if (!user) {
-      return await ctx.reply("❌ User not found. Please use /start to initialize your account.");
+      return await ctx.reply(
+        "❌ User not found. Please use /start to initialize your account.",
+      );
     }
 
     const uni = user.university || "Not set";
     const dept = user.department || "Not set";
-    const year = user.year ? (user.year === 6 ? "Graduate" : `${user.year} Year`) : "Not set";
+    const year = user.year
+      ? user.year === 6
+        ? "Graduate"
+        : `${user.year} Year`
+      : "Not set";
 
     const profileText = `👤 <b>Your Profile</b>
 
@@ -25,8 +31,12 @@ async function profileCommand(ctx) {
     await ctx.reply(profileText, {
       parse_mode: "HTML",
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback("✏️ Edit profile", "edit_profile")]
-      ]).reply_markup
+        [
+          Markup.button.callback("✏️ Edit Profile", "edit_profile"),
+          Markup.button.callback("📚 My Saves", "nav_saves"),
+        ],
+        [Markup.button.callback("◀ Back to Menu", "nav_main")],
+      ]).reply_markup,
     });
   } catch (error) {
     console.error("Error in /profile command:", error);

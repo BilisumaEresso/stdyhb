@@ -4,7 +4,6 @@ const { searchGitHub } = require("./providers/github");
 const { expandQuery } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
 
-
 // Search debugging logger
 class SearchLogger {
   constructor() {
@@ -39,7 +38,7 @@ class SearchService {
       pdf: "pdf",
       ppt: "ppt",
       doc: "document",
-      image: "notes",
+      image: "image",
       other: "other",
     };
     return typeMap[fileType] || "other";
@@ -74,16 +73,32 @@ class SearchService {
       year: null,
     };
 
-    if (/\b(mid|midterm|final|exam|exam paper|past paper|previous exam|test|quiz)\b/i.test(query)) {
+    if (
+      /\b(mid|midterm|final|exam|exam paper|past paper|previous exam|test|quiz|photo|picture|image|set|paper|question)\b/i.test(
+        query,
+      )
+    ) {
       intent.exam = true;
     }
-    if (/\b(note|notes|slide|slides|ppt|handout|lecture note|lecture notes|pdf)\b/i.test(query)) {
+    if (
+      /\b(note|notes|slide|slides|ppt|handout|lecture note|lecture notes|pdf)\b/i.test(
+        query,
+      )
+    ) {
       intent.notes = true;
     }
-    if (/\b(summary|short|easy|cheat sheet|quick review|revision|compact|brief)\b/i.test(query)) {
+    if (
+      /\b(summary|short|easy|cheat sheet|quick review|revision|compact|brief)\b/i.test(
+        query,
+      )
+    ) {
       intent.simple = true;
     }
-    if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(query)) {
+    if (
+      /\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(
+        query,
+      )
+    ) {
       intent.assignmentLab = true;
     }
 
@@ -106,7 +121,9 @@ class SearchService {
 
     // Tag intersection boost
     if (resource.tags && resource.tags.length > 0) {
-      const intersection = resource.tags.filter(tag => queryWords.includes(tag.toLowerCase()));
+      const intersection = resource.tags.filter((tag) =>
+        queryWords.includes(tag.toLowerCase()),
+      );
       score += intersection.length * 15; // +15 per matching tag
     }
 
@@ -115,44 +132,94 @@ class SearchService {
       score += 150; // Massively boost exams
     }
 
-    if (intent.notes && (resource.fileType === "ppt" || resource.fileType === "doc" || resource.fileType === "pdf")) {
+    // Grouped images without isExam flag — still likely multi-page exam sets
+    if (
+      intent.exam &&
+      resource.fileType === "image" &&
+      resource.groupId &&
+      !resource.isExam
+    ) {
+      score += 80;
+    }
+
+    if (
+      intent.notes &&
+      (resource.fileType === "ppt" ||
+        resource.fileType === "doc" ||
+        resource.fileType === "pdf")
+    ) {
       score += 40;
     }
 
     if (intent.simple) {
-      if (resource.tags && (resource.tags.includes("summary") || resource.tags.includes("short"))) score += 50;
+      if (
+        resource.tags &&
+        (resource.tags.includes("summary") || resource.tags.includes("short"))
+      )
+        score += 50;
     }
 
     if (intent.assignmentLab) {
-      if (resource.tags && (resource.tags.includes("assignment") || resource.tags.includes("project") || resource.tags.includes("lab"))) score += 60;
+      if (
+        resource.tags &&
+        (resource.tags.includes("assignment") ||
+          resource.tags.includes("project") ||
+          resource.tags.includes("lab"))
+      )
+        score += 60;
     }
 
     if (intent.year) {
       if (resource.tags && resource.tags.includes(intent.year)) score += 100;
-      else if (resource.messageDate && resource.messageDate.getFullYear().toString() === intent.year) score += 50;
+      else if (
+        resource.messageDate &&
+        resource.messageDate.getFullYear().toString() === intent.year
+      )
+        score += 50;
     }
 
     // Personalization scoring
-if (
-  user &&
-  user.university &&
-  resource.university &&
-  resource.university.toLowerCase() === user.university.toLowerCase()
-) {
-  score += 80; // Boost own university
-}
+    if (
+      user &&
+      user.university &&
+      resource.university &&
+      resource.university.toLowerCase() === user.university.toLowerCase()
+    ) {
+      score += 80; // Boost own university
+    }
     // Boost by popularity
     if (resource.downloadCount && resource.downloadCount > 0) {
       score += Math.min(resource.downloadCount * 2, 50);
     }
 
-    // Base score by file type
-    if (resource.fileType === "pdf") {
-      score += 30;
-    } else if (resource.fileType === "ppt") {
-      score += 20;
-    } else if (resource.fileType === "doc") {
-      score += 15;
+    // Intent-aware file type scoring — tuned for Ethiopian exam-heavy collection
+    if (intent.exam) {
+      // Ethiopian exams are mostly image sets — rank exam images at or above exam PDFs
+      if (resource.fileType === "image" && resource.isExam) score += 90;
+      if (resource.fileType === "pdf" && resource.isExam) score += 65;
+      if (resource.fileType === "image" && resource.groupId && !resource.isExam)
+        score += 70;
+      if (
+        resource.fileType === "image" &&
+        !resource.groupId &&
+        !resource.isExam
+      )
+        score += 10;
+      if (resource.fileType === "ppt" && resource.isExam) score += 40;
+      if (resource.fileType === "doc" && resource.isExam) score += 30;
+    } else if (intent.notes) {
+      if (resource.fileType === "pdf") score += 48;
+      if (resource.fileType === "ppt") score += 40;
+      if (resource.fileType === "doc") score += 30;
+      if (resource.fileType === "image") score += 5;
+    } else {
+      // No clear intent — collection is 83% exam-tagged so favor exam content
+      if (resource.isExam && resource.fileType === "image") score += 30;
+      if (resource.isExam && resource.fileType === "pdf") score += 28;
+      if (!resource.isExam && resource.fileType === "pdf") score += 15;
+      if (resource.fileType === "ppt") score += 14;
+      if (resource.fileType === "doc") score += 10;
+      if (!resource.isExam && resource.fileType === "image") score += 8;
     }
 
     return Math.max(0, score); // Don't go negative
@@ -161,13 +228,19 @@ if (
   /**
    * Search Telegram indexed resources with intelligence
    */
-  async searchTelegramResources(query, intent, user, logger = null, limit = 200) {
+  async searchTelegramResources(
+    query,
+    intent,
+    user,
+    logger = null,
+    limit = 200,
+  ) {
     try {
       console.log(`  📱 Searching Telegram resources...`);
 
       const results = await TelegramResource.find(
         { $text: { $search: query }, isAvailable: { $ne: false } },
-        { score: { $meta: "textScore" } }
+        { score: { $meta: "textScore" } },
       )
         .sort({ score: { $meta: "textScore" } })
         .limit(limit);
@@ -179,8 +252,14 @@ if (
 
       // Score and prioritize results
       const scoredResults = results.map((resource) => {
-        const textScore = resource.get('score');
-        const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user);
+        const textScore = resource.get("score");
+        const telegramScore = this.calculateTelegramScore(
+          resource,
+          query,
+          textScore,
+          intent,
+          user,
+        );
 
         return {
           title: resource.title || resource.fileName || "Unnamed",
@@ -208,7 +287,9 @@ if (
       const topResults = scoredResults.slice(0, 200);
       console.log(`  ✅ Telegram: ${topResults.length} qualified results`);
       if (topResults.length > 0) {
-        console.log(`     Top: "${topResults[0].title}" (score: ${topResults[0].score})`);
+        console.log(
+          `     Top: "${topResults[0].title}" (score: ${topResults[0].score})`,
+        );
       }
 
       return topResults;
@@ -318,7 +399,9 @@ if (
       const correctedQuery = typoResult.corrected;
       if (typoResult.hasCorrected) {
         logger.log("Typo corrected", correctedQuery);
-        console.log(`  ✓ Typo correction: "${normalizedQuery}" → "${correctedQuery}"`);
+        console.log(
+          `  ✓ Typo correction: "${normalizedQuery}" → "${correctedQuery}"`,
+        );
       }
 
       // Step 2: Subject alias expansion
@@ -326,16 +409,14 @@ if (
       logger.log("Expanded", expanded.expanded);
       if (expanded.appliedAliases.length > 0) {
         console.log(
-          `  ✓ Aliases expanded: ${expanded.appliedAliases.join(", ")}`
+          `  ✓ Aliases expanded: ${expanded.appliedAliases.join(", ")}`,
         );
       }
 
       // Check cache with corrected query
       const cachedResults = await this.getCachedResults(correctedQuery);
       if (cachedResults) {
-        console.log(
-          `📦 Cache HIT (${cachedResults.resources.length} results)`
-        );
+        console.log(`📦 Cache HIT (${cachedResults.resources.length} results)`);
         logger.log("Cache hit", true);
         return cachedResults.resources;
       }
@@ -347,21 +428,29 @@ if (
       logger.log("Intent", intent);
 
       // Kick off GitHub search in parallel so its timeout overlaps with Telegram searches
-      const githubPromise = searchGitHub(correctedQuery).catch(err => []);
+      const githubPromise = searchGitHub(correctedQuery).catch((err) => []);
 
       // Primary search with corrected & expanded query
       console.log(`\n📱 PHASE 1: Primary Telegram search...`);
-      let allResults = await this.searchTelegramResources(expanded.expanded, intent, user, logger, 200);
+      let allResults = await this.searchTelegramResources(
+        expanded.expanded,
+        intent,
+        user,
+        logger,
+        200,
+      );
 
       const queryWords = normalizedQuery.split(/\s+/);
       if (allResults.length < 5 && queryWords.length >= 3) {
-        console.log(`\n⚠️  Primary returned < 5 results. Triggering fallback fan-out...`);
+        console.log(
+          `\n⚠️  Primary returned < 5 results. Triggering fallback fan-out...`,
+        );
         const fallbackQueries = new Set();
         let addedCount = 0;
 
         // Multi-word combinatorics - prioritize word-pairs first
         for (let i = 0; i < queryWords.length - 1 && addedCount < 5; i++) {
-          const q = `${queryWords[i]} ${queryWords[i+1]}`;
+          const q = `${queryWords[i]} ${queryWords[i + 1]}`;
           if (q !== expanded.expanded) {
             fallbackQueries.add(q);
             addedCount++;
@@ -370,16 +459,24 @@ if (
         // Then individual words > 2 chars, up to 5 total fallbacks
         for (const w of queryWords) {
           if (addedCount >= 5) break;
-          if (w.length > 2 && w !== expanded.expanded && !fallbackQueries.has(w)) {
+          if (
+            w.length > 2 &&
+            w !== expanded.expanded &&
+            !fallbackQueries.has(w)
+          ) {
             fallbackQueries.add(w);
             addedCount++;
           }
         }
 
         if (fallbackQueries.size > 0) {
-          console.log(`Executing ${fallbackQueries.size} fallback searches concurrently...`);
+          console.log(
+            `Executing ${fallbackQueries.size} fallback searches concurrently...`,
+          );
           // Use smaller limit=50 for fallback queries
-          const searchPromises = Array.from(fallbackQueries).map(q => this.searchTelegramResources(q, intent, user, logger, 50));
+          const searchPromises = Array.from(fallbackQueries).map((q) =>
+            this.searchTelegramResources(q, intent, user, logger, 50),
+          );
           const resultsArrays = await Promise.all(searchPromises);
 
           for (const resArray of resultsArrays) {
@@ -406,13 +503,23 @@ if (
         // Try alias search if we haven't already
         const aliasQuery = expanded.appliedAliases.join(" ");
         if (aliasQuery) {
-          const res = await this.searchTelegramResources(aliasQuery, intent, user, logger);
+          const res = await this.searchTelegramResources(
+            aliasQuery,
+            intent,
+            user,
+            logger,
+          );
           allResults = allResults.concat(res);
         }
 
         // Try partial keyword match
         if (allResults.length === 0 && correctedQuery !== normalizedQuery) {
-          const res = await this.searchTelegramResources(normalizedQuery, intent, user, logger);
+          const res = await this.searchTelegramResources(
+            normalizedQuery,
+            intent,
+            user,
+            logger,
+          );
           allResults = allResults.concat(res);
         }
       }
@@ -446,10 +553,10 @@ if (
 
         for (const r of allResults) {
           if (r.groupId && r.fileType === "image") {
-             if (seenGroups.has(r.groupId)) continue;
-             seenGroups.add(r.groupId);
-             r._isGrouped = true;
-             r.groupSize = r.groupTotal;
+            if (seenGroups.has(r.groupId)) continue;
+            seenGroups.add(r.groupId);
+            r._isGrouped = true;
+            r.groupSize = r.groupTotal;
           }
           collapsed.push(r);
         }
@@ -458,9 +565,7 @@ if (
 
       // Return top 200 for pagination
       const topResults = allResults.slice(0, 200);
-      console.log(
-        `\n✨ FINAL: ${topResults.length} results`
-      );
+      console.log(`\n✨ FINAL: ${topResults.length} results`);
 
       logger.log("Results returned", topResults.length);
       logger.print();

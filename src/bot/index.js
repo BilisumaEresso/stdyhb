@@ -1,4 +1,4 @@
-const { Telegraf, session, Scenes } = require("telegraf");
+const { Telegraf, session, Scenes, Markup } = require("telegraf");
 const { setBot } = require("./botInstance");
 const startCommand = require("./commands/start");
 const { searchCommand, performSearch } = require("./commands/search");
@@ -6,6 +6,10 @@ const adminCommands = require("./commands/admin");
 const profileCommand = require("./commands/profile");
 const helpCommand = require("./commands/help");
 const savesCommand = require("./commands/saves");
+const {
+  broadcastCommand,
+  registerBroadcastHandlers,
+} = require("./commands/broadcast");
 const onboardingWizard = require("./scenes/onboarding");
 const recommendWizard = require("./scenes/recommend");
 const { registerFileDeliveryHandlers } = require("../telegram/fileDelivery");
@@ -15,7 +19,6 @@ const LABELS = require("./keyboardLabels");
 const bot = new Telegraf(process.env.BOT_TOKEN);
 setBot(bot);
 
-
 // Apply session and scene middleware
 const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);
 
@@ -23,7 +26,11 @@ const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);
 bot.catch((err, ctx) => {
   console.error(`[FATAL-TELEGRAF] Error for ${ctx.updateType}`, err);
   if (ctx && ctx.reply) {
-    ctx.reply("⚠️ Something went wrong processing your request. Please try again.").catch(() => {});
+    ctx
+      .reply(
+        "⚠️ Something went wrong processing your request. Please try again.",
+      )
+      .catch(() => {});
   }
 });
 
@@ -38,12 +45,12 @@ const mongoSessionStore = {
     await BotSession.findOneAndUpdate(
       { key },
       { key, data: value, updatedAt: new Date() },
-      { upsert: true }
+      { upsert: true },
     );
   },
   delete: async (key) => {
     await BotSession.deleteOne({ key });
-  }
+  },
 };
 
 bot.use(session({ store: mongoSessionStore }));
@@ -60,16 +67,65 @@ bot.command("help", helpCommand);
 bot.command("saves", savesCommand);
 
 bot.action("edit_profile", (ctx) => {
-  ctx.answerCbQuery().catch(()=> {});
+  ctx.answerCbQuery().catch(() => {});
   ctx.scene.enter("onboarding");
 });
 
+bot.action("nav_main", async (ctx) => {
+  await ctx.answerCbQuery().catch(() => {});
+  return startCommand(ctx, true);
+});
+
+bot.action("nav_saves", async (ctx) => {
+  await ctx.answerCbQuery().catch(() => {});
+  return savesCommand(ctx);
+});
+
+bot.action("about_studyhub", async (ctx) => {
+  await ctx.answerCbQuery();
+  const aboutText =
+    `<b>ℹ️ About StudyHub</b>\n\n` +
+    `StudyHub is a Telegram bot built to help Ethiopian university students ` +
+    `find study materials without digging through dozens of channels.\n\n` +
+    `<b>Built by:</b> <a href="${process.env.ADMIN_TELEGRAM_URL || "#"}">Billy</a>\n` +
+    `<b>Indexed resources:</b> 46,000+\n` +
+    `<b>Channels monitored:</b> 30+\n` +
+    `<b>Universities covered:</b> AAU, ASTU, JU, HU, MU, BDU and more\n\n` +
+    `<i>If a resource is missing or broken, use the Recommend Channel ` +
+    `feature to suggest a new source.</i>`;
+  await ctx.reply(aboutText, {
+    parse_mode: "HTML",
+    reply_markup: Markup.inlineKeyboard([
+      [
+        Markup.button.url(
+          "📬 Contact",
+          process.env.ADMIN_TELEGRAM_URL || "https://t.me/",
+        ),
+      ],
+    ]).reply_markup,
+  });
+});
+
 // Register admin commands
-bot.command("addchannel", adminCommands.isAdmin, adminCommands.addChannelCommand);
-bot.command("removechannel", adminCommands.isAdmin, adminCommands.removeChannelCommand);
-bot.command("listchannels", adminCommands.isAdmin, adminCommands.listChannelsCommand);
+bot.command(
+  "addchannel",
+  adminCommands.isAdmin,
+  adminCommands.addChannelCommand,
+);
+bot.command(
+  "removechannel",
+  adminCommands.isAdmin,
+  adminCommands.removeChannelCommand,
+);
+bot.command(
+  "listchannels",
+  adminCommands.isAdmin,
+  adminCommands.listChannelsCommand,
+);
 bot.command("forcescan", adminCommands.isAdmin, adminCommands.forceScanCommand);
+bot.command("broadcast", adminCommands.isAdmin, broadcastCommand);
 adminCommands.registerAdminActionHandlers(bot);
+registerBroadcastHandlers(bot);
 
 // Register file delivery handlers (for inline buttons)
 registerFileDeliveryHandlers(bot);
@@ -95,6 +151,10 @@ bot.on("text", async (ctx, next) => {
     return ctx.scene.enter("recommendChannel");
   } else if (text === LABELS.HELP) {
     return helpCommand(ctx);
+  } else if (text === LABELS.PROFILE) {
+    return profileCommand(ctx);
+  } else if (text === LABELS.TRENDING) {
+    return ctx.reply("🔥 Trending coming soon! Use /trending for now.");
   }
 
   if (text.length < 2) return next();

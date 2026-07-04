@@ -26,6 +26,7 @@ const TelegramChannelSchema = new mongoose.Schema({
   // Statistics
   lastScannedAt: { type: Date, default: null },
   totalIndexed: { type: Number, default: 0 },
+  fullyIndexed: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -3,4 +3,6 @@ module.exports = {
   SAVES: "📚 My Saves",
   RECOMMEND: "📢 Recommend Channel",
   HELP: "❓ Help",
+  PROFILE: "👤 Profile",
+  TRENDING: "🔥 Trending",
 };

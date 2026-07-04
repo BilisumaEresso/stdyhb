@@ -13,19 +13,21 @@ async function startCommand(ctx, skipWizard = false) {
       return ctx.scene.enter("onboarding");
     }
 
-   const keyboard = Markup.keyboard([
-     [LABELS.SEARCH, LABELS.SAVES],
-     [LABELS.RECOMMEND, LABELS.HELP],
-   ]).resize();
+    const keyboard = Markup.keyboard([
+      [LABELS.SEARCH, LABELS.SAVES],
+      [LABELS.RECOMMEND, LABELS.HELP],
+      [LABELS.PROFILE, LABELS.TRENDING],
+    ]).resize();
 
     // Decide which welcome message to send
-    const messageText = user.searchCount === 0
-      ? templates.welcomeNew(user)
-      : templates.welcomeReturning(user);
+    const messageText =
+      user.searchCount === 0
+        ? templates.welcomeNew(user)
+        : templates.welcomeReturning(user);
 
     await ctx.reply(messageText, {
       parse_mode: "HTML",
-      ...keyboard
+      ...keyboard,
     });
   } catch (error) {
     console.error("Error in /start command:", error);

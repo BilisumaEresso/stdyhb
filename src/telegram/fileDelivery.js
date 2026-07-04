@@ -13,24 +13,28 @@ const templates = require("./templates");
 async function markResourceUnavailable(resourceId, groupId = null) {
   try {
     if (groupId) {
-      await TelegramResource.updateMany({ groupId }, { $set: { isAvailable: false } });
+      await TelegramResource.updateMany(
+        { groupId },
+        { $set: { isAvailable: false } },
+      );
       await CachedSearch.updateMany(
         { "resources.groupId": groupId },
-        { $pull: { resources: { groupId } } }
+        { $pull: { resources: { groupId } } },
       );
     } else {
-      await TelegramResource.updateOne({ _id: resourceId }, { $set: { isAvailable: false } });
+      await TelegramResource.updateOne(
+        { _id: resourceId },
+        { $set: { isAvailable: false } },
+      );
       await CachedSearch.updateMany(
         { "resources._id": resourceId },
-        { $pull: { resources: { _id: resourceId } } }
+        { $pull: { resources: { _id: resourceId } } },
       );
     }
   } catch (err) {
     console.error("Error marking resource unavailable:", err);
   }
 }
-
-
 
 async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
   if (!results || results.length === 0) {
@@ -41,7 +45,7 @@ async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
   await QuerySession.findOneAndUpdate(
     { queryHash },
     { queryHash, query },
-    { upsert: true }
+    { upsert: true },
   );
 
   const ITEMS_PER_PAGE = 10;
@@ -52,26 +56,54 @@ async function sendPaginatedResults(ctx, results, query, queryHash, page = 1) {
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentBatch = results.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-  const messageText = templates.renderListTemplate(query, totalItems, currentPage, totalPages, currentBatch);
+  const messageText = templates.renderListTemplate(
+    query,
+    totalItems,
+    currentPage,
+    totalPages,
+    currentBatch,
+  );
 
   const keyboard = [];
 
-  const numberButtons = templates.renderNumberButtons(queryHash, currentPage, currentBatch.length);
+  const numberButtons = templates.renderNumberButtons(
+    queryHash,
+    currentPage,
+    currentBatch.length,
+  );
   keyboard.push(...numberButtons);
 
-  const navButtons = templates.renderNavButtons(queryHash, currentPage, totalPages);
+  const navButtons = templates.renderNavButtons(
+    queryHash,
+    currentPage,
+    totalPages,
+  );
   keyboard.push(navButtons);
 
   const buttons = Markup.inlineKeyboard(keyboard);
 
-  if (ctx.updateType === 'callback_query') {
-    await ctx.editMessageText(messageText, { parse_mode: "HTML", reply_markup: buttons.reply_markup }).catch(() => {});
+  if (ctx.updateType === "callback_query") {
+    await ctx
+      .editMessageText(messageText, {
+        parse_mode: "HTML",
+        reply_markup: buttons.reply_markup,
+      })
+      .catch(() => {});
   } else {
-    await ctx.reply(messageText, { parse_mode: "HTML", reply_markup: buttons.reply_markup });
+    await ctx.reply(messageText, {
+      parse_mode: "HTML",
+      reply_markup: buttons.reply_markup,
+    });
   }
 }
 
-async function renderDetailCardHandler(ctx, results, queryHash, page, resultIndex) {
+async function renderDetailCardHandler(
+  ctx,
+  results,
+  queryHash,
+  page,
+  resultIndex,
+) {
   const session = await QuerySession.findOne({ queryHash });
   const query = session ? session.query : "";
   const ITEMS_PER_PAGE = 10;
@@ -79,7 +111,8 @@ async function renderDetailCardHandler(ctx, results, queryHash, page, resultInde
   const currentBatch = results.slice(startIdx, startIdx + ITEMS_PER_PAGE);
   const resource = currentBatch[resultIndex];
 
-  if (!resource) return await ctx.answerCbQuery("Result not found", { show_alert: true });
+  if (!resource)
+    return await ctx.answerCbQuery("Result not found", { show_alert: true });
 
   let cardText = "";
   let buttons = [];
@@ -88,32 +121,59 @@ async function renderDetailCardHandler(ctx, results, queryHash, page, resultInde
     cardText = templates.renderDetailCard(resource);
 
     const isGroup = resource._isGrouped || false;
-    let buttonText = isGroup ? `📥 Get all ${resource.groupSize} images` : `📥 Get file`;
+    let buttonText = isGroup
+      ? `📥 Get all ${resource.groupSize} images`
+      : `📥 Get file`;
     let actionPrefix = isGroup ? "grp" : "get";
 
     buttons.push([
-      Markup.button.callback(buttonText, `${actionPrefix}_${resource._id.toString()}`),
-      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`)
+      Markup.button.callback(
+        buttonText,
+        `${actionPrefix}_${resource._id.toString()}`,
+      ),
+      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`),
     ]);
   } else {
     let title = resource.title || "GitHub Repository";
     cardText += `💻 <b>${templates.escapeHTML(title)}</b>\n📌 Source: GitHub\n`;
     if (resource.description) {
-      let desc = resource.description.replace(/\n/g, ' ').substring(0, 120);
+      let desc = resource.description.replace(/\n/g, " ").substring(0, 120);
       cardText += `\n📝 <i>${templates.escapeHTML(desc)}...</i>`;
     }
     buttons.push([Markup.button.url("🔗 View on GitHub", resource.url)]);
-    buttons.push([Markup.button.callback("💾 Save", `save_web_${resource.url}`)]);
+    buttons.push([
+      Markup.button.callback("💾 Save", `save_web_${resource.url}`),
+    ]);
   }
 
-  buttons.push([Markup.button.callback("◀ Back to list", `back_${queryHash}_${page}`)]);
+  buttons.push([
+    Markup.button.callback("◀ Back to list", `back_${queryHash}_${page}`),
+  ]);
 
-  await ctx.editMessageText(cardText, { parse_mode: "HTML", reply_markup: Markup.inlineKeyboard(buttons).reply_markup }).catch(() => {});
+  await ctx
+    .editMessageText(cardText, {
+      parse_mode: "HTML",
+      reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
+    })
+    .catch(() => {});
 }
 
-async function sendPaginatedSaves(ctx, results, page = 1) {
+async function sendPaginatedSaves(
+  ctx,
+  results,
+  page = 1,
+  showBackButton = false,
+) {
   if (!results || results.length === 0) {
-    return await ctx.reply(`😕 You haven't saved any resources yet!`);
+    const msg = `😕 You haven't saved any resources yet!`;
+    if (showBackButton) {
+      return await ctx.reply(msg, {
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback("◀ Back to Menu", "nav_main")],
+        ]).reply_markup,
+      });
+    }
+    return await ctx.reply(msg);
   }
 
   const ITEMS_PER_PAGE = 10;
@@ -127,14 +187,28 @@ async function sendPaginatedSaves(ctx, results, page = 1) {
   let messageText = `📚 <b>Your Saved Resources</b> (${totalItems} total)\n\n`;
   messageText += `<code>──────────────────────</code>\n`;
 
-  const numberEmojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+  const numberEmojis = [
+    "1️⃣",
+    "2️⃣",
+    "3️⃣",
+    "4️⃣",
+    "5️⃣",
+    "6️⃣",
+    "7️⃣",
+    "8️⃣",
+    "9️⃣",
+    "🔟",
+  ];
 
   currentBatch.forEach((saved, idx) => {
     const numEmoji = numberEmojis[idx] || `${idx + 1}.`;
 
     let typeEmoji = "📎";
     if (saved.source === "telegram") {
-      typeEmoji = { pdf: "📄", ppt: "📊", image: "🖼️", doc: "📝", notes: "📓" }[saved.type] || "📎";
+      typeEmoji =
+        { pdf: "📄", ppt: "📊", image: "🖼️", doc: "📝", notes: "📓" }[
+          saved.type
+        ] || "📎";
     } else {
       typeEmoji = "💻";
     }
@@ -147,15 +221,32 @@ async function sendPaginatedSaves(ctx, results, page = 1) {
 
   messageText += `<code>──────────────────────</code>`;
 
-  const keyboard = templates.renderNumberButtons("saves", currentPage, currentBatch.length);
+  const keyboard = templates.renderNumberButtons(
+    "saves",
+    currentPage,
+    currentBatch.length,
+  );
   keyboard.push(templates.renderNavButtons("saves", currentPage, totalPages));
+
+  // Add back button if this is the initial call from savesCommand
+  if (showBackButton) {
+    keyboard.push([Markup.button.callback("◀ Back to Menu", "nav_main")]);
+  }
 
   const buttons = Markup.inlineKeyboard(keyboard);
 
-  if (ctx.updateType === 'callback_query') {
-    await ctx.editMessageText(messageText, { parse_mode: "HTML", reply_markup: buttons.reply_markup }).catch(() => {});
+  if (ctx.updateType === "callback_query") {
+    await ctx
+      .editMessageText(messageText, {
+        parse_mode: "HTML",
+        reply_markup: buttons.reply_markup,
+      })
+      .catch(() => {});
   } else {
-    await ctx.reply(messageText, { parse_mode: "HTML", reply_markup: buttons.reply_markup });
+    await ctx.reply(messageText, {
+      parse_mode: "HTML",
+      reply_markup: buttons.reply_markup,
+    });
   }
 }
 
@@ -165,17 +256,26 @@ async function renderSavedDetailCard(ctx, results, page, resultIndex) {
   const currentBatch = results.slice(startIdx, startIdx + ITEMS_PER_PAGE);
   const saved = currentBatch[resultIndex];
 
-  if (!saved) return await ctx.answerCbQuery("Result not found", { show_alert: true });
+  if (!saved)
+    return await ctx.answerCbQuery("Result not found", { show_alert: true });
 
   let cardText = `<code>──────────────────────</code>\n`;
   let buttons = [];
 
   if (saved.source === "telegram" && saved.telegramResourceId) {
-    const typeEmoji = { pdf: "📄", ppt: "📊", image: "🖼️", doc: "📝", notes: "📓" }[saved.type] || "📎";
+    const typeEmoji =
+      { pdf: "📄", ppt: "📊", image: "🖼️", doc: "📝", notes: "📓" }[
+        saved.type
+      ] || "📎";
     cardText += `${typeEmoji} <b>${templates.escapeHTML(saved.title)}</b>\n`;
     cardText += `\n📝 <i>Saved Resource</i>\n`;
 
-    buttons.push([Markup.button.callback("📥 Get file", `get_${saved.telegramResourceId.toString()}`)]);
+    buttons.push([
+      Markup.button.callback(
+        "📥 Get file",
+        `get_${saved.telegramResourceId.toString()}`,
+      ),
+    ]);
   } else {
     cardText += `💻 <b>${templates.escapeHTML(saved.title)}</b>\n📌 Source: ${saved.source}\n`;
     buttons.push([Markup.button.url("🔗 View on GitHub", saved.url)]);
@@ -183,10 +283,17 @@ async function renderSavedDetailCard(ctx, results, page, resultIndex) {
 
   cardText += `<code>──────────────────────</code>`;
 
-  buttons.push([Markup.button.callback("❌ Remove Save", `unsave_${saved._id.toString()}`)]);
+  buttons.push([
+    Markup.button.callback("❌ Remove Save", `unsave_${saved._id.toString()}`),
+  ]);
   buttons.push([Markup.button.callback("◀ Back to list", `pg_saves_${page}`)]);
 
-  await ctx.editMessageText(cardText, { parse_mode: "HTML", reply_markup: Markup.inlineKeyboard(buttons).reply_markup }).catch(() => {});
+  await ctx
+    .editMessageText(cardText, {
+      parse_mode: "HTML",
+      reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
+    })
+    .catch(() => {});
 }
 
 // ---------------- DELIVERY ENGINE -------------------
@@ -200,19 +307,25 @@ async function getPendingDeliveryDebugInfo() {
   return {
     pendingDeliveries: pendingDeliveries.size,
     pendingGroups: pendingGroups.size,
-    activeUserRequests: activeUserRequests.size
+    activeUserRequests: activeUserRequests.size,
   };
 }
 
 function normalizeForwarded(fwd) {
-   if (Array.isArray(fwd) && Array.isArray(fwd[0])) return fwd[0];
-   if (fwd && fwd.updates && Array.isArray(fwd.updates)) {
-       return fwd.updates.filter(u => u.className === 'UpdateNewMessage' || u.className === 'UpdateNewChannelMessage').map(u => u.message);
-   }
-   return fwd;
+  if (Array.isArray(fwd) && Array.isArray(fwd[0])) return fwd[0];
+  if (fwd && fwd.updates && Array.isArray(fwd.updates)) {
+    return fwd.updates
+      .filter(
+        (u) =>
+          u.className === "UpdateNewMessage" ||
+          u.className === "UpdateNewChannelMessage",
+      )
+      .map((u) => u.message);
+  }
+  return fwd;
 }
 
-function startChatAction(ctx, userId, actionType = 'upload_document') {
+function startChatAction(ctx, userId, actionType = "upload_document") {
   ctx.telegram.sendChatAction(userId, actionType).catch(() => {});
   return setInterval(() => {
     ctx.telegram.sendChatAction(userId, actionType).catch(() => {});
@@ -224,7 +337,10 @@ async function handleDownload(ctx, resourceId) {
   const requestKey = `${userId}_${resourceId}`;
 
   if (activeUserRequests.has(requestKey)) {
-    return await ctx.answerCbQuery("⏳ Already sending your file, please wait...", { show_alert: true });
+    return await ctx.answerCbQuery(
+      "⏳ Already sending your file, please wait...",
+      { show_alert: true },
+    );
   }
   activeUserRequests.add(requestKey);
   await ctx.answerCbQuery("📥 Fetching file...");
@@ -233,18 +349,28 @@ async function handleDownload(ctx, resourceId) {
     const resource = await TelegramResource.findById(resourceId);
     if (!resource) {
       activeUserRequests.delete(requestKey);
-      return await ctx.editMessageText(templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+      return await ctx
+        .editMessageText(templates.renderError(), { parse_mode: "HTML" })
+        .catch(() => {});
     }
 
     const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
     if (ctx.chat.id === relayGroupId) {
       activeUserRequests.delete(requestKey);
-      return await ctx.answerCbQuery("❌ Test in the bot's private chat.", { show_alert: true });
+      return await ctx.answerCbQuery("❌ Test in the bot's private chat.", {
+        show_alert: true,
+      });
     }
 
-    const actionInterval = startChatAction(ctx, userId, resource.fileType === 'image' ? 'upload_photo' : 'upload_document');
-    const statusMsg = await ctx.reply("⏳ <i>Securely retrieving your file...</i>", { parse_mode: "HTML" });
-
+    const actionInterval = startChatAction(
+      ctx,
+      userId,
+      resource.fileType === "image" ? "upload_photo" : "upload_document",
+    );
+    const statusMsg = await ctx.reply(
+      "⏳ <i>Securely retrieving your file...</i>",
+      { parse_mode: "HTML" },
+    );
 
     let forwardedMessages;
     let usedArchive = false;
@@ -252,21 +378,31 @@ async function handleDownload(ctx, resourceId) {
 
     try {
       tg = await getClient();
-      forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
-        messages: [resource.messageId],
-        fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
-      }));
+      forwardedMessages = normalizeForwarded(
+        await tg.forwardMessages(relayGroupId, {
+          messages: [resource.messageId],
+          fromPeer: resource.channelUsername
+            ? `@${resource.channelUsername}`
+            : parseInt(resource.chatId),
+        }),
+      );
     } catch (gramError) {
       console.warn(`[DELIVERY] Primary forward failed: ${gramError.message}`);
-      if (resource.archiveMessageId && process.env.ARCHIVE_CHAT_ID && tg) {
+      if (
+        resource.archiveMessageId &&
+        process.env.ARCHIVE_CHAT_ID &&
+        tg !== null
+      ) {
         try {
-          forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
-            messages: [resource.archiveMessageId],
-            fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID)
-          }));
+          forwardedMessages = normalizeForwarded(
+            await tg.forwardMessages(relayGroupId, {
+              messages: [resource.archiveMessageId],
+              fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID),
+            }),
+          );
           usedArchive = true;
         } catch (archiveErr) {
-          console.warn('[ARCHIVE FALLBACK FAIL]', archiveErr.message);
+          console.warn("[ARCHIVE FALLBACK FAIL]", archiveErr.message);
         }
       }
 
@@ -274,49 +410,86 @@ async function handleDownload(ctx, resourceId) {
         clearInterval(actionInterval);
         await markResourceUnavailable(resourceId);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        await ctx.telegram
+          .editMessageText(
+            userId,
+            statusMsg.message_id,
+            null,
+            templates.renderError(),
+            { parse_mode: "HTML" },
+          )
+          .catch(() => {});
         return;
       }
     }
 
-    if (!forwardedMessages || forwardedMessages.length === 0 || !forwardedMessages[0].id) {
-       clearInterval(actionInterval);
-       if (!usedArchive) await markResourceUnavailable(resourceId);
-       activeUserRequests.delete(requestKey);
-       await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
-       return;
+    if (
+      !forwardedMessages ||
+      forwardedMessages.length === 0 ||
+      !forwardedMessages[0].id
+    ) {
+      clearInterval(actionInterval);
+      if (!usedArchive) await markResourceUnavailable(resourceId);
+      activeUserRequests.delete(requestKey);
+      await ctx.telegram
+        .editMessageText(
+          userId,
+          statusMsg.message_id,
+          null,
+          templates.renderError(),
+          { parse_mode: "HTML" },
+        )
+        .catch(() => {});
+      return;
     }
 
     const newMsgId = forwardedMessages[0].id;
 
     if (recentRelayMessages.has(newMsgId)) {
-        clearInterval(actionInterval);
-        await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await ctx.telegram.copyMessage(userId, relayGroupId, newMsgId, { caption: "" }).catch(() => {});
-        await ctx.telegram.deleteMessage(userId, statusMsg.message_id).catch(() => {});
-        await ctx.telegram.deleteMessage(relayGroupId, newMsgId).catch(() => {});
-        activeUserRequests.delete(requestKey);
+      clearInterval(actionInterval);
+      await ctx.telegram.sendMessage(
+        userId,
+        templates.renderFileDelivered(
+          resource.channelUsername || "Private Channel",
+        ),
+        { parse_mode: "HTML" },
+      );
+      await ctx.telegram
+        .copyMessage(userId, relayGroupId, newMsgId, { caption: "" })
+        .catch(() => {});
+      await ctx.telegram
+        .deleteMessage(userId, statusMsg.message_id)
+        .catch(() => {});
+      await ctx.telegram.deleteMessage(relayGroupId, newMsgId).catch(() => {});
+      activeUserRequests.delete(requestKey);
     } else {
-        const timeout = setTimeout(async () => {
-          if (pendingDeliveries.has(newMsgId)) {
-            clearInterval(pendingDeliveries.get(newMsgId).actionInterval);
-            pendingDeliveries.delete(newMsgId);
-            activeUserRequests.delete(requestKey);
-            await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
-          }
-        }, 30000);
+      const timeout = setTimeout(async () => {
+        if (pendingDeliveries.has(newMsgId)) {
+          clearInterval(pendingDeliveries.get(newMsgId).actionInterval);
+          pendingDeliveries.delete(newMsgId);
+          activeUserRequests.delete(requestKey);
+          await ctx.telegram
+            .editMessageText(
+              userId,
+              statusMsg.message_id,
+              null,
+              templates.renderError(),
+              { parse_mode: "HTML" },
+            )
+            .catch(() => {});
+        }
+      }, 30000);
 
-        pendingDeliveries.set(newMsgId, {
-          userId,
-          statusMsgId: statusMsg.message_id,
-          resourceId,
-          requestKey,
-          timeout,
-          actionInterval,
-          resource
-        });
+      pendingDeliveries.set(newMsgId, {
+        userId,
+        statusMsgId: statusMsg.message_id,
+        resourceId,
+        requestKey,
+        timeout,
+        actionInterval,
+        resource,
+      });
     }
-
   } catch (err) {
     activeUserRequests.delete(requestKey);
     await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
@@ -324,10 +497,12 @@ async function handleDownload(ctx, resourceId) {
 }
 
 async function sendGroupToUser(ctx, userId, relayGroupId, msgIds) {
-    for (const id of msgIds) {
-        await ctx.telegram.copyMessage(userId, relayGroupId, id, { caption: "" }).catch(() => {});
-        await new Promise(r => setTimeout(r, 150));
-    }
+  for (const id of msgIds) {
+    await ctx.telegram
+      .copyMessage(userId, relayGroupId, id, { caption: "" })
+      .catch(() => {});
+    await new Promise((r) => setTimeout(r, 150));
+  }
 }
 
 async function handleGroupDownload(ctx, resourceId) {
@@ -335,7 +510,10 @@ async function handleGroupDownload(ctx, resourceId) {
   const requestKey = `${userId}_${resourceId}`;
 
   if (activeUserRequests.has(requestKey)) {
-    return await ctx.answerCbQuery("⏳ Already sending your file, please wait...", { show_alert: true });
+    return await ctx.answerCbQuery(
+      "⏳ Already sending your file, please wait...",
+      { show_alert: true },
+    );
   }
   activeUserRequests.add(requestKey);
   await ctx.answerCbQuery("📥 Fetching image set...");
@@ -344,48 +522,70 @@ async function handleGroupDownload(ctx, resourceId) {
     const resource = await TelegramResource.findById(resourceId);
     if (!resource) {
       activeUserRequests.delete(requestKey);
-      return await ctx.editMessageText(templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+      return await ctx
+        .editMessageText(templates.renderError(), { parse_mode: "HTML" })
+        .catch(() => {});
     }
 
     const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
     if (ctx.chat.id === relayGroupId) {
       activeUserRequests.delete(requestKey);
-      return await ctx.answerCbQuery("❌ Test in the bot's private chat.", { show_alert: true });
+      return await ctx.answerCbQuery("❌ Test in the bot's private chat.", {
+        show_alert: true,
+      });
     }
 
-    const images = await TelegramResource.find({ groupId: resource.groupId }).sort({ messageDate: 1 });
+    const images = await TelegramResource.find({
+      groupId: resource.groupId,
+    }).sort({ messageDate: 1 });
     if (images.length === 0) {
       activeUserRequests.delete(requestKey);
       return await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
     }
 
-    const actionInterval = startChatAction(ctx, userId, 'upload_photo');
-    const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${images.length} images...</i>`, { parse_mode: "HTML" });
+    const actionInterval = startChatAction(ctx, userId, "upload_photo");
+    const statusMsg = await ctx.reply(
+      `⏳ <i>Retrieving ${images.length} images...</i>`,
+      { parse_mode: "HTML" },
+    );
 
-
-    const messageIds = images.map(img => img.messageId);
+    const messageIds = images.map((img) => img.messageId);
     let forwardedMessages;
     let usedArchive = false;
     let tg = null;
 
     try {
       tg = await getClient();
-      forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
-        messages: messageIds,
-        fromPeer: resource.channelUsername ? `@${resource.channelUsername}` : parseInt(resource.chatId)
-      }));
+      forwardedMessages = normalizeForwarded(
+        await tg.forwardMessages(relayGroupId, {
+          messages: messageIds,
+          fromPeer: resource.channelUsername
+            ? `@${resource.channelUsername}`
+            : parseInt(resource.chatId),
+        }),
+      );
     } catch (gramError) {
-      console.warn(`[DELIVERY] Primary group forward failed: ${gramError.message}`);
-      const archiveIds = images[0].archiveMessageIds || images.map(img => img.archiveMessageId).filter(id => id);
-      if (archiveIds.length === images.length && process.env.ARCHIVE_CHAT_ID && tg) {
+      console.warn(
+        `[DELIVERY] Primary group forward failed: ${gramError.message}`,
+      );
+      const archiveIds =
+        images[0].archiveMessageIds ||
+        images.map((img) => img.archiveMessageId).filter((id) => id);
+      if (
+        archiveIds.length === images.length &&
+        process.env.ARCHIVE_CHAT_ID &&
+        tg !== null
+      ) {
         try {
-          forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
-            messages: archiveIds,
-            fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID)
-          }));
+          forwardedMessages = normalizeForwarded(
+            await tg.forwardMessages(relayGroupId, {
+              messages: archiveIds,
+              fromPeer: parseInt(process.env.ARCHIVE_CHAT_ID),
+            }),
+          );
           usedArchive = true;
         } catch (err) {
-          console.warn('[ARCHIVE FALLBACK FAIL]', err.message);
+          console.warn("[ARCHIVE FALLBACK FAIL]", err.message);
         }
       }
 
@@ -393,77 +593,133 @@ async function handleGroupDownload(ctx, resourceId) {
         clearInterval(actionInterval);
         await markResourceUnavailable(null, resource.groupId);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        await ctx.telegram
+          .editMessageText(
+            userId,
+            statusMsg.message_id,
+            null,
+            templates.renderError(),
+            { parse_mode: "HTML" },
+          )
+          .catch(() => {});
         return;
       }
     }
 
     if (!forwardedMessages || forwardedMessages.length === 0) {
-        clearInterval(actionInterval);
-        if (!usedArchive) await markResourceUnavailable(null, resource.groupId);
-        activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
-        return;
+      clearInterval(actionInterval);
+      if (!usedArchive) await markResourceUnavailable(null, resource.groupId);
+      activeUserRequests.delete(requestKey);
+      await ctx.telegram
+        .editMessageText(
+          userId,
+          statusMsg.message_id,
+          null,
+          templates.renderError(),
+          { parse_mode: "HTML" },
+        )
+        .catch(() => {});
+      return;
     }
 
-    const newMsgIds = forwardedMessages.map(m => m && m.id).filter(id => id);
+    const newMsgIds = forwardedMessages
+      .map((m) => m && m.id)
+      .filter((id) => id);
     if (newMsgIds.length === 0) {
-         clearInterval(actionInterval);
-         activeUserRequests.delete(requestKey);
-         await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
-         return;
+      clearInterval(actionInterval);
+      activeUserRequests.delete(requestKey);
+      await ctx.telegram
+        .editMessageText(
+          userId,
+          statusMsg.message_id,
+          null,
+          templates.renderError(),
+          { parse_mode: "HTML" },
+        )
+        .catch(() => {});
+      return;
     }
 
     const expectedMsgIds = new Set(newMsgIds);
     const arrived = [];
     for (const id of newMsgIds) {
-        if (recentRelayMessages.has(id)) {
-            arrived.push(id);
-        }
+      if (recentRelayMessages.has(id)) {
+        arrived.push(id);
+      }
     }
 
     if (arrived.length === expectedMsgIds.size) {
-        clearInterval(actionInterval);
-        await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await sendGroupToUser(ctx, userId, relayGroupId, arrived);
-        await ctx.telegram.deleteMessage(userId, statusMsg.message_id).catch(() => {});
-        for (const id of arrived) {
-             await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
-        }
-        activeUserRequests.delete(requestKey);
+      clearInterval(actionInterval);
+      await ctx.telegram.sendMessage(
+        userId,
+        templates.renderFileDelivered(
+          resource.channelUsername || "Private Channel",
+        ),
+        { parse_mode: "HTML" },
+      );
+      await sendGroupToUser(ctx, userId, relayGroupId, arrived);
+      await ctx.telegram
+        .deleteMessage(userId, statusMsg.message_id)
+        .catch(() => {});
+      for (const id of arrived) {
+        await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
+      }
+      activeUserRequests.delete(requestKey);
     } else {
-        const timeout = setTimeout(async () => {
-            if (pendingGroups.has(requestKey)) {
-                const pg = pendingGroups.get(requestKey);
-                clearInterval(pg.actionInterval);
-                pendingGroups.delete(requestKey);
-                activeUserRequests.delete(requestKey);
+      const timeout = setTimeout(async () => {
+        if (pendingGroups.has(requestKey)) {
+          const pg = pendingGroups.get(requestKey);
+          clearInterval(pg.actionInterval);
+          pendingGroups.delete(requestKey);
+          activeUserRequests.delete(requestKey);
 
-                if (pg.arrived.length > 0) {
-                    await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-                    await sendGroupToUser(ctx, userId, relayGroupId, pg.arrived);
-                    await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, `⚠️ Sent ${pg.arrived.length} of ${pg.expectedMsgIds.size} images.`).catch(() => {});
-                    for (const id of pg.arrived) {
-                         await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
-                    }
-                } else {
-                    await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
-                }
+          if (pg.arrived.length > 0) {
+            await ctx.telegram.sendMessage(
+              userId,
+              templates.renderFileDelivered(
+                resource.channelUsername || "Private Channel",
+              ),
+              { parse_mode: "HTML" },
+            );
+            await sendGroupToUser(ctx, userId, relayGroupId, pg.arrived);
+            await ctx.telegram
+              .editMessageText(
+                userId,
+                statusMsg.message_id,
+                null,
+                `⚠️ Sent ${pg.arrived.length} of ${pg.expectedMsgIds.size} images.`,
+              )
+              .catch(() => {});
+            for (const id of pg.arrived) {
+              await ctx.telegram
+                .deleteMessage(relayGroupId, id)
+                .catch(() => {});
             }
-        }, 30000);
+          } else {
+            await ctx.telegram
+              .editMessageText(
+                userId,
+                statusMsg.message_id,
+                null,
+                templates.renderError(),
+                { parse_mode: "HTML" },
+              )
+              .catch(() => {});
+          }
+        }
+      }, 30000);
 
-        pendingGroups.set(requestKey, {
-            userId,
-            statusMsgId: statusMsg.message_id,
-            expectedMsgIds,
-            arrived,
-            requestKey,
-            timeout,
-            actionInterval,
-            resource
-        });
+      pendingGroups.set(requestKey, {
+        userId,
+        statusMsgId: statusMsg.message_id,
+        expectedMsgIds,
+        arrived,
+        requestKey,
+        timeout,
+        actionInterval,
+        resource,
+      });
     }
-
   } catch (err) {
     activeUserRequests.delete(requestKey);
     await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
@@ -491,13 +747,19 @@ function registerFileDeliveryHandlers(bot) {
 
     if (queryHash === "saves") {
       const user = await userService.findByTelegramId(ctx.from.id);
-      const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
-      return await sendPaginatedSaves(ctx, saves, page);
+      const saves = await SavedResource.find({ userId: user._id }).sort({
+        savedAt: -1,
+      });
+      return await sendPaginatedSaves(ctx, saves, page, false);
     }
 
     const session = await QuerySession.findOne({ queryHash });
     const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    if (!query)
+      return await ctx.answerCbQuery(
+        "❌ Session expired. Please search again.",
+        { show_alert: true },
+      );
 
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
@@ -513,13 +775,19 @@ function registerFileDeliveryHandlers(bot) {
 
     if (queryHash === "saves") {
       const user = await userService.findByTelegramId(ctx.from.id);
-      const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
+      const saves = await SavedResource.find({ userId: user._id }).sort({
+        savedAt: -1,
+      });
       return await renderSavedDetailCard(ctx, saves, page, resultIndex);
     }
 
     const session = await QuerySession.findOne({ queryHash });
     const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    if (!query)
+      return await ctx.answerCbQuery(
+        "❌ Session expired. Please search again.",
+        { show_alert: true },
+      );
 
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
@@ -534,13 +802,19 @@ function registerFileDeliveryHandlers(bot) {
 
     if (queryHash === "saves") {
       const user = await userService.findByTelegramId(ctx.from.id);
-      const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
-      return await sendPaginatedSaves(ctx, saves, page);
+      const saves = await SavedResource.find({ userId: user._id }).sort({
+        savedAt: -1,
+      });
+      return await sendPaginatedSaves(ctx, saves, page, false);
     }
 
     const session = await QuerySession.findOne({ queryHash });
     const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    if (!query)
+      return await ctx.answerCbQuery(
+        "❌ Session expired. Please search again.",
+        { show_alert: true },
+      );
 
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
@@ -548,20 +822,30 @@ function registerFileDeliveryHandlers(bot) {
   });
 
   bot.action(/save_web_(.+)/, async (ctx) => {
-    await ctx.answerCbQuery("Coming soon for web resources!", { show_alert: true });
+    await ctx.answerCbQuery("Coming soon for web resources!", {
+      show_alert: true,
+    });
   });
 
   bot.action(/save_([a-f0-9]{24})/, async (ctx) => {
     const resourceId = ctx.match[1];
     const user = await userService.findByTelegramId(ctx.from.id);
-    if (!user) return await ctx.answerCbQuery("User not found.", { show_alert: true });
+    if (!user)
+      return await ctx.answerCbQuery("User not found.", { show_alert: true });
 
     try {
-      const existing = await SavedResource.findOne({ userId: user._id, telegramResourceId: resourceId });
-      if (existing) return await ctx.answerCbQuery("Already saved!", { show_alert: true });
+      const existing = await SavedResource.findOne({
+        userId: user._id,
+        telegramResourceId: resourceId,
+      });
+      if (existing)
+        return await ctx.answerCbQuery("Already saved!", { show_alert: true });
 
       const resource = await TelegramResource.findById(resourceId);
-      if (!resource) return await ctx.answerCbQuery("Resource not found.", { show_alert: true });
+      if (!resource)
+        return await ctx.answerCbQuery("Resource not found.", {
+          show_alert: true,
+        });
 
       const newSave = new SavedResource({
         userId: user._id,
@@ -569,13 +853,15 @@ function registerFileDeliveryHandlers(bot) {
         title: resource.fileName || resource.caption || "Unnamed Telegram File",
         url: `tg://resolve?domain=${resource.channelUsername}&post=${resource.messageId}`,
         source: "telegram",
-        type: resource.fileType
+        type: resource.fileType,
       });
       await newSave.save();
       await ctx.answerCbQuery("✅ Resource saved!", { show_alert: false });
     } catch (e) {
-      console.error("Error on saving resource: ", e)
-      await ctx.answerCbQuery("❌ Error saving resource.", { show_alert: true });
+      console.error("Error on saving resource: ", e);
+      await ctx.answerCbQuery("❌ Error saving resource.", {
+        show_alert: true,
+      });
     }
   });
 
@@ -589,7 +875,7 @@ function registerFileDeliveryHandlers(bot) {
     await ctx.answerCbQuery();
   });
 
-  bot.on('message', async (ctx, next) => {
+  bot.on("message", async (ctx, next) => {
     const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
     if (ctx.chat.id === relayGroupId) {
       const msgId = ctx.message.message_id;
@@ -606,47 +892,85 @@ function registerFileDeliveryHandlers(bot) {
         pendingDeliveries.delete(msgId);
         activeUserRequests.delete(pending.requestKey);
 
-        await ctx.telegram.sendMessage(pending.userId, templates.renderFileDelivered(pending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await ctx.telegram.copyMessage(pending.userId, relayGroupId, msgId, { caption: "" }).catch(() => {});
-        await ctx.telegram.deleteMessage(pending.userId, pending.statusMsgId).catch(() => {});
+        await ctx.telegram.sendMessage(
+          pending.userId,
+          templates.renderFileDelivered(
+            pending.resource.channelUsername || "Private Channel",
+          ),
+          { parse_mode: "HTML" },
+        );
+        await ctx.telegram
+          .copyMessage(pending.userId, relayGroupId, msgId, { caption: "" })
+          .catch(() => {});
+        await ctx.telegram
+          .deleteMessage(pending.userId, pending.statusMsgId)
+          .catch(() => {});
         await ctx.telegram.deleteMessage(relayGroupId, msgId).catch(() => {});
       }
 
       for (const [key, groupPending] of pendingGroups.entries()) {
         if (groupPending.expectedMsgIds.has(msgId)) {
           if (!groupPending.arrived.includes(msgId)) {
-              groupPending.arrived.push(msgId);
+            groupPending.arrived.push(msgId);
           }
-          if (groupPending.arrived.length === groupPending.expectedMsgIds.size) {
+          if (
+            groupPending.arrived.length === groupPending.expectedMsgIds.size
+          ) {
             clearTimeout(groupPending.timeout);
             clearInterval(groupPending.actionInterval);
             pendingGroups.delete(key);
             activeUserRequests.delete(groupPending.requestKey);
 
-            await ctx.telegram.sendMessage(groupPending.userId, templates.renderFileDelivered(groupPending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-            await sendGroupToUser(ctx, groupPending.userId, relayGroupId, groupPending.arrived);
-            await ctx.telegram.deleteMessage(groupPending.userId, groupPending.statusMsgId).catch(() => {});
+            await ctx.telegram.sendMessage(
+              groupPending.userId,
+              templates.renderFileDelivered(
+                groupPending.resource.channelUsername || "Private Channel",
+              ),
+              { parse_mode: "HTML" },
+            );
+            await sendGroupToUser(
+              ctx,
+              groupPending.userId,
+              relayGroupId,
+              groupPending.arrived,
+            );
+            await ctx.telegram
+              .deleteMessage(groupPending.userId, groupPending.statusMsgId)
+              .catch(() => {});
             for (const id of groupPending.arrived) {
-                 await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
+              await ctx.telegram
+                .deleteMessage(relayGroupId, id)
+                .catch(() => {});
             }
           }
         }
       }
     }
 
-    if (ctx.message.text === '/get_chat_id') {
-      await ctx.reply(`This chat ID is: \`${ctx.chat.id}\``, { parse_mode: "Markdown" });
+    if (ctx.message.text === "/get_chat_id") {
+      await ctx.reply(`This chat ID is: \`${ctx.chat.id}\``, {
+        parse_mode: "Markdown",
+      });
     }
-    if (ctx.message.forward_from_chat && ctx.message.forward_from_chat.type === 'channel') {
+    if (
+      ctx.message.forward_from_chat &&
+      ctx.message.forward_from_chat.type === "channel"
+    ) {
       const forwardedChatId = ctx.message.forward_from_chat.id;
     }
 
     return next();
   });
 
-  bot.on('channel_post', async (ctx, next) => {
-    if (ctx.channelPost && ctx.channelPost.text === '/get_archive_id') {
-      await ctx.telegram.sendMessage(ctx.chat.id, `This Archive Chat ID is: \`${ctx.chat.id}\``, { parse_mode: "Markdown" }).catch(() => {});
+  bot.on("channel_post", async (ctx, next) => {
+    if (ctx.channelPost && ctx.channelPost.text === "/get_archive_id") {
+      await ctx.telegram
+        .sendMessage(
+          ctx.chat.id,
+          `This Archive Chat ID is: \`${ctx.chat.id}\``,
+          { parse_mode: "Markdown" },
+        )
+        .catch(() => {});
     }
     return next();
   });
