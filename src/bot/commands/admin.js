@@ -62,16 +62,18 @@ async function getAdminPanelMessage() {
     const resourceCount = await TelegramResource.countDocuments();
     const userCount = await User.countDocuments();
     const channels = await TelegramChannel.find({});
-    const activeCount = channels.filter(c => c.active && c.healthStatus !== "DEAD").length;
-    const deadCount = channels.filter(c => c.healthStatus === "DEAD").length;
+    const activeCount = channels.filter(
+      (c) => c.active && c.healthStatus !== "DEAD",
+    ).length;
+    const deadCount = channels.filter((c) => c.healthStatus === "DEAD").length;
     const indexing = isIndexingInProgress();
 
-    const message = 
+    const message =
       `🛠 <b>StudyHub Admin Panel</b>\n\n` +
       `📦 Resources: <b>${resourceCount.toLocaleString()}</b>\n` +
       `👥 Users: <b>${userCount.toLocaleString()}</b>\n` +
       `📡 Channels: <b>${activeCount}</b> active / <b>${deadCount}</b> dead\n` +
-      `⏱ Indexer: ${indexing ? '🔄 <b>Running</b>' : '💤 <b>Idle</b>'}\n\n` +
+      `⏱ Indexer: ${indexing ? "🔄 <b>Running</b>" : "💤 <b>Idle</b>"}\n\n` +
       `<i>Last updated: ${new Date().toLocaleTimeString()}</i>`;
 
     return message;
@@ -143,266 +145,314 @@ const registerAdminPanelHandlers = (bot) => {
   };
 
   // 📊 STATS
-  bot.action("adm_stats", requireAdmin(async (ctx) => {
-    try {
-      const resourceCount = await TelegramResource.countDocuments();
-      const userCount = await User.countDocuments();
-      const channels = await TelegramChannel.find({});
-      const downloads = await TelegramResource.aggregate([
-        { $group: { _id: null, total: { $sum: "$downloadCount" } } },
-      ]);
-      const downloadTotal = downloads[0]?.total || 0;
+  bot.action(
+    "adm_stats",
+    requireAdmin(async (ctx) => {
+      try {
+        const resourceCount = await TelegramResource.countDocuments();
+        const userCount = await User.countDocuments();
+        const channels = await TelegramChannel.find({});
+        const downloads = await TelegramResource.aggregate([
+          { $group: { _id: null, total: { $sum: "$downloadCount" } } },
+        ]);
+        const downloadTotal = downloads[0]?.total || 0;
 
-      const stats = 
-        `📊 <b>Full Statistics</b>\n\n` +
-        `📦 Resources: <b>${resourceCount.toLocaleString()}</b>\n` +
-        `👥 Users: <b>${userCount.toLocaleString()}</b>\n` +
-        `📡 Channels: <b>${channels.length}</b>\n` +
-        `📥 Total Downloads: <b>${downloadTotal.toLocaleString()}</b>\n\n` +
-        `<i>Generated: ${new Date().toLocaleString()}</i>`;
+        const stats =
+          `📊 <b>Full Statistics</b>\n\n` +
+          `📦 Resources: <b>${resourceCount.toLocaleString()}</b>\n` +
+          `👥 Users: <b>${userCount.toLocaleString()}</b>\n` +
+          `📡 Channels: <b>${channels.length}</b>\n` +
+          `📥 Total Downloads: <b>${downloadTotal.toLocaleString()}</b>\n\n` +
+          `<i>Generated: ${new Date().toLocaleString()}</i>`;
 
-      await ctx.reply(stats, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-STATS] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading stats", { show_alert: true });
-    }
-  }));
+        await ctx.reply(stats, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-STATS] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading stats", { show_alert: true });
+      }
+    }),
+  );
 
   // 🏥 CHANNEL HEALTH
-  bot.action("adm_health", requireAdmin(async (ctx) => {
-    try {
-      const channels = await TelegramChannel.find({}).sort({ healthStatus: 1 });
-      let message = "🏥 <b>Channel Health Status</b>\n\n";
+  bot.action(
+    "adm_health",
+    requireAdmin(async (ctx) => {
+      try {
+        const channels = await TelegramChannel.find({}).sort({
+          healthStatus: 1,
+        });
+        let message = "🏥 <b>Channel Health Status</b>\n\n";
 
-      const activeCount = channels.filter(c => c.healthStatus === "ACTIVE").length;
-      const degradedCount = channels.filter(c => c.healthStatus === "DEGRADED").length;
-      const deadCount = channels.filter(c => c.healthStatus === "DEAD").length;
+        const activeCount = channels.filter(
+          (c) => c.healthStatus === "ACTIVE",
+        ).length;
+        const degradedCount = channels.filter(
+          (c) => c.healthStatus === "DEGRADED",
+        ).length;
+        const deadCount = channels.filter(
+          (c) => c.healthStatus === "DEAD",
+        ).length;
 
-      message += `✅ Active: <b>${activeCount}</b>\n`;
-      message += `⚠️ Degraded: <b>${degradedCount}</b>\n`;
-      message += `❌ Dead: <b>${deadCount}</b>\n\n`;
+        message += `✅ Active: <b>${activeCount}</b>\n`;
+        message += `⚠️ Degraded: <b>${degradedCount}</b>\n`;
+        message += `❌ Dead: <b>${deadCount}</b>\n\n`;
 
-      if (deadCount > 0) {
-        message += "<b>Dead Channels:</b>\n";
-        channels
-          .filter(c => c.healthStatus === "DEAD")
-          .slice(0, 10)
-          .forEach((ch) => {
-            message += `• @${ch.username} (${ch.failureCount} failures)\n`;
-          });
-      }
+        if (deadCount > 0) {
+          message += "<b>Dead Channels:</b>\n";
+          channels
+            .filter((c) => c.healthStatus === "DEAD")
+            .slice(0, 10)
+            .forEach((ch) => {
+              message += `• @${ch.username} (${ch.failureCount} failures)\n`;
+            });
+        }
 
-      message += `\n<i>Last scan: ${channels[0]?.lastSuccessfulScan?.toLocaleString() || "Never"}</i>`;
+        message += `\n<i>Last scan: ${channels[0]?.lastSuccessfulScan?.toLocaleString() || "Never"}</i>`;
 
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-HEALTH] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading health", { show_alert: true });
-    }
-  }));
-
-  // 📋 PENDING CHANNELS
-  bot.action("adm_pending", requireAdmin(async (ctx) => {
-    try {
-      const pending = await ChannelRecommendation.find({ status: "pending" })
-        .sort({ createdAt: -1 })
-        .limit(10);
-
-      if (pending.length === 0) {
-        await ctx.reply("✅ No pending channel recommendations.", { parse_mode: "HTML" });
+        await ctx.reply(message, { parse_mode: "HTML" });
         await ctx.answerCbQuery();
-        return;
-      }
-
-      let message = `📋 <b>Pending Recommendations</b> (${pending.length})\n\n`;
-      pending.forEach((rec) => {
-        message += `@${rec.channelUsername}\n`;
-        message += `  Reason: ${rec.reason}\n\n`;
-      });
-
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-PENDING] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading pending", { show_alert: true });
-    }
-  }));
-
-  // 📜 RECENT LOGS
-  bot.action("adm_logs", requireAdmin(async (ctx) => {
-    try {
-      const logs = getAdminLogs(20);
-
-      if (logs.length === 0) {
-        await ctx.reply("📜 No errors logged yet.", { parse_mode: "HTML" });
-        await ctx.answerCbQuery();
-        return;
-      }
-
-      let message = `📜 <b>Recent Logs</b> (last ${Math.min(20, logs.length)})\n\n`;
-      message += `<pre>`;
-      logs.forEach((log) => {
-        const time = log.time.toLocaleTimeString();
-        const level = log.level.toUpperCase();
-        message += `[${time}] ${level}: ${log.message.substring(0, 50)}\n`;
-      });
-      message += `</pre>`;
-
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-LOGS] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading logs", { show_alert: true });
-    }
-  }));
-
-  // ▶ RUN FULL SCAN
-  bot.action("adm_scan", requireAdmin(async (ctx) => {
-    try {
-      // Fire off scan in background (no await)
-      indexAllChannels().catch((err) => {
-        console.error("[ADM-SCAN] Background error:", err);
-        pushAdminLog("error", `Scan failed: ${err.message}`);
-      });
-
-      await ctx.answerCbQuery("🔄 Scan started");
-      await ctx.reply("🔄 Full scan started in background. Use /channelhealth to monitor.");
-    } catch (error) {
-      console.error("[ADM-SCAN] Error:", error);
-      await ctx.answerCbQuery("❌ Error starting scan", { show_alert: true });
-    }
-  }));
-
-  // ⏸ INDEXER STATUS
-  bot.action("adm_indexstatus", requireAdmin(async (ctx) => {
-    try {
-      const running = isIndexingInProgress();
-      const channels = await TelegramChannel.find({ fullyIndexed: false });
-
-      let message = `⏸ <b>Indexer Status</b>\n\n`;
-      message += `Status: ${running ? "🔄 <b>Running</b>" : "💤 <b>Idle</b>"}\n`;
-      message += `Channels not fully indexed: <b>${channels.length}</b>\n`;
-
-      if (channels.length > 0) {
-        message += `\nPending (first 5):\n`;
-        channels.slice(0, 5).forEach((ch) => {
-          message += `  • @${ch.username}\n`;
+      } catch (error) {
+        console.error("[ADM-HEALTH] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading health", {
+          show_alert: true,
         });
       }
+    }),
+  );
 
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-INDEXSTATUS] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading status", { show_alert: true });
-    }
-  }));
+  // 📋 PENDING CHANNELS
+  bot.action(
+    "adm_pending",
+    requireAdmin(async (ctx) => {
+      try {
+        const pending = await ChannelRecommendation.find({ status: "pending" })
+          .sort({ createdAt: -1 })
+          .limit(10);
+
+        if (pending.length === 0) {
+          await ctx.reply("✅ No pending channel recommendations.", {
+            parse_mode: "HTML",
+          });
+          await ctx.answerCbQuery();
+          return;
+        }
+
+        let message = `📋 <b>Pending Recommendations</b> (${pending.length})\n\n`;
+        pending.forEach((rec) => {
+          message += `@${rec.channelUsername}\n`;
+          message += `  Reason: ${rec.reason}\n\n`;
+        });
+
+        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-PENDING] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading pending", {
+          show_alert: true,
+        });
+      }
+    }),
+  );
+
+  // 📜 RECENT LOGS
+  bot.action(
+    "adm_logs",
+    requireAdmin(async (ctx) => {
+      try {
+        const logs = getAdminLogs(20);
+
+        if (logs.length === 0) {
+          await ctx.reply("📜 No errors logged yet.", { parse_mode: "HTML" });
+          await ctx.answerCbQuery();
+          return;
+        }
+
+        let message = `📜 <b>Recent Logs</b> (last ${Math.min(20, logs.length)})\n\n`;
+        message += `<pre>`;
+        logs.forEach((log) => {
+          const time = log.time.toLocaleTimeString();
+          const level = log.level.toUpperCase();
+          message += `[${time}] ${level}: ${log.message.substring(0, 50)}\n`;
+        });
+        message += `</pre>`;
+
+        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-LOGS] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading logs", { show_alert: true });
+      }
+    }),
+  );
+
+  // ▶ RUN FULL SCAN
+  bot.action(
+    "adm_scan",
+    requireAdmin(async (ctx) => {
+      try {
+        // Fire off scan in background (no await)
+        indexAllChannels().catch((err) => {
+          console.error("[ADM-SCAN] Background error:", err);
+          pushAdminLog("error", `Scan failed: ${err.message}`);
+        });
+
+        await ctx.answerCbQuery("🔄 Scan started");
+        await ctx.reply(
+          "🔄 Full scan started in background. Use /channelhealth to monitor.",
+        );
+      } catch (error) {
+        console.error("[ADM-SCAN] Error:", error);
+        await ctx.answerCbQuery("❌ Error starting scan", { show_alert: true });
+      }
+    }),
+  );
+
+  // ⏸ INDEXER STATUS
+  bot.action(
+    "adm_indexstatus",
+    requireAdmin(async (ctx) => {
+      try {
+        const running = isIndexingInProgress();
+        const channels = await TelegramChannel.find({ fullyIndexed: false });
+
+        let message = `⏸ <b>Indexer Status</b>\n\n`;
+        message += `Status: ${running ? "🔄 <b>Running</b>" : "💤 <b>Idle</b>"}\n`;
+        message += `Channels not fully indexed: <b>${channels.length}</b>\n`;
+
+        if (channels.length > 0) {
+          message += `\nPending (first 5):\n`;
+          channels.slice(0, 5).forEach((ch) => {
+            message += `  • @${ch.username}\n`;
+          });
+        }
+
+        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-INDEXSTATUS] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading status", {
+          show_alert: true,
+        });
+      }
+    }),
+  );
 
   // 📢 BROADCAST
-  bot.action("adm_broadcast", requireAdmin(async (ctx) => {
-    try {
-      const message =
-        `📢 <b>Broadcast Instructions</b>\n\n` +
-        `Use: <code>/broadcast &lt;message&gt;</code>\n\n` +
-        `This will send your message to all users.\n` +
-        `Be mindful of rate limits!`;
+  bot.action(
+    "adm_broadcast",
+    requireAdmin(async (ctx) => {
+      try {
+        const message =
+          `📢 <b>Broadcast Instructions</b>\n\n` +
+          `Use: <code>/broadcast &lt;message&gt;</code>\n\n` +
+          `This will send your message to all users.\n` +
+          `Be mindful of rate limits!`;
 
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-BROADCAST] Error:", error);
-      await ctx.answerCbQuery("❌ Error", { show_alert: true });
-    }
-  }));
+        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-BROADCAST] Error:", error);
+        await ctx.answerCbQuery("❌ Error", { show_alert: true });
+      }
+    }),
+  );
 
   // 👥 USER LIST
-  bot.action("adm_users", requireAdmin(async (ctx) => {
-    try {
-      const total = await User.countDocuments();
-      const newToday = await User.countDocuments({
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      });
-      const activeToday = await User.countDocuments({
-        lastActivityAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      });
+  bot.action(
+    "adm_users",
+    requireAdmin(async (ctx) => {
+      try {
+        const total = await User.countDocuments();
+        const newToday = await User.countDocuments({
+          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        });
+        const activeToday = await User.countDocuments({
+          lastActivityAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        });
 
-      const message =
-        `👥 <b>User Metrics</b>\n\n` +
-        `Total Users: <b>${total}</b>\n` +
-        `New Today: <b>${newToday}</b>\n` +
-        `Active Today: <b>${activeToday}</b>`;
+        const message =
+          `👥 <b>User Metrics</b>\n\n` +
+          `Total Users: <b>${total}</b>\n` +
+          `New Today: <b>${newToday}</b>\n` +
+          `Active Today: <b>${activeToday}</b>`;
 
-      await ctx.reply(message, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-USERS] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading users", { show_alert: true });
-    }
-  }));
+        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-USERS] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading users", { show_alert: true });
+      }
+    }),
+  );
 
   // 🔄 REFRESH PANEL
-  bot.action("adm_refresh", requireAdmin(async (ctx) => {
-    try {
-      const message = await getAdminPanelMessage();
+  bot.action(
+    "adm_refresh",
+    requireAdmin(async (ctx) => {
+      try {
+        const message = await getAdminPanelMessage();
 
-      const keyboard = Markup.inlineKeyboard([
-        [
-          Markup.button.callback("📊 Full Stats", "adm_stats"),
-          Markup.button.callback("🏥 Channel Health", "adm_health"),
-        ],
-        [
-          Markup.button.callback("📋 Pending", "adm_pending"),
-          Markup.button.callback("📜 Recent Logs", "adm_logs"),
-        ],
-        [
-          Markup.button.callback("▶ Run Full Scan", "adm_scan"),
-          Markup.button.callback("⏸ Status", "adm_indexstatus"),
-        ],
-        [
-          Markup.button.callback("📢 Broadcast", "adm_broadcast"),
-          Markup.button.callback("👥 User List", "adm_users"),
-        ],
-        [
-          Markup.button.callback("🔄 Refresh", "adm_refresh"),
-          Markup.button.callback("❓ Help", "adm_help"),
-        ],
-      ]);
+        const keyboard = Markup.inlineKeyboard([
+          [
+            Markup.button.callback("📊 Full Stats", "adm_stats"),
+            Markup.button.callback("🏥 Channel Health", "adm_health"),
+          ],
+          [
+            Markup.button.callback("📋 Pending", "adm_pending"),
+            Markup.button.callback("📜 Recent Logs", "adm_logs"),
+          ],
+          [
+            Markup.button.callback("▶ Run Full Scan", "adm_scan"),
+            Markup.button.callback("⏸ Status", "adm_indexstatus"),
+          ],
+          [
+            Markup.button.callback("📢 Broadcast", "adm_broadcast"),
+            Markup.button.callback("👥 User List", "adm_users"),
+          ],
+          [
+            Markup.button.callback("🔄 Refresh", "adm_refresh"),
+            Markup.button.callback("❓ Help", "adm_help"),
+          ],
+        ]);
 
-      await ctx.editMessageText(message, {
-        parse_mode: "HTML",
-        ...keyboard,
-      });
-      await ctx.answerCbQuery("✅ Updated");
-    } catch (error) {
-      console.error("[ADM-REFRESH] Error:", error);
-      await ctx.answerCbQuery("❌ Error refreshing", { show_alert: true });
-    }
-  }));
+        await ctx.editMessageText(message, {
+          parse_mode: "HTML",
+          ...keyboard,
+        });
+        await ctx.answerCbQuery("✅ Updated");
+      } catch (error) {
+        console.error("[ADM-REFRESH] Error:", error);
+        await ctx.answerCbQuery("❌ Error refreshing", { show_alert: true });
+      }
+    }),
+  );
 
   // ❓ HELP
-  bot.action("adm_help", requireAdmin(async (ctx) => {
-    try {
-      const help =
-        `<b>Admin Commands</b>\n\n` +
-        `/admin — open this panel\n` +
-        `/stats — usage statistics\n` +
-        `/channelhealth — channel scan status\n` +
-        `/addchannel @username — add a new channel\n` +
-        `/removechannel @username — remove a channel\n` +
-        `/listchannels — list all channels\n` +
-        `/forcescan @username — force scan one channel\n` +
-        `/pendingchannels — review recommendations\n` +
-        `/broadcast — send message to all users`;
+  bot.action(
+    "adm_help",
+    requireAdmin(async (ctx) => {
+      try {
+        const help =
+          `<b>Admin Commands</b>\n\n` +
+          `/admin — open this panel\n` +
+          `/stats — usage statistics\n` +
+          `/channelhealth — channel scan status\n` +
+          `/addchannel @username — add a new channel\n` +
+          `/removechannel @username — remove a channel\n` +
+          `/listchannels — list all channels\n` +
+          `/forcescan @username — force scan one channel\n` +
+          `/pendingchannels — review recommendations\n` +
+          `/broadcast — send message to all users`;
 
-      await ctx.reply(help, { parse_mode: "HTML" });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error("[ADM-HELP] Error:", error);
-      await ctx.answerCbQuery("❌ Error loading help", { show_alert: true });
-    }
-  }));
+        await ctx.reply(help, { parse_mode: "HTML" });
+        await ctx.answerCbQuery();
+      } catch (error) {
+        console.error("[ADM-HELP] Error:", error);
+        await ctx.answerCbQuery("❌ Error loading help", { show_alert: true });
+      }
+    }),
+  );
 };
 
 /**
@@ -693,5 +743,5 @@ module.exports = {
   removeChannelCommand,
   listChannelsCommand,
   forceScanCommand,
-  registerAdminActionHandlers,
+  registerAdminActionHandlers,
 };

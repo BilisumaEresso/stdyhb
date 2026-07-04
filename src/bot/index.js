@@ -4,6 +4,7 @@ const startCommand = require("./commands/start");
 const { searchCommand, performSearch } = require("./commands/search");
 const adminCommands = require("./commands/admin");
 const profileCommand = require("./commands/profile");
+const trendingCommand = require("./commands/trending");
 const helpCommand = require("./commands/help");
 const savesCommand = require("./commands/saves");
 const onboardingWizard = require("./scenes/onboarding");
@@ -61,6 +62,7 @@ bot.use(rateLimitMiddleware());
 bot.start((ctx) => startCommand(ctx, false)); // Pass skipWizard=false by default
 bot.command("search", searchCommand);
 bot.command("profile", profileCommand);
+bot.command("trending", trendingCommand);
 bot.command("help", helpCommand);
 bot.command("saves", savesCommand);
 
@@ -70,11 +72,7 @@ bot.action("edit_profile", (ctx) => {
 });
 
 // Register admin commands
-bot.command(
-  "admin",
-  adminCommands.isAdmin,
-  adminCommands.adminPanelCommand,
-);
+bot.command("admin", adminCommands.isAdmin, adminCommands.adminPanelCommand);
 bot.command(
   "addchannel",
   adminCommands.isAdmin,
@@ -116,6 +114,10 @@ bot.on("text", async (ctx, next) => {
     return savesCommand(ctx);
   } else if (text === LABELS.RECOMMEND) {
     return ctx.scene.enter("recommendChannel");
+  } else if (text === LABELS.PROFILE) {
+    return profileCommand(ctx);
+  } else if (text === LABELS.TRENDING) {
+    return trendingCommand(ctx);
   } else if (text === LABELS.HELP) {
     return helpCommand(ctx);
   }
