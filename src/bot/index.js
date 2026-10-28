@@ -11,7 +11,12 @@ const adminCommands = require("./commands/admin");
 const profileCommand = require("./commands/profile");
 const trendingCommand = require("./commands/trending");
 const recentCommand = require("./commands/recent");
-const helpCommand = require("./commands/help");
+const {
+  helpCommand,
+  aboutCommand,
+  developerCommand,
+  registerHelpHandlers,
+} = require("./commands/help");
 const savesCommand = require("./commands/saves");
 const { broadcastCommand, registerBroadcastHandlers } = require("./commands/broadcast");
 const onboardingWizard = require("./scenes/onboarding");
@@ -98,6 +103,9 @@ bot.command("profile", profileCommand);
 bot.command("trending", trendingCommand);
 bot.command("recent", recentCommand);
 bot.command("help", helpCommand);
+bot.command("about", aboutCommand);
+bot.command("developer", developerCommand);
+bot.command("dev", developerCommand);
 bot.command("saves", savesCommand);
 
 bot.action("edit_profile", (ctx) => {
@@ -115,35 +123,8 @@ bot.action("nav_main", async (ctx) => {
   return startCommand(ctx, true);
 });
 
-bot.action("nav_help", async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  return helpCommand(ctx);
-});
-
-bot.action("about_studyhub", async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  const { Markup } = require("telegraf");
-  const aboutText = `ℹ️ <b>About StudyHub</b>
-
-StudyHub is an open-source academic search engine bot designed for Ethiopian university students.
-
-✨ <b>Key Features:</b>
-• Search indexed study materials across university channels
-• Download past exams, lecture notes, slides, and handouts
-• Photo exam bundle delivery
-• Save frequently used materials for quick access
-• Recommend and submit new educational channels
-
-👨‍💻 <b>Version:</b> 1.0.0
-📬 <b>Support & Feedback:</b> ${process.env.ADMIN_TELEGRAM_URL || "Contact Admin"}`;
-
-  await ctx.reply(aboutText, {
-    parse_mode: "HTML",
-    reply_markup: Markup.inlineKeyboard([
-      [Markup.button.callback("◀ Back to Help", "nav_help")],
-    ]).reply_markup,
-  }).catch(() => {});
-});
+// Register unified interactive Help, About, and Developer handlers
+registerHelpHandlers(bot);
 
 // Register admin commands
 bot.command("admin", adminCommands.isAdmin, adminCommands.adminPanelCommand);

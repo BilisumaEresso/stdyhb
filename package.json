@@ -1,14 +1,15 @@
 {
   "name": "studyhub",
-  "version": "1.0.0",
-  "description": "Study smart",
+  "version": "2.0.0",
+  "description": "Ethiopian Universities Academic Search Engine & Repository Indexer",
+  "homepage": "https://bilisumaeresso.vercel.app",
   "keywords": [
     "Study",
     "bot",
     "resource"
   ],
   "license": "ISC",
-  "author": "Billy",
+  "author": "Billy (Bilisuma Eresso)",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
