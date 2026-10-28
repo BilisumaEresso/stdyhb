@@ -34,6 +34,7 @@ const TelegramResourceSchema = new mongoose.Schema({
   // Scoring
   relevanceScore: { type: Number, default: 0 },
   downloadCount: { type: Number, default: 0 },
+  reportCount: { type: Number, default: 0 },
   isAvailable: { type: Boolean, default: true },
   archiveMessageId: { type: Number, default: null },
 

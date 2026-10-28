@@ -1,7 +1,13 @@
 function notifyAdmin(type, data) {
   try {
-    const bot = require("../bot/index");
-    const adminIds = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(",") : [];
+    const { getBot } = require("../bot/botInstance");
+    let bot;
+    try {
+      bot = getBot();
+    } catch (e) {
+      bot = require("../bot/index");
+    }
+    const adminIds = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(",").map(id => id.trim()).filter(Boolean) : [];
     if (adminIds.length === 0) return;
 
     let message = "";
@@ -44,19 +50,6 @@ function notifyAdmin(type, data) {
           `<b>Type:</b> ${data.type}\n` +
           `<b>University:</b> ${data.university}\n` +
           `<b>Status:</b> ${verified}`;
-        buttons = {
-          inline_keyboard: [
-            [
-              {
-                text: "✅ Approve",
-                callback_data: `approve_rec_${data.recId}`,
-              },
-              { text: "❌ Reject", callback_data: `reject_rec_${data.recId}` },
-            ],
-          ],
-        };
-        break;
-        message = `📢 <b>New channel recommendation:</b> @${data.channelUsername}\nby @${data.userUsername || data.userId} | Type: ${data.type} | University: ${data.university}`;
         buttons = {
           inline_keyboard: [
             [

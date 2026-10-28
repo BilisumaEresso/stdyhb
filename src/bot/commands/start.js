@@ -2,11 +2,27 @@ const userService = require("../../services/user.service");
 const LABELS = require("../keyboardLabels");
 const { Markup } = require("telegraf");
 const templates = require("../../telegram/templates");
+const fileDelivery = require("../../telegram/fileDelivery");
 
 async function startCommand(ctx, skipWizard = false) {
   try {
     const telegramUser = ctx.from;
     const user = await userService.getOrCreateUser(telegramUser);
+
+    // Check for deep-link payload (e.g. /start get_<id> from inline search)
+    const payload = (
+      ctx.payload ||
+      (ctx.message && ctx.message.text ? ctx.message.text.split(" ")[1] : "") ||
+      ""
+    ).trim();
+
+    if (payload.startsWith("get_")) {
+      const resourceId = payload.substring(4);
+      return await fileDelivery.handleDownload(ctx, resourceId);
+    } else if (payload.startsWith("grp_")) {
+      const resourceId = payload.substring(4);
+      return await fileDelivery.handleGroupDownload(ctx, resourceId);
+    }
 
     // Enter onboarding wizard if no university is set and they didn't just skip it
     if (!skipWizard && (!user.university || user.university === "")) {

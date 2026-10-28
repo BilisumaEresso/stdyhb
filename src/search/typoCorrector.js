@@ -8,13 +8,63 @@ const { SUBJECT_ALIASES } = require("../config/subjectAliases");
 
 // Build dictionary of all known subjects and aliases
 const KNOWN_TERMS = {};
+const CANONICAL_MAP = {};
+const VOCABULARY = new Set();
+
 for (const [subject, subjectData] of Object.entries(SUBJECT_ALIASES)) {
   KNOWN_TERMS[subject] = 1;
+  VOCABULARY.add(subject.toLowerCase());
+  CANONICAL_MAP[subject.toLowerCase()] = subject;
+
   const aliases = subjectData.aliases;
   aliases.forEach((alias) => {
-    KNOWN_TERMS[alias.toLowerCase()] = 1;
+    const a = alias.toLowerCase().trim();
+    KNOWN_TERMS[a] = 1;
+    VOCABULARY.add(a);
+    CANONICAL_MAP[a] = a;
   });
+
+  if (Array.isArray(subjectData.typos)) {
+    subjectData.typos.forEach((typo) => {
+      const t = typo.toLowerCase().trim();
+      CANONICAL_MAP[t] = aliases[0] || subject;
+    });
+  }
 }
+
+// Top academic subjects and search intent terms
+const TOP_ACADEMIC_TERMS = [
+  "physics",
+  "calculus",
+  "chemistry",
+  "biology",
+  "logic",
+  "nursing",
+  "economics",
+  "civics",
+  "management",
+  "entrepreneurship",
+  "communicative english",
+  "data structures",
+  "operating systems",
+  "database",
+  "computer networks",
+  "software engineering",
+  "programming",
+  "python",
+  "java",
+  "c++",
+  "exam",
+  "mid",
+  "final",
+  "notes",
+  "slides",
+];
+
+TOP_ACADEMIC_TERMS.forEach((s) => {
+  VOCABULARY.add(s);
+  if (!CANONICAL_MAP[s]) CANONICAL_MAP[s] = s;
+});
 
 // Common typos - explicit mappings for frequent mistakes
 const COMMON_CORRECTIONS = {
@@ -30,7 +80,21 @@ const COMMON_CORRECTIONS = {
   sofware: "software",
   eaxm: "exam",
   finl: "final",
+  phsyics: "physics",
+  physic: "physics",
+  calcullus: "calculus",
+  calclus: "calculus",
+  chemstry: "chemistry",
+  pythn: "python",
+  pyhton: "python",
 };
+
+Object.entries(COMMON_CORRECTIONS).forEach(([typo, target]) => {
+  CANONICAL_MAP[typo] = target;
+});
+
+const vocabList = Array.from(VOCABULARY);
+const singleWordVocab = vocabList.filter((v) => !v.includes(" "));
 
 /**
  * Correct typos in query with high confidence
@@ -76,7 +140,89 @@ function correctTypos(query) {
   };
 }
 
+/**
+ * Intelligent "Did you mean..." suggestions when a search returns 0 results
+ */
+function getZeroResultSuggestions(query, limit = 3) {
+  if (!query || typeof query !== "string") return [];
+  const clean = query.trim().toLowerCase();
+  const words = clean.split(/\s+/).filter(Boolean);
+  const candidates = [];
+  const seen = new Set([clean]);
+
+  // Strategy 1: Word-by-word correction (preserves intent & fixes typos within phrases)
+  const correctedWords = words.map((w) => {
+    if (CANONICAL_MAP[w]) return CANONICAL_MAP[w];
+    if (w.length >= 4 && singleWordVocab.length > 0) {
+      const match = stringSimilarity.findBestMatch(w, singleWordVocab);
+      if (match.bestMatch.rating > 0.72) {
+        return match.bestMatch.target;
+      }
+    }
+    return w;
+  });
+
+  const wordCorrected = correctedWords.join(" ");
+  if (wordCorrected !== clean && !seen.has(wordCorrected)) {
+    seen.add(wordCorrected);
+    candidates.push(wordCorrected);
+  }
+
+  // Strategy 2: Check entire phrase similarity
+  if (vocabList.length > 0) {
+    const phraseMatches = stringSimilarity.findBestMatch(clean, vocabList);
+    if (phraseMatches.bestMatch.rating > 0.65) {
+      const target = phraseMatches.bestMatch.target;
+      if (!seen.has(target)) {
+        seen.add(target);
+        candidates.push(target);
+      }
+    }
+  }
+
+  // Strategy 3: Multi-word query relaxation (remove filler words & specific years)
+  if (words.length >= 3) {
+    const fillerWords = new Set([
+      "advanced",
+      "intro",
+      "introduction",
+      "chapter",
+      "unit",
+      "part",
+      "questions",
+      "solutions",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026",
+    ]);
+    const relaxed = words.filter((w) => !fillerWords.has(w)).join(" ");
+    if (relaxed.length > 2 && relaxed !== clean && !seen.has(relaxed)) {
+      seen.add(relaxed);
+      candidates.push(relaxed);
+    }
+  }
+
+  // Strategy 4: Fallback to prominent subjects
+  const defaultFallbacks = ["dbms exam", "physics exam", "calculus", "logic"];
+  for (const fb of defaultFallbacks) {
+    if (candidates.length >= limit) break;
+    if (!seen.has(fb)) {
+      seen.add(fb);
+      candidates.push(fb);
+    }
+  }
+
+  return candidates.slice(0, limit);
+}
+
 module.exports = {
   correctTypos,
+  getZeroResultSuggestions,
   KNOWN_TERMS,
 };

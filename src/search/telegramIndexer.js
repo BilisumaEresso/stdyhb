@@ -10,6 +10,19 @@ const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 let client = null;
 let isIndexing = false;
+let shouldAbortScan = false;
+let indexingStats = {
+  startedAt: null,
+  completedAt: null,
+  totalChannels: 0,
+  completedChannels: 0,
+  currentChannel: null,
+  totalIndexed: 0,
+  totalSkipped: 0,
+  errors: 0,
+  lastError: null,
+  status: "IDLE",
+};
 
 // ─── client management ────────────────────────────────────────────────────────
 async function getClient() {
@@ -657,6 +670,7 @@ async function indexAllChannels() {
     return { skipped: true, reason: "already_running" };
   }
   isIndexing = true;
+  shouldAbortScan = false;
 
   try {
     const channels = await TelegramChannel.find({
@@ -665,17 +679,45 @@ async function indexAllChannels() {
     }).sort({ priority: -1 });
     console.log(`Starting indexer — ${channels.length} ACTIVE channels`);
 
+    indexingStats = {
+      startedAt: new Date(),
+      completedAt: null,
+      totalChannels: channels.length,
+      completedChannels: 0,
+      currentChannel: null,
+      totalIndexed: 0,
+      totalSkipped: 0,
+      errors: 0,
+      lastError: null,
+      status: "RUNNING",
+    };
+
     const results = [];
     for (const ch of channels) {
+      if (shouldAbortScan) {
+        console.log("⏹️ Indexing aborted by admin.");
+        break;
+      }
+
+      indexingStats.currentChannel = ch.username;
       await new Promise((r) => setTimeout(r, 1500));
+
       try {
         const r = await indexChannel(ch.username);
         results.push({ channel: ch.username, ...r });
+        indexingStats.totalIndexed += (r.indexed || 0);
+        indexingStats.totalSkipped += (r.skipped || 0);
+        if (r.error) {
+          indexingStats.errors++;
+          indexingStats.lastError = r.error;
+        }
       } catch (err) {
         console.error(
           `[FATAL-UNHANDLED] Unexpected error in indexChannel for @${ch.username}:`,
           err,
         );
+        indexingStats.errors++;
+        indexingStats.lastError = err.message;
         results.push({
           channel: ch.username,
           indexed: 0,
@@ -683,6 +725,7 @@ async function indexAllChannels() {
           error: err.message,
         });
       }
+      indexingStats.completedChannels++;
     }
 
     const total = results.reduce((sum, r) => sum + r.indexed, 0);
@@ -690,11 +733,55 @@ async function indexAllChannels() {
     return results;
   } finally {
     isIndexing = false;
+    shouldAbortScan = false;
+    indexingStats.completedAt = new Date();
+    indexingStats.status = "IDLE";
+    indexingStats.currentChannel = null;
   }
 }
 
 function isIndexingInProgress() {
   return isIndexing;
+}
+
+function getIndexingDiagnostics() {
+  const isRunning = isIndexing;
+  const elapsedSec =
+    indexingStats.startedAt && isRunning
+      ? Math.round(
+          (Date.now() - new Date(indexingStats.startedAt).getTime()) / 1000,
+        )
+      : indexingStats.startedAt && indexingStats.completedAt
+      ? Math.round(
+          (new Date(indexingStats.completedAt).getTime() -
+            new Date(indexingStats.startedAt).getTime()) /
+            1000,
+        )
+      : 0;
+
+  const percent =
+    indexingStats.totalChannels > 0
+      ? Math.round(
+          (indexingStats.completedChannels / indexingStats.totalChannels) * 100,
+        )
+      : 0;
+
+  return {
+    isRunning,
+    status: isRunning ? (shouldAbortScan ? "STOPPING" : "RUNNING") : "IDLE",
+    elapsedSec,
+    percent,
+    ...indexingStats,
+  };
+}
+
+function abortIndexing() {
+  if (!isIndexing) {
+    return { success: false, message: "No indexing scan is currently running." };
+  }
+  shouldAbortScan = true;
+  indexingStats.status = "STOPPING";
+  return { success: true, message: "Abort signal sent to indexer." };
 }
 
 module.exports = {
@@ -708,5 +795,7 @@ module.exports = {
   extractUniversity,
   extractSemester,
   getClient,
-  isIndexingInProgress
+  isIndexingInProgress,
+  getIndexingDiagnostics,
+  abortIndexing,
 };

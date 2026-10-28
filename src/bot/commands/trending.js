@@ -12,32 +12,58 @@ function escapeHtml(text = "") {
 
 async function trendingCommand(ctx) {
   try {
-    const resources = await TelegramResource.find({ downloadCount: { $gt: 0 } })
+    let resources = await TelegramResource.find({ downloadCount: { $gt: 0 }, isAvailable: { $ne: false } })
       .sort({ downloadCount: -1 })
       .limit(8);
 
+    let isFallback = false;
+    if (!resources || resources.length === 0) {
+      // Fallback to latest resources if no downloads recorded yet
+      resources = await TelegramResource.find({ isAvailable: { $ne: false } })
+        .sort({ indexedAt: -1 })
+        .limit(8);
+      isFallback = true;
+    }
+
     if (!resources || resources.length === 0) {
       return await ctx.reply(
-        "🔥 No trending resources found yet. Try again after more downloads occur.",
+        "🔥 No trending resources found yet. Check back soon!",
       );
     }
 
-    let message = "🔥 <b>Trending This Week</b>\n\n";
+    let message = isFallback
+      ? "🔥 <b>Featured Study Materials</b>\n\n"
+      : "🔥 <b>Trending This Week</b>\n\n";
+
+    const buttons = [];
 
     resources.forEach((resource, index) => {
-      const title = escapeHtml(
+      let title = escapeHtml(
         resource.fileName || resource.caption || "Untitled",
       );
+      if (title.length > 40) title = title.substring(0, 39) + "…";
+
       const channel = resource.channelUsername
         ? ` @${escapeHtml(resource.channelUsername)}`
         : "";
-      message += `${index + 1}. <b>${title}</b>${channel}\n`;
-      message += `   📥 Downloads: <b>${resource.downloadCount}</b>\n`;
-      message += `   📄 Type: <b>${escapeHtml(resource.fileType || "other")}</b>\n\n`;
+      const type = escapeHtml((resource.fileType || "file").toUpperCase());
+
+      message += `${index + 1}. 📄 <b>${title}</b>${channel}\n`;
+      if (!isFallback) {
+        message += `   📥 Downloads: <b>${resource.downloadCount}</b> · Type: <b>${type}</b>\n\n`;
+      } else {
+        message += `   Type: <b>${type}</b>\n\n`;
+      }
+
+      const action = resource.groupId && resource.fileType === "image"
+        ? `grp_${resource._id}`
+        : `get_${resource._id}`;
+      buttons.push([Markup.button.callback(`📥 Get #${index + 1} (${title.slice(0, 22)})`, action)]);
     });
 
     await ctx.reply(message, {
       parse_mode: "HTML",
+      reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
     });
   } catch (error) {
     console.error("Error in /trending command:", error);

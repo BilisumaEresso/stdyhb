@@ -66,30 +66,71 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ─── campus matching helper ───────────────────────────────────────────────────
+function isCampusResource(resource, user) {
+  if (!user || !user.university || typeof user.university !== "string") return false;
+  const uni = user.university.trim().toLowerCase();
+  if (!uni || uni.length < 2) return false;
+
+  const channel = (resource.channelUsername || "").toLowerCase();
+  const fileName = (resource.fileName || "").toLowerCase();
+  const caption = (resource.caption || "").toLowerCase();
+  const tags = Array.isArray(resource.tags)
+    ? resource.tags.join(" ").toLowerCase()
+    : "";
+
+  const combined = `${channel} ${fileName} ${caption} ${tags}`;
+  return combined.includes(uni);
+}
+
 // ─── search result list ───────────────────────────────────────────────────────
-function renderListTemplate(query, total, current, totalPages, batch) {
+function renderListTemplate(
+  query,
+  total,
+  current,
+  totalPages,
+  batch,
+  activeFilter = "all",
+  user = null
+) {
   const plural = total === 1 ? "result" : "results";
-  let msg = `🔍 <b>${escapeHTML(query)}</b>\n`;
-  msg += `📦 <b>${total}</b> ${plural} · page ${current}/${totalPages}\n`;
+  const filterBadges = {
+    all: "",
+    exam: " · 🎓 <b>Exams</b>",
+    ppt: " · 📙 <b>Slides</b>",
+    pdf: " · 📕 <b>PDFs</b>",
+    uni: " · 🏛️ <b>My Campus</b>",
+  };
+  const filterBadge = filterBadges[activeFilter] || "";
+
+  let msg = `🔍 <b>${escapeHTML(query)}</b>${filterBadge}\n`;
+  msg += `📦 <b>${total}</b> ${plural} · page ${current}/${totalPages || 1}\n`;
   msg += `<code>─────────────────────</code>\n`;
 
-  batch.forEach((resource, idx) => {
-    const num = numberEmojis[idx] || `${idx + 1}.`;
-    const title = getTitle(resource);
-    const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
-    const exam = resource.isExam ? " 🎓" : "";
-    const size = formatSize(resource.fileSize);
-    const sizeTxt = size ? ` · <i>${size}</i>` : "";
-    msg += `${num} ${emoji} ${title}${exam}${sizeTxt}\n`;
-  });
+  if (!batch || batch.length === 0) {
+    msg += `<i>No materials match this filter.\nTap [🔄 All] or another filter below ⬇️</i>\n`;
+  } else {
+    batch.forEach((resource, idx) => {
+      const num = numberEmojis[idx] || `${idx + 1}.`;
+      const title = getTitle(resource);
+      const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
+      const exam = resource.isExam ? " 🎓" : "";
+      const size = formatSize(resource.fileSize);
+      const sizeTxt = size ? ` · <i>${size}</i>` : "";
+      const campusBadge = isCampusResource(resource, user)
+        ? ` 🏛️ <b>[${escapeHTML(user.university.toUpperCase())}]</b>`
+        : "";
+      msg += `${num} ${emoji} ${title}${campusBadge}${exam}${sizeTxt}\n`;
+    });
+  }
 
   msg += `<code>─────────────────────</code>\n`;
-  msg += `<i>Tap a number below to get the file ⬇️</i>`;
+  msg += `<i>Tap a number to get the file, or filter by category ⬇️</i>`;
   return msg;
 }
 
 // ─── number buttons ───────────────────────────────────────────────────────────
-function renderNumberButtons(queryHash, page, batchLength) {
+function renderNumberButtons(queryHash, page, batchLength, activeFilter = "all") {
   const keyboard = [];
   const row1 = [];
   const row2 = [];
@@ -97,7 +138,7 @@ function renderNumberButtons(queryHash, page, batchLength) {
   for (let idx = 0; idx < batchLength; idx++) {
     const btn = Markup.button.callback(
       `${idx + 1}`,
-      `num_${queryHash}_${page}_${idx}`,
+      `num_${queryHash}_${page}_${idx}_${activeFilter}`,
     );
     if (idx < 5) row1.push(btn);
     else row2.push(btn);
@@ -109,38 +150,66 @@ function renderNumberButtons(queryHash, page, batchLength) {
 }
 
 // ─── nav buttons ──────────────────────────────────────────────────────────────
-function renderNavButtons(queryHash, currentPage, totalPages) {
+function renderNavButtons(queryHash, currentPage, totalPages, activeFilter = "all") {
   const nav = [];
 
   nav.push(
     currentPage > 1
-      ? Markup.button.callback("◀ Prev", `pg_${queryHash}_${currentPage - 1}`)
+      ? Markup.button.callback("◀ Prev", `pg_${queryHash}_${currentPage - 1}_${activeFilter}`)
       : Markup.button.callback("·", "noop"),
   );
 
-  nav.push(Markup.button.callback(`${currentPage} / ${totalPages}`, "noop"));
+  nav.push(Markup.button.callback(`${currentPage} / ${totalPages || 1}`, "noop"));
 
   nav.push(
     currentPage < totalPages
-      ? Markup.button.callback("Next ▶", `pg_${queryHash}_${currentPage + 1}`)
+      ? Markup.button.callback("Next ▶", `pg_${queryHash}_${currentPage + 1}_${activeFilter}`)
       : Markup.button.callback("·", "noop"),
   );
 
   return nav;
 }
 
+// ─── filter pill buttons ──────────────────────────────────────────────────────
+function renderFilterPills(queryHash, activeFilter = "all") {
+  const pills = [
+    { id: "all", label: "🔄 All" },
+    { id: "exam", label: "🎓 Exams" },
+    { id: "ppt", label: "📙 Slides" },
+    { id: "pdf", label: "📕 PDFs" },
+    { id: "uni", label: "🏛️ Campus" },
+  ];
+
+  const row1 = [];
+  const row2 = [];
+
+  pills.forEach((p, idx) => {
+    const isSelected = p.id === activeFilter;
+    const text = isSelected ? `• ${p.label} •` : p.label;
+    const btn = Markup.button.callback(text, `flt_${queryHash}_1_${p.id}`);
+    if (idx < 3) row1.push(btn);
+    else row2.push(btn);
+  });
+
+  return [row1, row2];
+}
+
 // ─── detail card ──────────────────────────────────────────────────────────────
-function renderDetailCard(resource) {
+function renderDetailCard(resource, user = null) {
   const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
   const label = getFileLabel(resource.fileType, resource._isGrouped);
   const title = getTitle(resource);
   const size = formatSize(resource.fileSize);
+  const isMyCampus = isCampusResource(resource, user);
 
   let msg = `<code>─────────────────────</code>\n`;
   msg += `${emoji} <b>${title}</b>\n\n`;
 
   // badges row
   const badges = [];
+  if (isMyCampus) {
+    badges.push(`🏛️ <b>My Campus (${escapeHTML(user.university.toUpperCase())})</b>`);
+  }
   if (resource.isExam) badges.push("🎓 Exam");
   badges.push(`📁 ${label}`);
   if (size) badges.push(`💾 ${size}`);
@@ -157,7 +226,11 @@ function renderDetailCard(resource) {
 
   // source channel
   if (resource.channelUsername) {
-    msg += `\n📡 Source: @${escapeHTML(resource.channelUsername)}\n`;
+    const ch = escapeHTML(resource.channelUsername);
+    const postUrl = resource.messageId
+      ? `https://t.me/${resource.channelUsername}/${resource.messageId}`
+      : `https://t.me/${resource.channelUsername}`;
+    msg += `\n📡 Source: <a href="${postUrl}">@${ch}</a>\n`;
   }
 
   // caption (expandable if long)
@@ -168,6 +241,11 @@ function renderDetailCard(resource) {
     } else {
       msg += `\n<i>${escapeHTML(cap)}</i>\n`;
     }
+  }
+
+  // Profile hint if university is not set
+  if (!user || !user.university) {
+    msg += `\n💡 <i>Tip: Set your university in /profile to highlight materials from your campus.</i>\n`;
   }
 
   msg += `<code>─────────────────────</code>`;
@@ -183,18 +261,85 @@ function renderFileDelivered(channelUsername) {
   );
 }
 
-// ─── no results ───────────────────────────────────────────────────────────────
-function renderNoResults(query) {
-  let msg = `<code>─────────────────────</code>\n`;
-  msg += `🔍 <b>No results for "${escapeHTML(query)}"</b>\n\n`;
-  msg += `<b>Try these tips:</b>\n`;
-  msg += `  📌 Use shorter keywords — <i>"dbms"</i> not <i>"database management system"</i>\n`;
-  msg += `  📌 Add a type hint — <i>"dbms exam"</i> or <i>"dbms notes"</i>\n`;
-  msg += `  📌 Use the course abbreviation — <i>"oop"</i>, <i>"dsa"</i>, <i>"os"</i>\n`;
-  msg += `  📌 Try a different spelling\n\n`;
-  msg += `<i>Know a channel with this content? Tap 📢 Recommend Channel.</i>\n`;
+// ─── report prompt ────────────────────────────────────────────────────────────
+function renderReportPrompt(
+  resource,
+  queryHash,
+  page,
+  resultIndex,
+  activeFilter = "all"
+) {
+  const title = getTitle(resource);
+  let msg = `⚠️ <b>Report an Issue with this Resource</b>\n\n`;
+  msg += `📄 <b>${title}</b>\n\n`;
+  msg += `Please select the issue you encountered:\n`;
   msg += `<code>─────────────────────</code>`;
-  return msg;
+
+  const id = resource._id.toString();
+  const backCallback = `num_${queryHash}_${page}_${resultIndex}_${activeFilter}`;
+
+  const keyboard = [
+    [
+      Markup.button.callback("❌ Download Failed", `repsub_${id}_download_failed`),
+      Markup.button.callback("🔒 Password Locked", `repsub_${id}_password_locked`),
+    ],
+    [
+      Markup.button.callback("📑 Corrupt / Blank", `repsub_${id}_corrupt_content`),
+      Markup.button.callback("🏷️ Wrong Subject", `repsub_${id}_wrong_subject`),
+    ],
+    [Markup.button.callback("◀ Cancel", backCallback)],
+  ];
+
+  return { text: msg, keyboard };
+}
+
+function renderReportSubmitted(backCallback) {
+  let msg = `<code>─────────────────────</code>\n`;
+  msg += `✅ <b>Report Submitted!</b>\n\n`;
+  msg += `Thank you for keeping StudyHub clean and accurate. Our team will review this resource.\n`;
+  msg += `<code>─────────────────────</code>`;
+
+  const keyboard = [
+    [Markup.button.callback("◀ Back to Material", backCallback)],
+  ];
+
+  return { text: msg, keyboard };
+}
+
+// ─── no results ───────────────────────────────────────────────────────────────
+function renderNoResults(query, suggestionItems = []) {
+  let msg = `<code>─────────────────────</code>\n`;
+  msg += `🔍 <b>No direct matches for "${escapeHTML(query)}"</b>\n\n`;
+
+  const keyboard = [];
+
+  if (suggestionItems && suggestionItems.length > 0) {
+    msg += `💡 <b>Did you mean one of these?</b>\n`;
+    msg += `<i>Tap below to search with the corrected term:</i>\n`;
+
+    suggestionItems.forEach((item) => {
+      let label = item.query;
+      if (label.length > 28) label = label.substring(0, 27) + "…";
+      keyboard.push([
+        Markup.button.callback(
+          `💡 Did you mean: "${label}"?`,
+          `qsearch_${item.hash}`
+        ),
+      ]);
+    });
+  } else {
+    msg += `<b>Try these tips:</b>\n`;
+    msg += `  📌 Use shorter keywords — <i>"dbms"</i> not <i>"database management system"</i>\n`;
+    msg += `  📌 Add a type hint — <i>"dbms exam"</i> or <i>"dbms notes"</i>\n`;
+    msg += `  📌 Use the course abbreviation — <i>"oop"</i>, <i>"dsa"</i>, <i>"os"</i>\n`;
+    msg += `  📌 Try a different spelling\n\n`;
+    msg += `<i>Know a channel with this content? Tap 📢 Recommend Channel.</i>\n`;
+  }
+
+  msg += `<code>─────────────────────</code>`;
+  const result = { text: msg, keyboard };
+  result.toString = () => msg;
+  return result;
 }
 
 // ─── resource unavailable error ───────────────────────────────────────────────
@@ -241,14 +386,95 @@ function welcomeReturning(user) {
   return `${greeting}\n\nType anything to search.`;
 }
 
+// ─── search screen prompt ─────────────────────────────────────────────────────
+function renderSearchPrompt(recentItems = [], suggestionItems = []) {
+  const hasRecent = recentItems && recentItems.length > 0;
+
+  let msg = `🔍 <b>Search Academic Materials</b>\n\n`;
+  msg += `Type any course name, code, or topic to search:\n`;
+  msg += `  • <i>"dbms exam"</i>\n`;
+  msg += `  • <i>"python slides"</i>\n`;
+  msg += `  • <i>"physics mid"</i>\n\n`;
+
+  const keyboard = [];
+
+  if (hasRecent) {
+    msg += `🕒 <b>Recent Searches:</b>\n`;
+    msg += `<i>Tap any button to search again:</i>`;
+
+    const recentRows = [];
+    let currentRow = [];
+
+    recentItems.forEach((item) => {
+      let label = item.query;
+      if (label.length > 20) label = label.substring(0, 19) + "…";
+      const btn = Markup.button.callback(`🕒 ${label}`, `qsearch_${item.hash}`);
+
+      if (label.length <= 14 && currentRow.length < 2) {
+        currentRow.push(btn);
+        if (currentRow.length === 2) {
+          recentRows.push(currentRow);
+          currentRow = [];
+        }
+      } else {
+        if (currentRow.length > 0) {
+          recentRows.push(currentRow);
+          currentRow = [];
+        }
+        recentRows.push([btn]);
+      }
+    });
+
+    if (currentRow.length > 0) {
+      recentRows.push(currentRow);
+    }
+
+    keyboard.push(...recentRows);
+    keyboard.push([
+      Markup.button.callback("🗑️ Clear Search History", "clear_search_history"),
+    ]);
+  } else {
+    msg += `💡 <b>Popular Searches & Topics:</b>\n`;
+    msg += `<i>Tap a suggestion below or type your own:</i>`;
+
+    const sugRows = [];
+    let currentRow = [];
+
+    suggestionItems.forEach((item) => {
+      let label = item.query;
+      if (label.length > 20) label = label.substring(0, 19) + "…";
+      const btn = Markup.button.callback(`💡 ${label}`, `qsearch_${item.hash}`);
+
+      currentRow.push(btn);
+      if (currentRow.length === 2) {
+        sugRows.push(currentRow);
+        currentRow = [];
+      }
+    });
+
+    if (currentRow.length > 0) {
+      sugRows.push(currentRow);
+    }
+
+    keyboard.push(...sugRows);
+  }
+
+  return { text: msg, keyboard };
+}
+
 module.exports = {
   renderListTemplate,
   renderNumberButtons,
   renderNavButtons,
+  renderFilterPills,
   renderDetailCard,
   renderFileDelivered,
   renderNoResults,
   renderError,
+  renderSearchPrompt,
+  renderReportPrompt,
+  renderReportSubmitted,
+  isCampusResource,
   welcomeNew,
   welcomeReturning,
   escapeHTML,

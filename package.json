@@ -12,9 +12,10 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "test",
+    "test": "node test-search.js",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "archive": "node scripts/backfill-archive.js"
   },
   "dependencies": {
     "axios": "^1.17.0",

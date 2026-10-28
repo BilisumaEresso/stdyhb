@@ -133,6 +133,7 @@ async function searchGitHub(query) {
       headers: {
         "User-Agent": "StudyHub-Bot",
         Accept: "application/vnd.github.v3+json",
+        ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
       },
       timeout: 8000,
     });

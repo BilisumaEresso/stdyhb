@@ -63,27 +63,85 @@ class SearchService {
   }
 
   /**
+   * Extract a clean, human-readable title from image captions
+   */
+  cleanCaptionTitle(caption) {
+    if (!caption) return "Exam Material";
+    const lines = caption
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => {
+        if (!line || line.startsWith("http") || line.startsWith("@")) return false;
+        // Must contain at least some letters or numbers in any language
+        return /[\p{L}\p{N}]/u.test(line);
+      });
+
+    if (lines.length === 0) return "Exam Material";
+
+    let title = "";
+    for (const l of lines) {
+      let candidate = l
+        .replace(/@\w+/g, "")
+        .replace(/https?:\/\/\S+/g, "")
+        .replace(/#\w+/g, "")
+        .replace(/[^\p{L}\p{N}\s\-()[\].,:'"]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (candidate.length >= 4) {
+        title = candidate;
+        break;
+      }
+    }
+
+    if (!title && lines[0]) {
+      title = lines[0].substring(0, 50).trim();
+    }
+
+    if (title.length > 55) title = title.substring(0, 54) + "…";
+    return title || "Exam Material";
+  }
+
+  /**
    * Detect search intent from query
    */
   detectIntent(query) {
+    const q = query.toLowerCase();
     const intent = {
       exam: false,
+      ppt: false,
+      pdf: false,
+      doc: false,
       notes: false,
       simple: false,
       assignmentLab: false,
       year: null,
+      explicitFormat: false,
     };
 
-    if (/\b(mid|midterm|final|exam|exam paper|past paper|previous exam|test|quiz)\b/i.test(query)) {
+    if (/\b(ppt|pptx|slide|slides|powerpoint|presentation)\b/i.test(q)) {
+      intent.ppt = true;
+      intent.explicitFormat = true;
+    }
+    if (/\b(pdf|book|textbook)\b/i.test(q)) {
+      intent.pdf = true;
+      intent.explicitFormat = true;
+    }
+    if (/\b(doc|docx|word|document)\b/i.test(q)) {
+      intent.doc = true;
+      intent.explicitFormat = true;
+    }
+
+    if (/\b(mid|midterm|final|exam|exam paper|past paper|previous exam|test|quiz)\b/i.test(q)) {
       intent.exam = true;
     }
-    if (/\b(note|notes|slide|slides|ppt|handout|lecture note|lecture notes|pdf)\b/i.test(query)) {
+    if (/\b(note|notes|handout|lecture note|lecture notes)\b/i.test(q)) {
       intent.notes = true;
     }
-    if (/\b(summary|short|easy|cheat sheet|quick review|revision|compact|brief)\b/i.test(query)) {
+    if (/\b(summary|short|easy|cheat sheet|quick review|revision|compact|brief)\b/i.test(q)) {
       intent.simple = true;
     }
-    if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(query)) {
+    if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(q)) {
       intent.assignmentLab = true;
     }
 
@@ -102,17 +160,41 @@ class SearchService {
     let score = (textScore || 0) * 10; // Base score from MongoDB text index
 
     const queryLower = query.toLowerCase();
-    const queryWords = queryLower.split(/\s+/);
+    const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
 
     // Tag intersection boost
     if (resource.tags && resource.tags.length > 0) {
       const intersection = resource.tags.filter(tag => queryWords.includes(tag.toLowerCase()));
-      score += intersection.length * 15; // +15 per matching tag
+      score += intersection.length * 20; // +20 per matching tag
     }
 
-    // Intent scoring
+    const isImageGroup = (resource.groupId && resource.fileType === "image") || resource._isGrouped;
+
+    // Explicit format matching vs Default Exam Photo Set Priority
+    if (intent.explicitFormat) {
+      if (intent.ppt && resource.fileType === "ppt") score += 200;
+      if (intent.pdf && resource.fileType === "pdf") score += 200;
+      if (intent.doc && resource.fileType === "doc") score += 200;
+    } else {
+      // User did not specify a format: PRIORITIZE EXAM PHOTO SETS & IMAGES!
+      if (isImageGroup) {
+        score += 160; // Top priority for exam photo bundles
+      } else if (resource.fileType === "image" && resource.isExam) {
+        score += 100;
+      } else if (resource.fileType === "pdf") {
+        score += 30;
+      } else if (resource.fileType === "ppt") {
+        score += 20;
+      } else if (resource.fileType === "doc") {
+        score += 15;
+      }
+    }
+
+    // Exam boost
     if (intent.exam && resource.isExam) {
-      score += 150; // Massively boost exams
+      score += 80;
+    } else if (!intent.explicitFormat && resource.isExam) {
+      score += 50;
     }
 
     if (intent.notes && (resource.fileType === "ppt" || resource.fileType === "doc" || resource.fileType === "pdf")) {
@@ -133,29 +215,26 @@ class SearchService {
     }
 
     // Personalization scoring
-if (
-  user &&
-  user.university &&
-  resource.university &&
-  resource.university.toLowerCase() === user.university.toLowerCase()
-) {
-  score += 80; // Boost own university
-}
+    if (
+      user &&
+      user.university &&
+      resource.university &&
+      resource.university.toLowerCase() === user.university.toLowerCase()
+    ) {
+      score += 80; // Boost own university
+    }
+
+    // Demote advertisements / commercial promotions in images
+    if (resource.caption && /\b(#ad|#advertisement|#advetisement|sponsored|አስጠኚ ይፈልጋሉ|ኮርስ ለመግዛት)\b/i.test(resource.caption)) {
+      score -= 150;
+    }
+
     // Boost by popularity
     if (resource.downloadCount && resource.downloadCount > 0) {
       score += Math.min(resource.downloadCount * 2, 50);
     }
 
-    // Base score by file type
-    if (resource.fileType === "pdf") {
-      score += 30;
-    } else if (resource.fileType === "ppt") {
-      score += 20;
-    } else if (resource.fileType === "doc") {
-      score += 15;
-    }
-
-    return Math.max(0, score); // Don't go negative
+    return Math.max(0, score);
   }
 
   /**
@@ -165,25 +244,74 @@ if (
     try {
       console.log(`  📱 Searching Telegram resources...`);
 
-      const results = await TelegramResource.find(
-        { $text: { $search: query }, isAvailable: { $ne: false } },
-        { score: { $meta: "textScore" } }
-      )
-        .sort({ score: { $meta: "textScore" } })
-        .limit(limit);
+      // Clean search string of boolean/syntax artifacts for MongoDB text search
+      const cleanSearch = query.replace(/[()]/g, " ").trim();
+
+      // Partitioned search: Guarantee both images/image groups and documents are retrieved
+      const [images, docs] = await Promise.all([
+        TelegramResource.find(
+          { $text: { $search: cleanSearch }, fileType: "image", isAvailable: { $ne: false } },
+          { score: { $meta: "textScore" } }
+        )
+          .sort({ score: { $meta: "textScore" } })
+          .limit(100)
+          .catch(() => []),
+        TelegramResource.find(
+          { $text: { $search: cleanSearch }, fileType: { $ne: "image" }, isAvailable: { $ne: false } },
+          { score: { $meta: "textScore" } }
+        )
+          .sort({ score: { $meta: "textScore" } })
+          .limit(100)
+          .catch(() => []),
+      ]);
+
+      let results = [...images, ...docs];
+
+      // If text index found fewer than 5 images, do a targeted caption search for exam photo sets
+      if (images.length < 5) {
+        const queryKeywords = cleanSearch
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 2 && w !== "exam" && w !== "notes" && w !== "mid" && w !== "final");
+        if (queryKeywords.length > 0) {
+          const keywordRegex = new RegExp(queryKeywords.join("|"), "i");
+          const fallbackImages = await TelegramResource.find({
+            fileType: "image",
+            caption: { $regex: keywordRegex },
+            isAvailable: { $ne: false },
+          })
+            .limit(40)
+            .catch(() => []);
+
+          if (fallbackImages.length > 0) {
+            results = results.concat(fallbackImages);
+          }
+        }
+      }
 
       if (results.length === 0) {
         console.log(`  📱 Telegram: No results found`);
         return [];
       }
 
+      // Deduplicate results by _id
+      const uniqueDocs = new Map();
+      for (const doc of results) {
+        uniqueDocs.set(doc._id.toString(), doc);
+      }
+
       // Score and prioritize results
-      const scoredResults = results.map((resource) => {
-        const textScore = resource.get('score');
+      const scoredResults = Array.from(uniqueDocs.values()).map((resource) => {
+        const textScore = resource.get ? resource.get("score") : 5;
         const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user);
 
+        const computedTitle =
+          resource.fileName ||
+          this.cleanCaptionTitle(resource.caption) ||
+          "Untitled Resource";
+
         return {
-          title: resource.title || resource.fileName || "Unnamed",
+          title: computedTitle,
           url: `https://t.me/${resource.channelUsername}/${resource.messageId}`,
           source: "telegram",
           type: this.mapFileTypeToResourceType(resource.fileType),
@@ -194,10 +322,13 @@ if (
           groupId: resource.groupId,
           caption: resource.caption,
           tags: resource.tags,
-          downloadCount: resource.downloadCount,
+          downloadCount: resource.downloadCount || 0,
           messageDate: resource.messageDate,
           fileName: resource.fileName,
           fileType: resource.fileType,
+          fileSize: resource.fileSize || 0,
+          groupTotal: resource.groupTotal || 1,
+          archiveMessageId: resource.archiveMessageId,
           _telegramResource: true,
           _id: resource._id,
         };
@@ -205,7 +336,7 @@ if (
 
       scoredResults.sort((a, b) => b.score - a.score);
 
-      const topResults = scoredResults.slice(0, 200);
+      const topResults = scoredResults.slice(0, limit);
       console.log(`  ✅ Telegram: ${topResults.length} qualified results`);
       if (topResults.length > 0) {
         console.log(`     Top: "${topResults[0].title}" (score: ${topResults[0].score})`);
@@ -346,9 +477,6 @@ if (
       const intent = this.detectIntent(normalizedQuery);
       logger.log("Intent", intent);
 
-      // Kick off GitHub search in parallel so its timeout overlaps with Telegram searches
-      const githubPromise = searchGitHub(correctedQuery).catch(err => []);
-
       // Primary search with corrected & expanded query
       console.log(`\n📱 PHASE 1: Primary Telegram search...`);
       let allResults = await this.searchTelegramResources(expanded.expanded, intent, user, logger, 200);
@@ -417,12 +545,11 @@ if (
         }
       }
 
-      // Finally, try GitHub search if less than 3 results from Telegram
+      // Finally, try GitHub search if no results found from Telegram
       if (allResults.length === 0) {
         console.log(`\n🐙 PHASE 2: GitHub search fallback...`);
         logger.log("Fallback used", "github_search");
-        // Await the promise we started at the top
-        const gitHubResults = await githubPromise;
+        const gitHubResults = await searchGitHub(correctedQuery).catch(() => []);
 
         const scoredGitHub = gitHubResults.map((result) => ({
           ...result,
@@ -449,11 +576,12 @@ if (
              if (seenGroups.has(r.groupId)) continue;
              seenGroups.add(r.groupId);
              r._isGrouped = true;
-             r.groupSize = r.groupTotal;
+             r.groupSize = r.groupTotal || 1;
           }
           collapsed.push(r);
         }
         allResults = collapsed;
+        allResults.sort((a, b) => b.score - a.score);
       }
 
       // Return top 200 for pagination
