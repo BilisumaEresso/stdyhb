@@ -490,10 +490,219 @@ function renderChannelManagerView({ channels, page, totalPages, totalCount, filt
   return { text, keyboard: Markup.inlineKeyboard(inlineKeyboard) };
 }
 
+const USERS_PER_PAGE = 6;
+
+/**
+ * Fetch paginated users and metrics for the admin user manager
+ */
+async function getUserManagerData(page = 0, filter = "all") {
+  let query = {};
+  if (filter === "active") {
+    query = {
+      lastActive: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+    };
+  } else if (filter === "banned") {
+    query = { isBanned: true };
+  } else if (filter === "aastu") {
+    query = { university: { $regex: /^AASTU/i } };
+  } else if (filter === "aau") {
+    query = { university: { $regex: /^AAU/i } };
+  } else if (filter === "astu") {
+    query = { university: { $regex: /^ASTU/i } };
+  }
+
+  const totalRegistered = await User.countDocuments();
+  const newToday = await User.countDocuments({
+    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  });
+  const activeToday = await User.countDocuments({
+    lastActive: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  });
+  const bannedCount = await User.countDocuments({ isBanned: true });
+
+  const totalCount = await User.countDocuments(query);
+  const totalPages = Math.max(1, Math.ceil(totalCount / USERS_PER_PAGE));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+
+  const users = await User.find(query)
+    .sort({ lastActive: -1 })
+    .skip(safePage * USERS_PER_PAGE)
+    .limit(USERS_PER_PAGE);
+
+  return {
+    users,
+    totalCount,
+    totalPages,
+    page: safePage,
+    filter,
+    metrics: {
+      totalRegistered,
+      newToday,
+      activeToday,
+      bannedCount,
+    },
+  };
+}
+
+/**
+ * Render the full paginated user manager dashboard view
+ */
+function renderUserManagerView(data) {
+  const { users, totalCount, totalPages, page, filter, metrics } = data;
+  const filterTitles = {
+    all: "👥 All Students",
+    active: "⚡ Active (30d)",
+    banned: "🚫 Banned / Suspended",
+    aastu: "🏛️ AASTU",
+    aau: "🏛️ AAU",
+    astu: "🏛️ ASTU",
+  };
+
+  const filterRow1 = [
+    Markup.button.callback(
+      filter === "all" ? "• 👥 All •" : "👥 All",
+      "adm_usr_flt_all",
+    ),
+    Markup.button.callback(
+      filter === "active" ? "• ⚡ Active •" : "⚡ Active",
+      "adm_usr_flt_active",
+    ),
+    Markup.button.callback(
+      filter === "banned" ? "• 🚫 Banned •" : "🚫 Banned",
+      "adm_usr_flt_banned",
+    ),
+  ];
+
+  const filterRow2 = [
+    Markup.button.callback(
+      filter === "aastu" ? "• 🏛️ AASTU •" : "🏛️ AASTU",
+      "adm_usr_flt_aastu",
+    ),
+    Markup.button.callback(
+      filter === "aau" ? "• 🏛️ AAU •" : "🏛️ AAU",
+      "adm_usr_flt_aau",
+    ),
+    Markup.button.callback(
+      filter === "astu" ? "• 🏛️ ASTU •" : "🏛️ ASTU",
+      "adm_usr_flt_astu",
+    ),
+  ];
+
+  let text = `👥 <b>User Management & Metrics</b> (Page ${page + 1}/${totalPages} · ${totalCount.toLocaleString()} total)\n`;
+  text += `Filter: <b>${filterTitles[filter] || filter}</b>\n\n`;
+  text += `📊 Registered: <b>${metrics.totalRegistered.toLocaleString()}</b> · ⚡ Active: <b>${metrics.activeToday}</b> · 🚫 Banned: <b>${metrics.bannedCount}</b>\n\n`;
+
+  if (users.length === 0) {
+    text += `<i>No users found matching this filter.</i>\n\n`;
+  }
+
+  const buttons = [];
+
+  users.forEach((u, idx) => {
+    const itemNum = page * USERS_PER_PAGE + idx + 1;
+    const name =
+      [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+      u.username ||
+      `User ${u.telegramId}`;
+    const handle = u.username ? `@${u.username}` : `ID:${u.telegramId}`;
+    const uni = u.university || "Unset";
+    const statusIcon = u.isBanned ? "🚫" : "🟢";
+    const lastActive = u.lastActive
+      ? new Date(u.lastActive).toLocaleDateString()
+      : "Never";
+
+    text += `${itemNum}. ${statusIcon} <b>${escapeHtml(name)}</b> (${escapeHtml(handle)})\n`;
+    text += `   🏛️ ${escapeHtml(uni)} | 🔍 <b>${u.searchCount || 0}</b> searches | ⏱ ${lastActive}\n\n`;
+
+    buttons.push([
+      Markup.button.callback(
+        `🔍 Inspect ${name.substring(0, 14)}`,
+        `adm_usr_inspect_${u._id}_${page}_${filter}`,
+      ),
+      Markup.button.callback(
+        u.isBanned ? "✅ Unban" : "🚫 Ban",
+        `adm_usr_ban_${u._id}_${page}_${filter}`,
+      ),
+    ]);
+  });
+
+  // Filter rows
+  buttons.push(filterRow1);
+  buttons.push(filterRow2);
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (page > 0) {
+      navRow.push(
+        Markup.button.callback("◀ Prev", `adm_usr_page_${page - 1}_${filter}`),
+      );
+    }
+    navRow.push(
+      Markup.button.callback(`📄 ${page + 1}/${totalPages}`, "adm_usr_noop"),
+    );
+    if (page < totalPages - 1) {
+      navRow.push(
+        Markup.button.callback("Next ▶", `adm_usr_page_${page + 1}_${filter}`),
+      );
+    }
+    buttons.push(navRow);
+  }
+
+  buttons.push([
+    Markup.button.callback("◀ Back to Admin Panel", "adm_panel_main"),
+  ]);
+
+  return { text, keyboard: Markup.inlineKeyboard(buttons) };
+}
+
+/**
+ * Format official warning notice sub-panel view
+ */
+function renderUserWarningView(user, page = 0, filter = "all") {
+  const name =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.username ||
+    `User ${user.telegramId}`;
+
+  let text = `⚠️ <b>Send Official Warning Notice</b>\n\n`;
+  text += `Target Student: <b>${escapeHtml(name)}</b> (ID: <code>${user.telegramId}</code>)\n\n`;
+  text += `Select a warning preset to deliver to this student's private chat from StudyHub:\n`;
+
+  const buttons = [
+    [
+      Markup.button.callback(
+        "⚠️ Excessive / Spam Searches",
+        `adm_usr_sendwarn_${user._id}_spam_${page}_${filter}`,
+      ),
+    ],
+    [
+      Markup.button.callback(
+        "ℹ️ Community Policy Reminder",
+        `adm_usr_sendwarn_${user._id}_policy_${page}_${filter}`,
+      ),
+    ],
+    [
+      Markup.button.callback(
+        "🚫 Terms of Service Violation",
+        `adm_usr_sendwarn_${user._id}_terms_${page}_${filter}`,
+      ),
+    ],
+    [
+      Markup.button.callback(
+        "◀ Cancel & Back",
+        `adm_usr_inspect_${user._id}_${page}_${filter}`,
+      ),
+    ],
+  ];
+
+  return { text, keyboard: Markup.inlineKeyboard(buttons) };
+}
+
 /**
  * Format an interactive user profile card with recent searches and 1-tap Ban/Unban toggle
  */
-function renderUserProfileCard(user, recentSearches = []) {
+function renderUserProfileCard(user, recentSearches = [], page = 0, filter = "all") {
   const name =
     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     "Unnamed Student";
@@ -551,7 +760,18 @@ function renderUserProfileCard(user, recentSearches = []) {
   }
 
   buttons.push([
-    Markup.button.callback("👥 Back to Users", "adm_users"),
+    Markup.button.callback(
+      "⚠️ Send Warning",
+      `adm_usr_warn_${user._id}_${page}_${filter}`,
+    ),
+    Markup.button.callback(
+      "🗑️ Clear History",
+      `adm_usr_clearhist_${user._id}_${page}_${filter}`,
+    ),
+  ]);
+
+  buttons.push([
+    Markup.button.callback("👥 Back to Users", `adm_usr_page_${page}_${filter}`),
     Markup.button.callback("◀ Admin Panel", "adm_panel_main"),
   ]);
 
@@ -1565,82 +1785,69 @@ const registerAdminPanelHandlers = (bot) => {
     }),
   );
 
-  // 👥 USER LIST & RECENT ACTIVITY
+  // 👥 USER LIST & PAGINATED USER MANAGER
+  const handleUserManagerView = async (ctx, page = 0, filter = "all") => {
+    try {
+      const data = await getUserManagerData(page, filter);
+      const view = renderUserManagerView(data);
+      await ctx
+        .editMessageText(view.text, {
+          parse_mode: "HTML",
+          ...view.keyboard,
+        })
+        .catch(async () => {
+          await ctx.reply(view.text, {
+            parse_mode: "HTML",
+            ...view.keyboard,
+          });
+        });
+      await ctx.answerCbQuery().catch(() => {});
+    } catch (err) {
+      console.error("[ADM-USERS] Error:", err);
+      await ctx.answerCbQuery("❌ Error loading user manager", { show_alert: true });
+    }
+  };
+
   bot.action(
     "adm_users",
     requireAdmin(async (ctx) => {
-      try {
-        const total = await User.countDocuments();
-        const newToday = await User.countDocuments({
-          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        });
-        const activeToday = await User.countDocuments({
-          lastActive: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        });
-        const bannedCount = await User.countDocuments({ isBanned: true });
+      await handleUserManagerView(ctx, 0, "all");
+    }),
+  );
 
-        // Retrieve 5 most recently active students
-        const recentUsers = await User.find({})
-          .sort({ lastActive: -1 })
-          .limit(5);
+  bot.action(
+    /^adm_usr_page_(\d+)_([a-z]+)$/,
+    requireAdmin(async (ctx) => {
+      const page = parseInt(ctx.match[1], 10);
+      const filter = ctx.match[2];
+      await handleUserManagerView(ctx, page, filter);
+    }),
+  );
 
-        let message =
-          `👥 <b>User Management & Metrics</b>\n\n` +
-          `👥 Total Registered: <b>${total.toLocaleString()}</b>\n` +
-          `🆕 Joined Today: <b>${newToday}</b>\n` +
-          `⚡ Active Today: <b>${activeToday}</b>\n` +
-          `🚫 Suspended / Banned: <b>${bannedCount}</b>\n\n` +
-          `<b>Recent Students:</b>\n`;
+  bot.action(
+    /^adm_usr_flt_([a-z]+)$/,
+    requireAdmin(async (ctx) => {
+      const filter = ctx.match[1];
+      await handleUserManagerView(ctx, 0, filter);
+    }),
+  );
 
-        const buttons = [];
-
-        recentUsers.forEach((u, i) => {
-          const name = u.firstName || u.username || `User ${u.telegramId}`;
-          const uni = u.university ? ` (${u.university})` : "";
-          const status = u.isBanned ? "🚫" : "🟢";
-          message += `${i + 1}. ${status} <b>${escapeHtml(name)}</b>${uni} · ID: <code>${u.telegramId}</code>\n`;
-
-          buttons.push([
-            Markup.button.callback(
-              `🔍 Inspect ${name.substring(0, 16)}`,
-              `adm_usr_inspect_${u._id}`,
-            ),
-          ]);
-        });
-
-        message += `\n<i>Tip: Use <code>/user &lt;id_or_username&gt;</code> to inspect any user directly.</i>`;
-
-        buttons.push([
-          Markup.button.callback("◀ Back to Admin Panel", "adm_panel_main"),
-        ]);
-
-        const keyboard = Markup.inlineKeyboard(buttons);
-
-        await ctx
-          .editMessageText(message, {
-            parse_mode: "HTML",
-            ...keyboard,
-          })
-          .catch(async () => {
-            await ctx.reply(message, {
-              parse_mode: "HTML",
-              ...keyboard,
-            });
-          });
-        await ctx.answerCbQuery();
-      } catch (error) {
-        console.error("[ADM-USERS] Error:", error);
-        await ctx.answerCbQuery("❌ Error loading users", { show_alert: true });
-      }
+  bot.action(
+    "adm_usr_noop",
+    requireAdmin(async (ctx) => {
+      await ctx.answerCbQuery();
     }),
   );
 
   // Inspect user profile
   bot.action(
-    /^adm_usr_inspect_([a-f0-9]+)$/,
+    /^adm_usr_inspect_([a-f0-9]+)(?:_(\d+)_([a-z]+))?$/,
     requireAdmin(async (ctx) => {
       try {
         const userId = ctx.match[1];
+        const page = ctx.match[2] !== undefined ? parseInt(ctx.match[2], 10) : 0;
+        const filter = ctx.match[3] || "all";
+
         const user = await User.findById(userId);
         if (!user) {
           return ctx.answerCbQuery("⚠️ User not found", { show_alert: true });
@@ -1650,7 +1857,7 @@ const registerAdminPanelHandlers = (bot) => {
           .sort({ searchedAt: -1 })
           .limit(4);
 
-        const view = renderUserProfileCard(user, recentSearches);
+        const view = renderUserProfileCard(user, recentSearches, page, filter);
 
         await ctx
           .editMessageText(view.text, {
@@ -1675,10 +1882,13 @@ const registerAdminPanelHandlers = (bot) => {
 
   // Toggle Ban / Unban user
   bot.action(
-    /^adm_usr_ban_([a-f0-9]+)$/,
+    /^adm_usr_ban_([a-f0-9]+)(?:_(\d+)_([a-z]+))?$/,
     requireAdmin(async (ctx) => {
       try {
         const userId = ctx.match[1];
+        const page = ctx.match[2] !== undefined ? parseInt(ctx.match[2], 10) : 0;
+        const filter = ctx.match[3] || "all";
+
         const user = await User.findById(userId);
         if (!user) {
           return ctx.answerCbQuery("⚠️ User not found", { show_alert: true });
@@ -1692,11 +1902,16 @@ const registerAdminPanelHandlers = (bot) => {
           user.isBanned ? "🚫 User suspended/banned!" : "✅ User unbanned!",
         );
 
+        // If called from the user manager list directly, refresh the list view
+        if (ctx.match[2] !== undefined) {
+          return await handleUserManagerView(ctx, page, filter);
+        }
+
         const recentSearches = await SearchHistory.find({ userId: user._id })
           .sort({ searchedAt: -1 })
           .limit(4);
 
-        const view = renderUserProfileCard(user, recentSearches);
+        const view = renderUserProfileCard(user, recentSearches, page, filter);
 
         await ctx
           .editMessageText(view.text, {
@@ -1712,6 +1927,135 @@ const registerAdminPanelHandlers = (bot) => {
       } catch (error) {
         console.error("[ADM-USR-BAN] Error:", error);
         await ctx.answerCbQuery("❌ Error toggling ban", { show_alert: true });
+      }
+    }),
+  );
+
+  // Open warning selection view
+  bot.action(
+    /^adm_usr_warn_([a-f0-9]+)(?:_(\d+)_([a-z]+))?$/,
+    requireAdmin(async (ctx) => {
+      try {
+        const userId = ctx.match[1];
+        const page = ctx.match[2] !== undefined ? parseInt(ctx.match[2], 10) : 0;
+        const filter = ctx.match[3] || "all";
+
+        const user = await User.findById(userId);
+        if (!user) {
+          return ctx.answerCbQuery("⚠️ User not found", { show_alert: true });
+        }
+
+        const view = renderUserWarningView(user, page, filter);
+        await ctx
+          .editMessageText(view.text, {
+            parse_mode: "HTML",
+            ...view.keyboard,
+          })
+          .catch(async () => {
+            await ctx.reply(view.text, {
+              parse_mode: "HTML",
+              ...view.keyboard,
+            });
+          });
+        await ctx.answerCbQuery();
+      } catch (err) {
+        console.error("[ADM-USR-WARN] Error:", err);
+        await ctx.answerCbQuery("❌ Error loading warning options", { show_alert: true });
+      }
+    }),
+  );
+
+  // Send selected official warning
+  bot.action(
+    /^adm_usr_sendwarn_([a-f0-9]+)_(spam|policy|terms)(?:_(\d+)_([a-z]+))?$/,
+    requireAdmin(async (ctx) => {
+      try {
+        const userId = ctx.match[1];
+        const warnType = ctx.match[2];
+        const page = ctx.match[3] !== undefined ? parseInt(ctx.match[3], 10) : 0;
+        const filter = ctx.match[4] || "all";
+
+        const user = await User.findById(userId);
+        if (!user) {
+          return ctx.answerCbQuery("⚠️ User not found", { show_alert: true });
+        }
+
+        const warningTexts = {
+          spam: "⚠️ <b>Official Notice from StudyHub Admins</b>\n\nWe detected unusually high or automated search traffic from your account. Please pace your requests to avoid temporary suspension.",
+          policy: "ℹ️ <b>StudyHub Community Policy Reminder</b>\n\nPlease ensure your interactions with the bot and channels follow our academic guidelines. Thank you for using StudyHub responsibly!",
+          terms: "⚠️ <b>Warning: Terms of Service Violation</b>\n\nYour account has been flagged for activities violating our terms of service. Continued violations will result in permanent account suspension.",
+        };
+
+        const msgText = warningTexts[warnType] || warningTexts.policy;
+        await ctx.telegram
+          .sendMessage(user.telegramId, msgText, { parse_mode: "HTML" })
+          .catch(() => {});
+
+        await ctx.answerCbQuery("✅ Warning delivered to student's private chat!", {
+          show_alert: true,
+        });
+
+        // Return to user inspector profile card
+        const recentSearches = await SearchHistory.find({ userId: user._id })
+          .sort({ searchedAt: -1 })
+          .limit(4);
+
+        const view = renderUserProfileCard(user, recentSearches, page, filter);
+        await ctx
+          .editMessageText(view.text, {
+            parse_mode: "HTML",
+            ...view.keyboard,
+          })
+          .catch(async () => {
+            await ctx.reply(view.text, {
+              parse_mode: "HTML",
+              ...view.keyboard,
+            });
+          });
+      } catch (err) {
+        console.error("[ADM-USR-SENDWARN] Error:", err);
+        await ctx.answerCbQuery("❌ Error sending warning", { show_alert: true });
+      }
+    }),
+  );
+
+  // Clear search history for user
+  bot.action(
+    /^adm_usr_clearhist_([a-f0-9]+)(?:_(\d+)_([a-z]+))?$/,
+    requireAdmin(async (ctx) => {
+      try {
+        const userId = ctx.match[1];
+        const page = ctx.match[2] !== undefined ? parseInt(ctx.match[2], 10) : 0;
+        const filter = ctx.match[3] || "all";
+
+        const user = await User.findById(userId);
+        if (!user) {
+          return ctx.answerCbQuery("⚠️ User not found", { show_alert: true });
+        }
+
+        await SearchHistory.deleteMany({ userId: user._id });
+        user.searchCount = 0;
+        await user.save();
+
+        await ctx.answerCbQuery("🗑️ Search history and count reset!", {
+          show_alert: true,
+        });
+
+        const view = renderUserProfileCard(user, [], page, filter);
+        await ctx
+          .editMessageText(view.text, {
+            parse_mode: "HTML",
+            ...view.keyboard,
+          })
+          .catch(async () => {
+            await ctx.reply(view.text, {
+              parse_mode: "HTML",
+              ...view.keyboard,
+            });
+          });
+      } catch (err) {
+        console.error("[ADM-USR-CLEARHIST] Error:", err);
+        await ctx.answerCbQuery("❌ Error clearing history", { show_alert: true });
       }
     }),
   );
@@ -1872,6 +2216,27 @@ const channelsCommand = async (ctx) => {
 };
 
 const listChannelsCommand = channelsCommand;
+
+/**
+ * /users [filter] — open interactive user manager
+ */
+const usersCommand = async (ctx) => {
+  try {
+    const rawText = ctx.message?.text || "";
+    const args = rawText.split(" ").slice(1);
+    const filter = args[0] ? args[0].toLowerCase() : "all";
+    const data = await getUserManagerData(0, filter);
+    const view = renderUserManagerView(data);
+
+    return ctx.reply(view.text, {
+      parse_mode: "HTML",
+      ...view.keyboard,
+    });
+  } catch (error) {
+    console.error("[UsersCommand] Error:", error);
+    return ctx.reply("❌ Error loading user manager.");
+  }
+};
 
 /**
  * /user <id_or_username> — inspect student profile, activity, and ban controls
@@ -2189,6 +2554,10 @@ module.exports = {
   channelsCommand,
   renderUserProfileCard,
   userInspectorCommand,
+  getUserManagerData,
+  renderUserManagerView,
+  renderUserWarningView,
+  usersCommand,
   renderIndexerDiagnosticsView,
   indexStatusCommand,
   addChannelCommand,

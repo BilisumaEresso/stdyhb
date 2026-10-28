@@ -410,10 +410,10 @@ function normalizeForwarded(fwd) {
    return fwd;
 }
 
-function startChatAction(ctx, userId, actionType = 'upload_document') {
-  ctx.telegram.sendChatAction(userId, actionType).catch(() => {});
+function startChatAction(ctx, targetChatId, actionType = 'upload_document') {
+  ctx.telegram.sendChatAction(targetChatId, actionType).catch(() => {});
   return setInterval(() => {
-    ctx.telegram.sendChatAction(userId, actionType).catch(() => {});
+    ctx.telegram.sendChatAction(targetChatId, actionType).catch(() => {});
   }, 4500);
 }
 
@@ -477,6 +477,7 @@ async function autoArchiveGroup(tg, images, resource, archiveChatId) {
 
 async function handleDownload(ctx, resourceId) {
   const userId = ctx.from.id;
+  const targetChatId = ctx.chat ? ctx.chat.id : userId;
   const requestKey = `${userId}_${resourceId}`;
 
   if (activeUserRequests.has(requestKey)) {
@@ -501,7 +502,7 @@ async function handleDownload(ctx, resourceId) {
     }
 
     const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
-    if (ctx.chat.id === relayGroupId) {
+    if (ctx.chat && ctx.chat.id === relayGroupId) {
       activeUserRequests.delete(requestKey);
       if (ctx.callbackQuery) {
         return await ctx.answerCbQuery("❌ Test in the bot's private chat.", { show_alert: true });
@@ -509,7 +510,7 @@ async function handleDownload(ctx, resourceId) {
       return await ctx.reply("❌ Test in the bot's private chat.");
     }
 
-    const actionInterval = startChatAction(ctx, userId, resource.fileType === 'image' ? 'upload_photo' : 'upload_document');
+    const actionInterval = startChatAction(ctx, targetChatId, resource.fileType === 'image' ? 'upload_photo' : 'upload_document');
     const statusMsg = await ctx.reply("⏳ <i>Securely retrieving your file...</i>", { parse_mode: "HTML" });
 
 
@@ -568,7 +569,7 @@ async function handleDownload(ctx, resourceId) {
       if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
       }
     }
@@ -576,7 +577,7 @@ async function handleDownload(ctx, resourceId) {
     if (!forwardedMessages || forwardedMessages.length === 0 || !forwardedMessages[0].id) {
        clearInterval(actionInterval);
        activeUserRequests.delete(requestKey);
-       await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+       await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
        return;
     }
 
@@ -584,9 +585,17 @@ async function handleDownload(ctx, resourceId) {
 
     if (recentRelayMessages.has(newMsgId)) {
         clearInterval(actionInterval);
-        await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await ctx.telegram.copyMessage(userId, relayGroupId, newMsgId, { caption: "" }).catch(() => {});
-        await ctx.telegram.deleteMessage(userId, statusMsg.message_id).catch(() => {});
+        try {
+          await ctx.telegram.sendMessage(targetChatId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
+          await ctx.telegram.copyMessage(targetChatId, relayGroupId, newMsgId, { caption: "" });
+          await ctx.telegram.deleteMessage(targetChatId, statusMsg.message_id).catch(() => {});
+        } catch (deliverErr) {
+          if (targetChatId !== userId) {
+            await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" }).catch(() => {});
+            await ctx.telegram.copyMessage(userId, relayGroupId, newMsgId, { caption: "" }).catch(() => {});
+            await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, "ℹ️ Sent to your private chat (media restricted in this group).").catch(() => {});
+          }
+        }
         await ctx.telegram.deleteMessage(relayGroupId, newMsgId).catch(() => {});
         activeUserRequests.delete(requestKey);
         recordSuccessfulDelivery(userId, resource, "download");
@@ -596,12 +605,13 @@ async function handleDownload(ctx, resourceId) {
             clearInterval(pendingDeliveries.get(newMsgId).actionInterval);
             pendingDeliveries.delete(newMsgId);
             activeUserRequests.delete(requestKey);
-            await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+            await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
           }
         }, 30000);
 
         pendingDeliveries.set(newMsgId, {
           userId,
+          targetChatId,
           statusMsgId: statusMsg.message_id,
           resourceId,
           requestKey,
@@ -617,7 +627,7 @@ async function handleDownload(ctx, resourceId) {
   }
 }
 
-async function sendGroupToUser(ctx, userId, relayGroupId, msgIds, resource = null) {
+async function sendGroupToUser(ctx, targetChatId, relayGroupId, msgIds, resource = null) {
   try {
     const rawTitle = resource
       ? resource.fileName || resource.caption || "Exam Paper"
@@ -658,7 +668,7 @@ async function sendGroupToUser(ctx, userId, relayGroupId, msgIds, resource = nul
           parse_mode: "HTML",
         }));
 
-        await ctx.telegram.sendMediaGroup(userId, mediaGroup);
+        await ctx.telegram.sendMediaGroup(targetChatId, mediaGroup);
         if (i + CHUNK_SIZE < fileIds.length) {
           await new Promise((r) => setTimeout(r, 300));
         }
@@ -666,7 +676,7 @@ async function sendGroupToUser(ctx, userId, relayGroupId, msgIds, resource = nul
       return;
     } else if (fileIds.length === 1 && msgIds.length === 1) {
       const caption = `🎓 <b>${templates.escapeHTML(cleanTitle)}</b>${channelInfo}`;
-      await ctx.telegram.sendPhoto(userId, fileIds[0], {
+      await ctx.telegram.sendPhoto(targetChatId, fileIds[0], {
         caption,
         parse_mode: "HTML",
       });
@@ -682,7 +692,7 @@ async function sendGroupToUser(ctx, userId, relayGroupId, msgIds, resource = nul
   // Fallback: sequential copyMessage
   for (const id of msgIds) {
     await ctx.telegram
-      .copyMessage(userId, relayGroupId, id, { caption: "" })
+      .copyMessage(targetChatId, relayGroupId, id, { caption: "" })
       .catch(() => {});
     await new Promise((r) => setTimeout(r, 150));
   }
@@ -690,6 +700,7 @@ async function sendGroupToUser(ctx, userId, relayGroupId, msgIds, resource = nul
 
 async function handleGroupDownload(ctx, resourceId) {
   const userId = ctx.from.id;
+  const targetChatId = ctx.chat ? ctx.chat.id : userId;
   const requestKey = `${userId}_${resourceId}`;
 
   if (activeUserRequests.has(requestKey)) {
@@ -714,7 +725,7 @@ async function handleGroupDownload(ctx, resourceId) {
     }
 
     const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
-    if (ctx.chat.id === relayGroupId) {
+    if (ctx.chat && ctx.chat.id === relayGroupId) {
       activeUserRequests.delete(requestKey);
       if (ctx.callbackQuery) {
         return await ctx.answerCbQuery("❌ Test in the bot's private chat.", { show_alert: true });
@@ -733,7 +744,7 @@ async function handleGroupDownload(ctx, resourceId) {
       return await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
     }
 
-    const actionInterval = startChatAction(ctx, userId, 'upload_photo');
+    const actionInterval = startChatAction(ctx, targetChatId, 'upload_photo');
     const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${images.length} images...</i>`, { parse_mode: "HTML" });
 
 
@@ -796,7 +807,7 @@ async function handleGroupDownload(ctx, resourceId) {
       if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
       }
     }
@@ -804,7 +815,7 @@ async function handleGroupDownload(ctx, resourceId) {
     if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
         return;
     }
 
@@ -812,7 +823,7 @@ async function handleGroupDownload(ctx, resourceId) {
     if (newMsgIds.length === 0) {
          clearInterval(actionInterval);
          activeUserRequests.delete(requestKey);
-         await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+         await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
          return;
     }
 
@@ -826,9 +837,17 @@ async function handleGroupDownload(ctx, resourceId) {
 
     if (arrived.length === expectedMsgIds.size) {
         clearInterval(actionInterval);
-        await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await sendGroupToUser(ctx, userId, relayGroupId, arrived, resource);
-        await ctx.telegram.deleteMessage(userId, statusMsg.message_id).catch(() => {});
+        try {
+          await ctx.telegram.sendMessage(targetChatId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
+          await sendGroupToUser(ctx, targetChatId, relayGroupId, arrived, resource);
+          await ctx.telegram.deleteMessage(targetChatId, statusMsg.message_id).catch(() => {});
+        } catch (grpErr) {
+          if (targetChatId !== userId) {
+            await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" }).catch(() => {});
+            await sendGroupToUser(ctx, userId, relayGroupId, arrived, resource).catch(() => {});
+            await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, "ℹ️ Sent to your private chat (media restricted in this group).").catch(() => {});
+          }
+        }
         for (const id of arrived) {
              await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
         }
@@ -842,22 +861,32 @@ async function handleGroupDownload(ctx, resourceId) {
                 pendingGroups.delete(requestKey);
                 activeUserRequests.delete(requestKey);
 
+                const destChatId = pg.targetChatId || pg.userId;
                 if (pg.arrived.length > 0) {
-                    await ctx.telegram.sendMessage(userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-                    await sendGroupToUser(ctx, userId, relayGroupId, pg.arrived, resource);
-                    await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, `⚠️ Sent ${pg.arrived.length} of ${pg.expectedMsgIds.size} images.`).catch(() => {});
+                    try {
+                      await ctx.telegram.sendMessage(destChatId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
+                      await sendGroupToUser(ctx, destChatId, relayGroupId, pg.arrived, resource);
+                      await ctx.telegram.editMessageText(destChatId, statusMsg.message_id, null, `⚠️ Sent ${pg.arrived.length} of ${pg.expectedMsgIds.size} images.`).catch(() => {});
+                    } catch (err2) {
+                      if (destChatId !== pg.userId) {
+                        await ctx.telegram.sendMessage(pg.userId, templates.renderFileDelivered(resource.channelUsername || "Private Channel"), { parse_mode: "HTML" }).catch(() => {});
+                        await sendGroupToUser(ctx, pg.userId, relayGroupId, pg.arrived, resource).catch(() => {});
+                        await ctx.telegram.editMessageText(destChatId, statusMsg.message_id, null, "ℹ️ Sent to your private chat (media restricted in this group).").catch(() => {});
+                      }
+                    }
                     for (const id of pg.arrived) {
                          await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
                     }
                     recordSuccessfulDelivery(userId, resource, "view_set");
                 } else {
-                    await ctx.telegram.editMessageText(userId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+                    await ctx.telegram.editMessageText(destChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
                 }
             }
         }, 30000);
 
         pendingGroups.set(requestKey, {
             userId,
+            targetChatId,
             statusMsgId: statusMsg.message_id,
             expectedMsgIds,
             arrived,
@@ -1167,9 +1196,18 @@ function registerFileDeliveryHandlers(bot) {
         pendingDeliveries.delete(msgId);
         activeUserRequests.delete(pending.requestKey);
 
-        await ctx.telegram.sendMessage(pending.userId, templates.renderFileDelivered(pending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-        await ctx.telegram.copyMessage(pending.userId, relayGroupId, msgId, { caption: "" }).catch(() => {});
-        await ctx.telegram.deleteMessage(pending.userId, pending.statusMsgId).catch(() => {});
+        const destChatId = pending.targetChatId || pending.userId;
+        try {
+          await ctx.telegram.sendMessage(destChatId, templates.renderFileDelivered(pending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
+          await ctx.telegram.copyMessage(destChatId, relayGroupId, msgId, { caption: "" });
+          await ctx.telegram.deleteMessage(destChatId, pending.statusMsgId).catch(() => {});
+        } catch (targetErr) {
+          if (destChatId !== pending.userId) {
+            await ctx.telegram.sendMessage(pending.userId, templates.renderFileDelivered(pending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" }).catch(() => {});
+            await ctx.telegram.copyMessage(pending.userId, relayGroupId, msgId, { caption: "" }).catch(() => {});
+            await ctx.telegram.editMessageText(destChatId, pending.statusMsgId, null, "ℹ️ Sent to your private chat (media restricted in this group).").catch(() => {});
+          }
+        }
         await ctx.telegram.deleteMessage(relayGroupId, msgId).catch(() => {});
         recordSuccessfulDelivery(pending.userId, pending.resource, "download");
       }
@@ -1185,9 +1223,18 @@ function registerFileDeliveryHandlers(bot) {
             pendingGroups.delete(key);
             activeUserRequests.delete(groupPending.requestKey);
 
-            await ctx.telegram.sendMessage(groupPending.userId, templates.renderFileDelivered(groupPending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
-            await sendGroupToUser(ctx, groupPending.userId, relayGroupId, groupPending.arrived, groupPending.resource);
-            await ctx.telegram.deleteMessage(groupPending.userId, groupPending.statusMsgId).catch(() => {});
+            const destChatId = groupPending.targetChatId || groupPending.userId;
+            try {
+              await ctx.telegram.sendMessage(destChatId, templates.renderFileDelivered(groupPending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" });
+              await sendGroupToUser(ctx, destChatId, relayGroupId, groupPending.arrived, groupPending.resource);
+              await ctx.telegram.deleteMessage(destChatId, groupPending.statusMsgId).catch(() => {});
+            } catch (targetErr) {
+              if (destChatId !== groupPending.userId) {
+                await ctx.telegram.sendMessage(groupPending.userId, templates.renderFileDelivered(groupPending.resource.channelUsername || "Private Channel"), { parse_mode: "HTML" }).catch(() => {});
+                await sendGroupToUser(ctx, groupPending.userId, relayGroupId, groupPending.arrived, groupPending.resource).catch(() => {});
+                await ctx.telegram.editMessageText(destChatId, groupPending.statusMsgId, null, "ℹ️ Sent to your private chat (media restricted in this group).").catch(() => {});
+              }
+            }
             for (const id of groupPending.arrived) {
                  await ctx.telegram.deleteMessage(relayGroupId, id).catch(() => {});
             }

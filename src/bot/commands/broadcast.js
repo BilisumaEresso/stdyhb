@@ -47,12 +47,15 @@ function parseButtons(content) {
   const textLines = [];
 
   for (const line of lines) {
-    if (line.startsWith("BUTTON:")) {
-      const parts = line.substring("BUTTON:".length).trim().split("|");
+    const trimmed = line.trim();
+    if (trimmed.startsWith("BUTTON:")) {
+      const parts = trimmed.substring("BUTTON:".length).trim().split("|");
       if (parts.length === 2) {
         const label = parts[0].trim();
         const url = parts[1].trim();
-        buttons.push(Markup.button.url(label, url));
+        if (label && url.startsWith("http")) {
+          buttons.push(Markup.button.url(label, url));
+        }
       }
     } else {
       textLines.push(line);
@@ -60,9 +63,25 @@ function parseButtons(content) {
   }
 
   return {
-    text: textLines.join("\n"),
+    text: textLines.join("\n").trim(),
     buttons,
   };
+}
+
+/**
+ * Adjust entity offsets when a command prefix like "/broadcast " is stripped
+ */
+function adjustEntities(entities, prefixLength) {
+  if (!entities || !Array.isArray(entities) || entities.length === 0) return undefined;
+  const adjusted = [];
+  for (const ent of entities) {
+    if (ent.offset < prefixLength) continue;
+    adjusted.push({
+      ...ent,
+      offset: ent.offset - prefixLength,
+    });
+  }
+  return adjusted.length > 0 ? adjusted : undefined;
 }
 
 /**
@@ -76,12 +95,27 @@ function renderBroadcastPreview(broadcast, broadcastId) {
     AUDIENCE_OPTIONS[0];
   const count = broadcast.audienceCount || 0;
 
+  const typeIcon = {
+    text: "📝 TEXT",
+    photo: "🖼️ PHOTO",
+    video: "🎥 VIDEO",
+    animation: "🎞️ GIF",
+    document: "📁 DOCUMENT",
+    audio: "🎵 AUDIO",
+    voice: "🎙️ VOICE",
+  }[broadcast.type] || "📄 MESSAGE";
+
   let text = `📤 <b>Broadcast Preview</b>\n\n`;
   text += `🎯 <b>Audience:</b> ${audience.label} (<b>${count.toLocaleString()}</b> students)\n`;
-  text += `📁 <b>Type:</b> ${broadcast.type.toUpperCase()}\n\n`;
-  text += `------------------------------------\n`;
-  text += cleanText;
-  text += `\n------------------------------------\n`;
+  text += `📁 <b>Type:</b> ${typeIcon}\n`;
+  if (broadcast.isReply) {
+    text += `🔗 <i>Delivering replied message with 100% native formatting & media.</i>\n`;
+  }
+  text += `\n─────────────────────\n`;
+  text += cleanText
+    ? (cleanText.length > 500 ? cleanText.substring(0, 497) + "..." : cleanText)
+    : "<i>(Media message without caption)</i>";
+  text += `\n─────────────────────\n`;
 
   if (buttons.length > 0) {
     text += `\n<i>[+ ${buttons.length} attached URL button(s)]</i>`;
@@ -133,47 +167,153 @@ function renderBroadcastPreview(broadcast, broadcastId) {
  */
 async function broadcastCommand(ctx) {
   try {
-    const rawText = ctx.message?.text || "";
-    const text = rawText.replace(/^\/broadcast\b/, "").trim();
-    const photo = ctx.message?.photo;
-    const video = ctx.message?.video;
+    const replyMsg = ctx.message?.reply_to_message;
+    const isReply = Boolean(replyMsg);
+    const targetMsg = isReply ? replyMsg : ctx.message;
+
+    // Check command parameters for buttons: e.g. /broadcast BUTTON: Join | https://t.me/...
+    const commandText = (ctx.message?.text || ctx.message?.caption || "").trim();
+    const commandParams = commandText.replace(/^\/broadcast\b/, "").trim();
+    const { buttons: commandButtons } = parseButtons(commandParams);
 
     let broadcastType = "text";
-    let content = text;
     let fileId = null;
-    let caption = null;
+    let content = "";
+    let caption = "";
+    let entities = undefined;
+    let captionEntities = undefined;
+    let sourceMsgId = isReply ? replyMsg.message_id : null;
+    let allButtons = [...commandButtons];
 
-    if (photo && photo.length > 0) {
+    if (targetMsg.photo && targetMsg.photo.length > 0) {
       broadcastType = "photo";
-      fileId = photo[photo.length - 1].file_id;
-      caption = ctx.message.caption || text || "";
-    } else if (video) {
+      fileId = targetMsg.photo[targetMsg.photo.length - 1].file_id;
+      const rawCaption = targetMsg.caption || "";
+      if (!isReply && rawCaption.startsWith("/broadcast")) {
+        const stripped = rawCaption.replace(/^\/broadcast\b/, "").trim();
+        const parsed = parseButtons(stripped);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = adjustEntities(targetMsg.caption_entities, rawCaption.indexOf(stripped));
+      } else {
+        const parsed = parseButtons(rawCaption);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = targetMsg.caption_entities;
+      }
+    } else if (targetMsg.video) {
       broadcastType = "video";
-      fileId = video.file_id;
-      caption = ctx.message.caption || text || "";
+      fileId = targetMsg.video.file_id;
+      const rawCaption = targetMsg.caption || "";
+      if (!isReply && rawCaption.startsWith("/broadcast")) {
+        const stripped = rawCaption.replace(/^\/broadcast\b/, "").trim();
+        const parsed = parseButtons(stripped);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = adjustEntities(targetMsg.caption_entities, rawCaption.indexOf(stripped));
+      } else {
+        const parsed = parseButtons(rawCaption);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = targetMsg.caption_entities;
+      }
+    } else if (targetMsg.document) {
+      broadcastType = "document";
+      fileId = targetMsg.document.file_id;
+      const rawCaption = targetMsg.caption || "";
+      if (!isReply && rawCaption.startsWith("/broadcast")) {
+        const stripped = rawCaption.replace(/^\/broadcast\b/, "").trim();
+        const parsed = parseButtons(stripped);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = adjustEntities(targetMsg.caption_entities, rawCaption.indexOf(stripped));
+      } else {
+        const parsed = parseButtons(rawCaption);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = targetMsg.caption_entities;
+      }
+    } else if (targetMsg.animation) {
+      broadcastType = "animation";
+      fileId = targetMsg.animation.file_id;
+      const rawCaption = targetMsg.caption || "";
+      if (!isReply && rawCaption.startsWith("/broadcast")) {
+        const stripped = rawCaption.replace(/^\/broadcast\b/, "").trim();
+        const parsed = parseButtons(stripped);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = adjustEntities(targetMsg.caption_entities, rawCaption.indexOf(stripped));
+      } else {
+        const parsed = parseButtons(rawCaption);
+        caption = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        captionEntities = targetMsg.caption_entities;
+      }
+    } else if (targetMsg.audio) {
+      broadcastType = "audio";
+      fileId = targetMsg.audio.file_id;
+      const rawCaption = targetMsg.caption || "";
+      caption = rawCaption;
+      captionEntities = targetMsg.caption_entities;
+    } else if (targetMsg.voice) {
+      broadcastType = "voice";
+      fileId = targetMsg.voice.file_id;
+      const rawCaption = targetMsg.caption || "";
+      caption = rawCaption;
+      captionEntities = targetMsg.caption_entities;
+    } else if (targetMsg.text) {
+      broadcastType = "text";
+      if (!isReply) {
+        const rawText = targetMsg.text || "";
+        const stripped = rawText.replace(/^\/broadcast\b/, "").trim();
+        const parsed = parseButtons(stripped);
+        content = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        const offset = rawText.indexOf(stripped);
+        entities = adjustEntities(targetMsg.entities, offset >= 0 ? offset : 0);
+      } else {
+        const parsed = parseButtons(targetMsg.text);
+        content = parsed.text;
+        allButtons = [...allButtons, ...parsed.buttons];
+        entities = targetMsg.entities;
+      }
     }
 
-    if (!content && !fileId) {
+    if (!content && !fileId && !sourceMsgId) {
       return ctx.reply(
-        "❌ <b>No content provided.</b>\n\nUsage:\n<code>/broadcast &lt;message&gt;</code>\n\nOptional buttons:\n<code>BUTTON: Join Channel | https://t.me/channel</code>\n\nYou can also attach a photo or video with a caption.",
-        { parse_mode: "HTML" },
+        "📢 <b>StudyHub Multi-Format Broadcast</b>\n\n" +
+        "You can broadcast in 3 easy ways:\n\n" +
+        "1️⃣ <b>Reply-to-Broadcast (Recommended):</b>\n" +
+        "• Send or forward ANY post (photo, video, PDF document, GIF, audio, or formatted text with links).\n" +
+        "• Reply to it with <code>/broadcast</code>.\n" +
+        "• <i>Optional buttons:</i> <code>/broadcast BUTTON: Visit Site | https://example.com</code>\n\n" +
+        "2️⃣ <b>Direct Media with Caption:</b>\n" +
+        "• Send a photo, video, or PDF with caption:\n" +
+        "  <code>/broadcast Exam schedules updated!</code>\n\n" +
+        "3️⃣ <b>Direct Text:</b>\n" +
+        "• Send: <code>/broadcast Your announcement here</code>\n" +
+        "  <code>BUTTON: Join | https://t.me/channel</code>",
+        { parse_mode: "HTML" }
       );
     }
 
-    const { text: cleanText, buttons } = parseButtons(content || caption);
     const broadcastId = Date.now().toString(36);
     const totalUsers = await getAudienceCount("all");
 
     const broadcast = {
       type: broadcastType,
-      content: cleanText,
+      content,
       fileId,
-      caption: caption || cleanText,
-      buttons,
+      caption: caption || content,
+      entities,
+      captionEntities,
+      buttons: allButtons,
       targetAudience: "all",
       audienceCount: totalUsers,
       adminChatId: ctx.chat.id,
       adminMsgId: null,
+      sourceMsgId,
+      isReply,
       startTime: Date.now(),
     };
 
@@ -278,21 +418,59 @@ function registerBroadcastHandlers(bot) {
                 .reply_markup
             : undefined;
 
-          if (broadcast.type === "photo") {
+          if (broadcast.sourceMsgId) {
+            await ctx.telegram.copyMessage(
+              user.telegramId,
+              broadcast.adminChatId,
+              broadcast.sourceMsgId,
+              { reply_markup: buttonMarkup },
+            );
+          } else if (broadcast.type === "photo") {
             await ctx.telegram.sendPhoto(user.telegramId, broadcast.fileId, {
               caption: broadcast.caption,
-              parse_mode: "HTML",
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
               reply_markup: buttonMarkup,
             });
           } else if (broadcast.type === "video") {
             await ctx.telegram.sendVideo(user.telegramId, broadcast.fileId, {
               caption: broadcast.caption,
-              parse_mode: "HTML",
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
+              reply_markup: buttonMarkup,
+            });
+          } else if (broadcast.type === "document") {
+            await ctx.telegram.sendDocument(user.telegramId, broadcast.fileId, {
+              caption: broadcast.caption,
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
+              reply_markup: buttonMarkup,
+            });
+          } else if (broadcast.type === "animation") {
+            await ctx.telegram.sendAnimation(user.telegramId, broadcast.fileId, {
+              caption: broadcast.caption,
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
+              reply_markup: buttonMarkup,
+            });
+          } else if (broadcast.type === "audio") {
+            await ctx.telegram.sendAudio(user.telegramId, broadcast.fileId, {
+              caption: broadcast.caption,
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
+              reply_markup: buttonMarkup,
+            });
+          } else if (broadcast.type === "voice") {
+            await ctx.telegram.sendVoice(user.telegramId, broadcast.fileId, {
+              caption: broadcast.caption,
+              caption_entities: broadcast.captionEntities,
+              parse_mode: broadcast.captionEntities ? undefined : "HTML",
               reply_markup: buttonMarkup,
             });
           } else {
             await ctx.telegram.sendMessage(user.telegramId, broadcast.content, {
-              parse_mode: "HTML",
+              entities: broadcast.entities,
+              parse_mode: broadcast.entities ? undefined : "HTML",
               reply_markup: buttonMarkup,
             });
           }

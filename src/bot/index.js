@@ -168,8 +168,16 @@ bot.command("pendingchannels", adminCommands.isAdmin, adminCommands.pendingChann
 bot.command("reports", adminCommands.isAdmin, adminCommands.reportsCommand);
 bot.command("archive", adminCommands.isAdmin, adminCommands.archiveCommand);
 bot.command("user", adminCommands.isAdmin, adminCommands.userInspectorCommand);
+bot.command("users", adminCommands.isAdmin, adminCommands.usersCommand);
 bot.command("indexstatus", adminCommands.isAdmin, adminCommands.indexStatusCommand);
 bot.command("broadcast", adminCommands.isAdmin, broadcastCommand);
+bot.on("message", (ctx, next) => {
+  const caption = ctx.message?.caption;
+  if (caption && caption.trim().startsWith("/broadcast")) {
+    return adminCommands.isAdmin(ctx, () => broadcastCommand(ctx));
+  }
+  return next();
+});
 adminCommands.registerAdminActionHandlers(bot);
 adminCommands.registerAdminPanelHandlers(bot);
 registerBroadcastHandlers(bot);
@@ -189,23 +197,67 @@ bot.on("text", async (ctx, next) => {
   const text = ctx.message.text.trim();
   const relayGroupId = parseInt(process.env.RELAY_GROUP_ID);
 
+  // 1. Never intercept messages sent via inline bots (prevent recursive re-search)
+  if (ctx.message.via_bot) return next();
+
+  // 2. Ignore commands or relay group internal traffic
   if (text.startsWith("/")) return next();
   if (ctx.chat.id === relayGroupId) return next();
 
-  if (text === LABELS.SEARCH) {
-    return showSearchScreen(ctx);
-  } else if (text === LABELS.SAVES) {
-    return savesCommand(ctx);
-  } else if (text === LABELS.RECOMMEND) {
-    return ctx.scene.enter("recommendChannel");
-  } else if (text === LABELS.PROFILE) {
-    return profileCommand(ctx);
-  } else if (text === LABELS.TRENDING) {
-    return trendingCommand(ctx);
-  } else if (text === LABELS.HELP) {
-    return helpCommand(ctx);
+  // 3. Handle persistent keyboard buttons (only in private chat)
+  if (ctx.chat.type === "private") {
+    if (text === LABELS.SEARCH) {
+      return showSearchScreen(ctx);
+    } else if (text === LABELS.SAVES) {
+      return savesCommand(ctx);
+    } else if (text === LABELS.RECOMMEND) {
+      return ctx.scene.enter("recommendChannel");
+    } else if (text === LABELS.PROFILE) {
+      return profileCommand(ctx);
+    } else if (text === LABELS.TRENDING) {
+      return trendingCommand(ctx);
+    } else if (text === LABELS.HELP) {
+      return helpCommand(ctx);
+    }
   }
 
+  // 4. Group / Supergroup privacy filter:
+  // In groups, DO NOT treat casual conversation as search queries.
+  // Only trigger if bot is mentioned by username or if replying to the bot.
+  if (ctx.chat.type !== "private") {
+    const botUsername =
+      (ctx.botInfo && ctx.botInfo.username) ||
+      process.env.BOT_USERNAME ||
+      "StudyHubBot";
+
+    const mentionPrefix = `@${botUsername.toLowerCase()}`;
+    const textLower = text.toLowerCase();
+    const isMentioned = textLower.startsWith(mentionPrefix);
+    const isReplyToBot =
+      ctx.message.reply_to_message &&
+      ctx.message.reply_to_message.from &&
+      ctx.message.reply_to_message.from.is_bot &&
+      ctx.message.reply_to_message.from.username?.toLowerCase() === botUsername.toLowerCase();
+
+    if (isMentioned) {
+      const strippedQuery = text.substring(mentionPrefix.length).trim();
+      if (strippedQuery.length >= 2) {
+        return await performSearch(ctx, strippedQuery);
+      } else {
+        return await ctx.reply(
+          `💡 <b>How to search in groups:</b>\nType <code>@${botUsername} &lt;subject&gt;</code> or <code>/search &lt;subject&gt;</code>\n<i>Example: /search general physics</i>`,
+          { parse_mode: "HTML" }
+        );
+      }
+    } else if (isReplyToBot && text.length >= 2) {
+      return await performSearch(ctx, text);
+    } else {
+      // Regular group chatter — ignore!
+      return next();
+    }
+  }
+
+  // 5. Private chat text search:
   if (text.length < 2) return next();
 
   // Smart channel detection — intercept before search
