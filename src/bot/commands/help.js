@@ -60,7 +60,7 @@ function renderHelpHub(isAdmin = false) {
   const contactUrl =
     process.env.ADMIN_TELEGRAM_URL ||
     process.env.DEVELOPER_TELEGRAM_URL ||
-    "https://t.me/Ethiel_Academy";
+    "https://t.me/+251938730818";
 
   const rows = [
     [
@@ -182,7 +182,7 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
   const contactUrl =
     process.env.ADMIN_TELEGRAM_URL ||
     process.env.DEVELOPER_TELEGRAM_URL ||
-    "https://t.me/Ethiel_Academy";
+    "https://t.me/+251938730818";
 
   let text = `ℹ️ <b>About StudyHub</b>\n\n`;
   text += `StudyHub is an academic search engine and open educational repository indexer built for Ethiopian university students.\n\n`;
@@ -199,7 +199,10 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
   text += `• 🏛️ Supported Campuses: AASTU, AAU, ASTU, Hawassa, Jimma, Bahir Dar & more\n\n`;
 
   text += `⚖️ <b>Open Access Mission:</b>\n`;
-  text += `StudyHub does not host files on private servers; it indexes and curates publicly shared educational resources from Telegram channels to ensure every student has equal access to past exams and study materials.`;
+  text += `StudyHub does not host files on private servers; it indexes and curates publicly shared educational resources from Telegram channels to ensure every student has equal access to past exams and study materials.\n\n`;
+
+  text += `📬 <b>Feedback & Direct Contact:</b>\n`;
+  text += `Have suggestions, want your channel indexed, or found an issue? Reach out on Telegram: <a href="${contactUrl}">+251 938 730 818</a>`;
 
   const rows = [
     [
@@ -227,7 +230,9 @@ function renderDeveloperView(isAdmin = false) {
   const contactUrl =
     process.env.DEVELOPER_TELEGRAM_URL ||
     process.env.ADMIN_TELEGRAM_URL ||
-    "https://t.me/Ethiel_Academy";
+    "https://t.me/+251938730818";
+  const phone = process.env.DEVELOPER_PHONE || "+251938730818";
+  const formattedPhone = "+251 938 730 818";
   const githubUrl =
     process.env.GITHUB_REPO_URL || "https://github.com/studyhub";
 
@@ -235,7 +240,9 @@ function renderDeveloperView(isAdmin = false) {
 
   text += `<b>Lead Engineer:</b> <b>${escapeHtml(authorName)}</b>\n`;
   text += `<b>Role:</b> Full-Stack Software Engineer & AI Systems Developer\n`;
-  text += `<b>Portfolio:</b> <a href="${portfolioUrl}">${portfolioUrl.replace(/^https?:\/\//, "")}</a>\n`;
+  text += `📞 <b>Direct Phone:</b> <code>${formattedPhone}</code>\n`;
+  text += `✈️ <b>Telegram Contact:</b> <a href="${contactUrl}">${formattedPhone}</a>\n`;
+  text += `🌐 <b>Portfolio:</b> <a href="${portfolioUrl}">${portfolioUrl.replace(/^https?:\/\//, "")}</a>\n`;
   text += `<b>Project:</b> StudyHub Academic Repository Indexer (v${packageInfo.version || "2.0.0"})\n\n`;
 
   text += `🛠 <b>Core Technologies:</b>\n`;
@@ -248,12 +255,12 @@ function renderDeveloperView(isAdmin = false) {
   text += `<i>"Educational materials should be freely accessible to every student, everywhere. StudyHub was engineered to eliminate the struggle of hunting through dozens of unorganized Telegram channels by providing instant, unified search."</i>\n\n`;
 
   text += `📬 <b>Connect & Collaborate:</b>\n`;
-  text += `Feel free to explore my portfolio, reach out for feature suggestions, channel partnerships, or open-source collaboration!`;
+  text += `Feel free to explore my portfolio or reach out on Telegram / direct call (<code>${formattedPhone}</code>) for feature suggestions, channel partnerships, or open-source collaboration!`;
 
   const rows = [
     [
       Markup.button.url("🌐 Developer Portfolio", portfolioUrl),
-      Markup.button.url("💬 Contact Billy (Telegram)", contactUrl),
+      Markup.button.url("💬 Chat on Telegram", contactUrl),
     ],
     [
       Markup.button.callback("ℹ️ About StudyHub", "about_studyhub"),

@@ -84,15 +84,29 @@ async function runTests() {
   assert.ok(devView.text.includes("Lead Engineer:"), "Lead Engineer section missing");
   assert.ok(devView.text.includes("Billy"), "Developer name Billy missing");
   assert.ok(devView.text.includes("bilisumaeresso.vercel.app"), "Developer portfolio URL missing from text");
+  assert.ok(devView.text.includes("+251 938 730 818"), "Developer phone number missing from text");
   assert.ok(devView.text.includes("Core Technologies"), "Technologies section missing");
   assert.ok(devView.text.includes("Vision & Commitment"), "Vision missing");
+  assert.ok(!devView.text.includes("Ethiel_Academy"), "Ethiel_Academy must not be in dev view text");
   
-  // Verify portfolio button exists in keyboard
+  // Verify portfolio and telegram contact buttons exist in keyboard
   const keyboardButtons = devView.keyboard.reply_markup.inline_keyboard.flat();
   const portfolioBtn = keyboardButtons.find((btn) => btn.text.includes("Portfolio"));
   assert.ok(portfolioBtn, "Portfolio button missing from keyboard");
   assert.strictEqual(portfolioBtn.url, "https://bilisumaeresso.vercel.app", "Portfolio button URL mismatch");
-  console.log("  ✓ Developer Spotlight rendered with rich profile, mission statement, and portfolio link");
+
+  const contactBtn = keyboardButtons.find((btn) => btn.text.includes("Telegram"));
+  assert.ok(contactBtn, "Telegram contact button missing from keyboard");
+  assert.strictEqual(contactBtn.url, "https://t.me/+251938730818", "Contact button URL mismatch");
+  assert.ok(!contactBtn.url.includes("Ethiel_Academy"), "Contact button URL must not link to Ethiel_Academy");
+
+  // Verify Help Hub contact button
+  const hubButtons = studentHub.keyboard.reply_markup.inline_keyboard.flat();
+  const hubContactBtn = hubButtons.find((btn) => btn.text.includes("Support"));
+  assert.ok(hubContactBtn, "Hub support button missing");
+  assert.strictEqual(hubContactBtn.url, "https://t.me/+251938730818", "Hub support URL mismatch");
+
+  console.log("  ✓ Developer Spotlight rendered with rich profile, portfolio, phone, and direct Telegram links");
 
   // 7. Test Bot Command Invocations (Message & CallbackQuery contexts)
   console.log("\n[Test 7] Verify Command Handlers (Message context)");
