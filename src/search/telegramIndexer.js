@@ -157,10 +157,52 @@ const COURSE_KEYWORDS = [
   "general chemistry",
 ];
 
-function extractTags(caption = "", fileName = "", channelUsername = "") {
+// ─── Junk / Spam / Announcement Pre-filter ───────────────────────────────────
+// Applied BEFORE any resource is indexed. If a post matches, it is silently
+// skipped — not stored in DB, not forwarded to archive.
+const JUNK_PATTERNS = [
+  // Financial scams & paid-answer services
+  /\b(telebirr|commercial\s*bank|account\s*number|cbe\s*birr|betting|forex|crypto|airdrop|airtime\s*giveaway|giveaway\s*airtime)\b/i,
+  /\b(contact\s*admin\s*for\s*answers|buy\s*exam|vip\s*channel|vip\s*group|paid\s*channel|subscription\s*fee|promo\s*code)\b/i,
+  /(ብር|ክፍያ|ዋጋ|መክፈያ|ፈተና\s*እንሸጣለን|መልስ\s*ለመግዛት)/i,
+  // Dorm/admission/registration notices (not study materials)
+  /\b(dorm\s*placement|dorm\s*assignment|orientation\s*day|admitted\s*students|placement\s*result|remedial\s*registration)\b/i,
+  /\b(vacancy|job\s*opportunity|hiring|senate\s*decision|presidential\s*directive|graduation\s*ceremony)\b/i,
+  /(ምዝገባ|ቅበላ|ዶርም\s*ምደባ|የተመደባችሁ|ቅጥር|ደመወዝ|ክፍት\s*የሥራ)/i,
+];
+
+/**
+ * Returns true if the content is junk (announcement, ad, or scam).
+ * Used as a pre-filter before any indexing or archiving.
+ */
+function isJunk(caption = "", fileName = "") {
+  const text = `${caption} ${fileName}`;
+  return JUNK_PATTERNS.some((p) => p.test(text));
+}
+
+/**
+ * Returns true if a document file has academic merit.
+ * Requires at least one course keyword in filename or caption,
+ * OR an exam keyword, OR a recognized course code pattern.
+ */
+function hasAcademicSignal(caption = "", fileName = "") {
   const cleanFileName = fileName.replace(/[_\-\.]/g, " ");
-  const combinedText =
-    `${caption} ${cleanFileName} ${channelUsername}`.toLowerCase();
+  const text = `${caption} ${cleanFileName}`.toLowerCase();
+  const hasExamWord = EXAM_KEYWORDS.some((k) => text.includes(k));
+  const hasCourseWord = COURSE_KEYWORDS.some((k) => text.includes(k));
+  const hasCourseCode = /\b[a-z]{2,5}[\s\-]?\d{2,4}\b/i.test(text);
+  return hasExamWord || hasCourseWord || hasCourseCode;
+}
+
+/**
+ * Extract tags from caption and filename ONLY.
+ * Channel username is intentionally excluded to prevent tag poisoning
+ * (e.g. @exambankfreshman tagging every post with 'exam').
+ */
+function extractTags(caption = "", fileName = "") {
+  const cleanFileName = fileName.replace(/[_\-\.]/g, " ");
+  // ✅ FIX: Use ONLY caption + fileName — NOT channelUsername
+  const combinedText = `${caption} ${cleanFileName}`.toLowerCase();
   const rawTags = [];
 
   [...EXAM_KEYWORDS, ...COURSE_KEYWORDS].forEach((k) => {
@@ -171,6 +213,7 @@ function extractTags(caption = "", fileName = "", channelUsername = "") {
 }
 
 function isExam(text = "", fileName = "") {
+  // ✅ FIX: Use ONLY caption + fileName — NOT channelUsername
   const combined = `${text} ${fileName}`.toLowerCase();
   return EXAM_KEYWORDS.some((k) => combined.includes(k));
 }
@@ -295,12 +338,26 @@ const groupCaption =
     }
 
     const caption = msgs.length > 1 ? groupCaption : msg.message || "";
-    const textToAnalyze = `${caption} ${fileName} ${channelUsername}`;
+    // ✅ FIX: textToAnalyze uses ONLY caption + fileName (not channelUsername)
+    const textToAnalyze = `${caption} ${fileName}`;
 
-    const tags = extractTags(caption, fileName, channelUsername);
+    // ── Gate 1: Reject junk / ads / announcements before indexing ──
+    if (isJunk(caption, fileName)) {
+      bSkipped++;
+      continue;
+    }
+
+    const tags = extractTags(caption, fileName);
     const exam = isExam(caption, fileName);
 
+    // ── Gate 2: Images without any academic signal are skipped ──
     if (fileType === "image" && tags.length === 0 && !exam) {
+      bSkipped++;
+      continue;
+    }
+
+    // ── Gate 3: Documents must have at least one academic signal ──
+    if (fileType !== "image" && !hasAcademicSignal(caption, fileName)) {
       bSkipped++;
       continue;
     }
@@ -790,6 +847,9 @@ module.exports = {
   processMessage,
   processMessageGroup,
   extractTags,
+  isExam,
+  isJunk,
+  hasAcademicSignal,
   extractCourseCode,
   extractYear,
   extractUniversity,
