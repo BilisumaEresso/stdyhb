@@ -1,3 +1,9 @@
+// Force IPv4 first to prevent IPv6 connect ETIMEDOUT on Render/cloud hosts
+const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const express = require("express");
@@ -50,14 +56,61 @@ async function bootstrap() {
     });
   });
 
+  // Diagnostic endpoints for Render & Webhook status
+  app.get("/webhook-info", async (req, res) => {
+    try {
+      const info = await bot.telegram.getWebhookInfo();
+      res.json({ ok: true, webhookInfo: info });
+    } catch (err) {
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
+  app.get("/set-webhook", async (req, res) => {
+    const rawUrl = req.query.url || process.env.WEBHOOK_URL;
+    if (!rawUrl) {
+      return res.status(400).json({ ok: false, message: "WEBHOOK_URL not set" });
+    }
+    const cleanUrl = rawUrl.replace(/\/+$/, "");
+    try {
+      await bot.telegram.setWebhook(`${cleanUrl}/webhook`);
+      const info = await bot.telegram.getWebhookInfo();
+      res.json({ ok: true, message: `Webhook configured at ${cleanUrl}/webhook`, webhookInfo: info });
+    } catch (err) {
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
   // Webhook vs Polling
-  const webhookUrl = process.env.WEBHOOK_URL;
+  const rawWebhookUrl = process.env.WEBHOOK_URL || "";
+  const webhookUrl = rawWebhookUrl.replace(/\/+$/, "");
+
   if (process.env.NODE_ENV === "production") {
     if (webhookUrl) {
       app.use(bot.webhookCallback("/webhook"));
-      bot.telegram.setWebhook(`${webhookUrl}/webhook`)
-        .then(() => console.log(`✅ Webhook configured at ${webhookUrl}/webhook`))
-        .catch(err => console.error("❌ Webhook configuration failed:", err));
+      
+      // Auto-retry setWebhook with exponential backoff
+      const setupWebhookWithRetry = async (retries = 5, delay = 2000) => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          try {
+            await bot.telegram.setWebhook(`${webhookUrl}/webhook`);
+            console.log(`✅ Webhook successfully configured at ${webhookUrl}/webhook`);
+            return;
+          } catch (err) {
+            console.error(`❌ Webhook configuration failed (attempt ${attempt}/${retries}):`, err.message);
+            if (attempt < retries) {
+              const waitMs = delay * attempt;
+              console.log(`   Retrying setWebhook in ${waitMs / 1000}s...`);
+              await new Promise(r => setTimeout(r, waitMs));
+            } else {
+              console.warn(`⚠️ Could not auto-set webhook from server.`);
+              console.warn(`👉 You can manually set it by visiting: ${webhookUrl}/set-webhook`);
+            }
+          }
+        }
+      };
+
+      setupWebhookWithRetry();
     } else {
       console.warn("⚠️ WEBHOOK_URL not set in .env! Bot will not receive updates.");
     }

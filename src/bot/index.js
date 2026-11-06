@@ -1,3 +1,7 @@
+const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
 const { Telegraf, session, Scenes } = require("telegraf");
 const { setBot } = require("./botInstance");
 const startCommand = require("./commands/start");
