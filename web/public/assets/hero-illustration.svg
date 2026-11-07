@@ -1,42 +1,78 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 470" fill="none">
 <defs>
- <linearGradient id="book" x1="120" y1="260" x2="490" y2="390" gradientUnits="userSpaceOnUse"><stop stop-color="#16D6A0"/><stop offset="1" stop-color="#087A60"/></linearGradient>
- <linearGradient id="paper" x1="280" y1="70" x2="480" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#DCE8F4"/></linearGradient>
- <linearGradient id="glow" x1="120" y1="80" x2="530" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#00D89B" stop-opacity=".25"/><stop offset="1" stop-color="#00D89B" stop-opacity="0"/></linearGradient>
- <filter id="shadow" x="30" y="30" width="570" height="430" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="18"/></filter>
+ <linearGradient id="book" x1="120" y1="260" x2="490" y2="390" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#0878F9"/>
+   <stop offset="1" stop-color="#082B62"/>
+ </linearGradient>
+ <linearGradient id="book-lower" x1="70" y1="350" x2="490" y2="450" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#1457B8"/>
+   <stop offset="1" stop-color="#071426"/>
+ </linearGradient>
+ <linearGradient id="paper" x1="280" y1="70" x2="480" y2="300" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#FFFFFF"/>
+   <stop offset="1" stop-color="#E8F2FF"/>
+ </linearGradient>
+ <linearGradient id="glow" x1="120" y1="80" x2="530" y2="430" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#12BCEB" stop-opacity=".22"/>
+   <stop offset="0.6" stop-color="#0878F9" stop-opacity=".12"/>
+   <stop offset="1" stop-color="#0878F9" stop-opacity="0"/>
+ </linearGradient>
+ <filter id="shadow" x="30" y="30" width="570" height="430" filterUnits="userSpaceOnUse">
+   <feGaussianBlur stdDeviation="20"/>
+ </filter>
 </defs>
-<ellipse cx="328" cy="382" rx="230" ry="50" fill="#00D89B" opacity=".16" filter="url(#shadow)"/>
-<circle cx="330" cy="220" r="205" fill="url(#glow)"/>
-<path d="M343 62c7-22 38-31 58-15l142 111c12 9 17 25 12 39l-58 186-204-44 50-277Z" fill="#0B5D4D" opacity=".55"/>
+<ellipse cx="328" cy="388" rx="230" ry="50" fill="#0878F9" opacity=".18" filter="url(#shadow)"/>
+<circle cx="330" cy="220" r="215" fill="url(#glow)"/>
+
+<!-- Background Academic Backing -->
+<path d="M343 62c7-22 38-31 58-15l142 111c12 9 17 25 12 39l-58 186-204-44 50-277Z" fill="#082B62" opacity=".45"/>
+
+<!-- Floating Organized Resource Stack Sheet -->
 <g transform="rotate(9 390 180)">
- <rect x="254" y="52" width="235" height="282" rx="22" fill="url(#paper)"/>
- <rect x="277" y="78" width="58" height="56" rx="12" fill="#F04444"/>
- <text x="306" y="112" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">PDF</text>
- <rect x="277" y="151" width="58" height="56" rx="12" fill="#F59B26"/>
- <text x="306" y="185" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">PPT</text>
- <rect x="277" y="224" width="58" height="56" rx="12" fill="#277CE8"/>
- <text x="306" y="258" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">DOC</text>
- <rect x="352" y="86" width="110" height="12" rx="6" fill="#A9B9CC"/>
- <rect x="352" y="111" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
- <rect x="352" y="159" width="110" height="12" rx="6" fill="#A9B9CC"/>
- <rect x="352" y="184" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
- <rect x="352" y="232" width="110" height="12" rx="6" fill="#A9B9CC"/>
- <rect x="352" y="257" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
+ <rect x="254" y="52" width="235" height="282" rx="22" fill="url(#paper)" stroke="#E2EAF5" stroke-width="2"/>
+ <!-- PDF Badge -->
+ <rect x="277" y="78" width="58" height="56" rx="12" fill="#EF4444"/>
+ <text x="306" y="113" fill="white" font-family="'DM Sans', Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">PDF</text>
+ <!-- PPT Badge -->
+ <rect x="277" y="151" width="58" height="56" rx="12" fill="#F97316"/>
+ <text x="306" y="186" fill="white" font-family="'DM Sans', Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">PPT</text>
+ <!-- DOC Badge -->
+ <rect x="277" y="224" width="58" height="56" rx="12" fill="#0878F9"/>
+ <text x="306" y="259" fill="white" font-family="'DM Sans', Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">DOC</text>
+ 
+ <!-- Document metadata bars -->
+ <rect x="352" y="86" width="112" height="12" rx="6" fill="#12BCEB" fill-opacity="0.35"/>
+ <rect x="352" y="110" width="94" height="9" rx="4.5" fill="#9BAEC8" fill-opacity="0.5"/>
+ 
+ <rect x="352" y="159" width="112" height="12" rx="6" fill="#12BCEB" fill-opacity="0.35"/>
+ <rect x="352" y="183" width="94" height="9" rx="4.5" fill="#9BAEC8" fill-opacity="0.5"/>
+ 
+ <rect x="352" y="232" width="112" height="12" rx="6" fill="#12BCEB" fill-opacity="0.35"/>
+ <rect x="352" y="256" width="94" height="9" rx="4.5" fill="#9BAEC8" fill-opacity="0.5"/>
 </g>
+
+<!-- Main Academic Bound Volumes / Books -->
 <g transform="rotate(-2 305 342)">
- <path d="M90 296 340 256l188 70-255 55-183-85Z" fill="#063D34"/>
- <path d="m90 296 183 85v29L90 326v-30Z" fill="#D5DDE5"/>
- <path d="m273 381 255-55v29l-255 55v-29Z" fill="#AEBBC8"/>
+ <path d="M90 296 340 256l188 70-255 55-183-85Z" fill="#082B62"/>
+ <path d="m90 296 183 85v29L90 326v-30Z" fill="#E2EAF5"/>
+ <path d="m273 381 255-55v29l-255 55v-29Z" fill="#CBD5E1"/>
  <path d="m90 296 250-40 188 70-255 55-183-85Z" fill="url(#book)"/>
- <path d="m176 303 164-26 93 34-166 29-91-37Z" fill="#0B8F70" opacity=".65"/>
- <path d="m255 298 50-8 35 13-51 9-34-14Z" fill="#7FFFD1" opacity=".8"/>
- <path d="m270 313 50-8 35 13-51 9-34-14Z" fill="#7FFFD1" opacity=".8"/>
+ <path d="m176 303 164-26 93 34-166 29-91-37Z" fill="#1457B8" opacity=".85"/>
+ <path d="m255 298 50-8 35 13-51 9-34-14Z" fill="#12BCEB" opacity=".9"/>
+ <path d="m270 313 50-8 35 13-51 9-34-14Z" fill="#FFB21A" opacity=".95"/>
 </g>
+
+<!-- Lower Book Base -->
 <g transform="rotate(-4 270 405)">
- <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="#0B6653"/>
- <path d="m70 350 201 83v19L70 370v-20Z" fill="#C9D4DE"/>
- <path d="m271 433 262-53v19l-262 53v-19Z" fill="#9EADBC"/>
- <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="url(#book)"/>
+ <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="#071426"/>
+ <path d="m70 350 201 83v20L70 370v-20Z" fill="#CBD5E1"/>
+ <path d="m271 433 262-53v20l-262 53v-20Z" fill="#94A3B8"/>
+ <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="url(#book-lower)"/>
 </g>
-<path d="m176 88 15-32 13 31M125 139l-25-18M506 85l25-19" stroke="#1BE0AA" stroke-width="9" stroke-linecap="round"/>
+
+<!-- Academic Excellence Sparks in Brand Cyan and Gold -->
+<path d="m176 88 15-32 13 31M125 139l-25-18M506 85l25-19" stroke="#12BCEB" stroke-width="8" stroke-linecap="round"/>
+<circle cx="160" cy="180" r="6" fill="#FFB21A"/>
+<circle cx="510" cy="240" r="5" fill="#20C98B"/>
+<circle cx="480" cy="100" r="4" fill="#0878F9"/>
 </svg>

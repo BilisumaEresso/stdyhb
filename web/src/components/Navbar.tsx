@@ -3,13 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Sun, Moon, Menu, X, Send } from "lucide-react";
+import { useTelegram } from "./TelegramProvider";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isInsideTelegram, triggerHaptic } = useTelegram();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem("studyhub-theme") as "light" | "dark" | null;
     const initialTheme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     setTheme(initialTheme);
@@ -17,6 +22,7 @@ export default function Navbar() {
   }, []);
 
   const toggleTheme = () => {
+    triggerHaptic?.("light");
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
@@ -29,16 +35,20 @@ export default function Navbar() {
     return false;
   };
 
+  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
+
   return (
     <header className="topbar">
       <div className="container nav">
+        {/* Brand Lockup */}
         <Link className="brand" href="/">
-          <img src="/assets/logo.svg" alt="StudyHub Logo" />
+          <img src="/assets/logo.svg" alt="StudyHub Mark" />
           <span>
             Study<span>Hub</span>
           </span>
         </Link>
 
+        {/* Desktop Navigation */}
         <nav className="navlinks">
           <Link className={isActive("/") ? "active" : ""} href="/">
             Home
@@ -54,33 +64,45 @@ export default function Navbar() {
           </Link>
         </nav>
 
+        {/* Actions */}
         <div className="navactions">
-          <a
-            className="btn btn-primary"
-            href="https://t.me/studyhub_resource_bot"
-            target="_blank"
-            rel="noreferrer"
-          >
-            ➤ &nbsp; Open Bot
-          </a>
+          {!isInsideTelegram && (
+            <a
+              className="btn btn-primary"
+              href={`https://t.me/${botUsername}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Send size={14} />
+              <span>Open Bot</span>
+            </a>
+          )}
+
+          {/* Theme Toggle Button */}
           <button
             className="btn btn-ghost"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label="Toggle color theme"
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {theme === "dark" ? "☀" : "☾"}
+            {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
+          {/* Mobile Hamburger Toggle */}
           <button
             className="btn btn-ghost mobile-menu"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Open menu"
+            onClick={() => {
+              triggerHaptic?.("light");
+              setMobileMenuOpen(!mobileMenuOpen);
+            }}
+            aria-label="Toggle navigation menu"
           >
-            ☰
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
+      {/* Mobile Drawer */}
       <nav className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`}>
         <Link
           className={isActive("/") ? "active" : ""}
@@ -110,14 +132,18 @@ export default function Navbar() {
         >
           About
         </Link>
-        <a
-          href="https://t.me/studyhub_resource_bot"
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Open Bot ↗
-        </a>
+        {!isInsideTelegram && (
+          <a
+            href={`https://t.me/${botUsername}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--primary)" }}
+          >
+            <Send size={15} />
+            <span>Open Telegram Bot ↗</span>
+          </a>
+        )}
       </nav>
     </header>
   );

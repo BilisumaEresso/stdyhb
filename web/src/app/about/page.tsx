@@ -1,85 +1,130 @@
 import Link from "next/link";
+import {
+  BookOpen,
+  Users,
+  Sparkles,
+  GraduationCap,
+  Send,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 
 export default function AboutPage() {
+  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
+
   return (
     <main>
       <section className="page-hero container">
         <span className="eyebrow">
-          <i className="dot"></i> About StudyHub
+          <span className="dot"></span> Our Mission & Platform
         </span>
         <h1>
-          Less searching.
-          <br />
-          <span className="accent">More learning.</span>
+          Making academic resources <span className="accent">easier to discover.</span>
         </h1>
         <p>
-          StudyHub helps Ethiopian university students discover academic resources from the
-          communities and channels where students already share knowledge.
+          StudyHub helps Ethiopian university students discover past examinations, lecture notes, and
+          learning materials from the campus channels where students already share knowledge.
         </p>
       </section>
 
-      <section className="container section">
+      <section className="container section" style={{ paddingTop: 0 }}>
         <div className="about-grid">
           <div>
             <h2>
-              Academic resources, <span className="accent">within reach.</span>
+              Academic knowledge, <span className="accent">within reach.</span>
             </h2>
-            <p className="muted">
-              Finding the right lecture note or past exam can take hours across disorganized chat
-              groups. StudyHub brings resource discovery into one focused experience, so students can
-              spend less time searching and more time understanding.
+            <p className="muted" style={{ lineHeight: "1.7", fontSize: "16px" }}>
+              Finding the right lecture note or past exam can take hours across disconnected Telegram chat
+              groups, bloated channels, and fragmented storage links.
             </p>
-            <p className="muted">
-              Search by subject, topic, course code, or resource type. Explore useful materials and
-              continue your study journey through a simple interface connected directly to Telegram.
+            <p className="muted" style={{ lineHeight: "1.7", fontSize: "16px" }}>
+              StudyHub aggregates and indexes educational materials into one focused academic search engine.
+              Whether you are preparing for a freshman physics midterm, reviewing computer science algorithms,
+              or looking for university exit exam papers, StudyHub brings clarity to your studies.
             </p>
-            <Link className="btn btn-primary" href="/explore" style={{ marginTop: "12px" }}>
-              Explore the library&nbsp; →
-            </Link>
+            <p className="muted" style={{ lineHeight: "1.7", fontSize: "16px" }}>
+              Search on the web with fast previews, or send materials directly to your Telegram via{" "}
+              <strong>@{botUsername}</strong> with a single tap.
+            </p>
+            <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <Link className="btn btn-primary" href="/explore">
+                <span>Explore the Library</span>
+                <ArrowRight size={15} />
+              </Link>
+              <a
+                className="btn btn-outline"
+                href={`https://t.me/${botUsername}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Send size={15} />
+                <span>Open Telegram Bot</span>
+              </a>
+            </div>
           </div>
 
           <div className="about-visual">
-            <img src="/assets/hero-illustration.svg" alt="Study materials illustration" />
+            <img
+              src="/assets/mascot.png"
+              alt="StudyHub Official Mascot — The Academic Robot"
+              style={{
+                width: "min(100%, 320px)",
+                borderRadius: "24px",
+                boxShadow: "var(--shadow)",
+                border: "1px solid var(--line)",
+              }}
+            />
           </div>
         </div>
 
+        {/* ── Product Core Values ─────────────────────────────────────── */}
         <div className="value-grid">
           <div className="value-card">
-            <div className="stat-icon">⌕</div>
-            <h3>Discover faster</h3>
-            <p className="muted">
-              A single place to search across 80,000+ academic resource collections from top Ethiopian
-              universities.
+            <div className="stat-icon">
+              <Zap size={22} />
+            </div>
+            <h3>Accessibility</h3>
+            <p className="muted" style={{ lineHeight: "1.6", fontSize: "14px" }}>
+              Open and free access to past exams and study materials for every Ethiopian university student,
+              across AAU, ASTU, AASTU, Jimma, Gondar, and more.
             </p>
           </div>
 
           <div className="value-card">
-            <div className="stat-icon">▤</div>
-            <h3>Organized learning</h3>
-            <p className="muted">
-              Browse materials through structured subjects, exam groupings, and familiar resource types.
+            <div className="stat-icon">
+              <Users size={22} />
+            </div>
+            <h3>Community Powered</h3>
+            <p className="muted" style={{ lineHeight: "1.6", fontSize: "14px" }}>
+              Built upon the collaborative spirit of campus Telegram communities, preserving notes and
+              solutions passed down through student batches.
             </p>
           </div>
 
           <div className="value-card">
-            <div className="stat-icon">➤</div>
-            <h3>Telegram connected</h3>
-            <p className="muted">
-              Seamlessly bridge web search with 1-tap delivery straight to your Telegram via{" "}
-              <strong>@studyhub_resource_bot</strong>.
+            <div className="stat-icon">
+              <Sparkles size={22} />
+            </div>
+            <h3>Simplicity & Speed</h3>
+            <p className="muted" style={{ lineHeight: "1.6", fontSize: "14px" }}>
+              Zero paywalls, zero sign-up friction, and clean multi-filter discovery designed to help you get
+              straight to studying.
             </p>
           </div>
         </div>
       </section>
 
+      {/* ── CTA Banner ──────────────────────────────────────────────── */}
       <section className="container section">
         <div className="cta">
           <div>
-            <h2>Ready to find your next resource?</h2>
-            <p>Start exploring the StudyHub resource library today.</p>
+            <h2>Ready to find your next study resource?</h2>
+            <p>Start searching past exams, slides, and lecture notes in the library today.</p>
           </div>
           <Link className="btn" href="/explore">
-            Explore resources&nbsp; →
+            <span>Explore All Materials</span>
+            <ArrowRight size={15} />
           </Link>
         </div>
       </section>

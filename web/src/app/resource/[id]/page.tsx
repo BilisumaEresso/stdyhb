@@ -4,6 +4,21 @@ import { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
+  ArrowLeft,
+  Send,
+  Download,
+  Search,
+  BookOpen,
+  Layers,
+  GraduationCap,
+  FileText,
+  Calendar,
+  Building2,
+  HardDrive,
+  Eye,
+  CheckCircle2,
+} from "lucide-react";
+import {
   ResourceItem,
   getFileStreamUrl,
   getFileDownloadUrl,
@@ -90,13 +105,13 @@ function ResourceDetailContent() {
   };
 
   const getTelegramButtonText = () => {
-    if (isPhotoAlbum) return `📥 Get all ${bundleCount} photos in Telegram`;
+    if (isPhotoAlbum) return `Get all ${bundleCount} photos in Telegram`;
     if (isDocBundle) {
-      if (resource?.fileType === "pdf") return `📥 Get all ${bundleCount} PDFs in Telegram`;
-      if (resource?.fileType === "ppt") return `📥 Get all ${bundleCount} slides in Telegram`;
-      return `📥 Get bundle (${bundleCount} files) in Telegram`;
+      if (resource?.fileType === "pdf") return `Get all ${bundleCount} PDFs in Telegram`;
+      if (resource?.fileType === "ppt") return `Get all ${bundleCount} slides in Telegram`;
+      return `Get complete bundle (${bundleCount} files)`;
     }
-    return "Open in Telegram ↗";
+    return "Open in Telegram Bot";
   };
 
   const badgeTypeClass = isPhotoAlbum
@@ -109,17 +124,24 @@ function ResourceDetailContent() {
     ? "image"
     : "pdf";
 
-  const displayTitle = resource?.caption && resource?.fileName
-    ? resource.fileName
-    : resource?.caption || resource?.fileName || "Academic Resource";
+  const displayTitle =
+    (resource as any)?.cleanTitle ||
+    (resource as any)?.title ||
+    resource?.fileName ||
+    "Academic Resource";
 
   return (
     <main>
       <section className="page-hero container">
-        <Link className="muted" href="/explore">
-          ← Back to resources
+        <Link
+          className="muted"
+          href="/explore"
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 600 }}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Resources</span>
         </Link>
-        <h1 style={{ fontSize: "36px", marginTop: "20px" }}>
+        <h1 style={{ fontSize: "clamp(28px, 4vw, 42px)", marginTop: "18px" }}>
           {displayTitle}
         </h1>
         <p>
@@ -136,8 +158,8 @@ function ResourceDetailContent() {
           {/* ── Left Preview & Content Area ───────────────────────── */}
           <div className="preview-box" style={{ alignItems: "start" }}>
             {isLoading ? (
-              <div style={{ padding: "40px", textAlign: "center", width: "100%" }}>
-                <p className="muted">Fetching resource details and preview...</p>
+              <div style={{ padding: "60px", textAlign: "center", width: "100%" }}>
+                <p className="muted">Fetching resource details and live stream...</p>
               </div>
             ) : isPhotoAlbum ? (
               /* Photo Album View */
@@ -146,9 +168,9 @@ function ResourceDetailContent() {
                   src={getFileStreamUrl(currentId)}
                   alt="Exam page preview"
                   style={{
-                    maxHeight: "520px",
+                    maxHeight: "540px",
                     maxWidth: "100%",
-                    borderRadius: "12px",
+                    borderRadius: "14px",
                     boxShadow: "var(--shadow)",
                     margin: "0 auto",
                     objectFit: "contain",
@@ -195,7 +217,7 @@ function ResourceDetailContent() {
                 </div>
 
                 {/* Bundle Items List */}
-                <div style={{ display: "grid", gap: "10px", marginBottom: "20px" }}>
+                <div style={{ display: "grid", gap: "10px", marginBottom: "22px" }}>
                   {groupItems.map((item, idx) => {
                     const isSelected = activeGroupIndex === idx;
                     const itemExt = item.fileType === "pdf" ? "PDF" : item.fileType === "ppt" ? "PPT" : "DOC";
@@ -210,29 +232,28 @@ function ResourceDetailContent() {
                           justifyContent: "space-between",
                           padding: "12px 16px",
                           borderRadius: "12px",
-                          border: isSelected ? "1px solid var(--green)" : "1px solid var(--line)",
-                          background: isSelected ? "var(--green-soft)" : "var(--surface)",
+                          border: isSelected ? "1px solid var(--primary)" : "1px solid var(--line)",
+                          background: isSelected ? "var(--primary-soft)" : "var(--surface)",
                           transition: "0.2s ease",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                           <span
+                            className={`file-type ${item.fileType || "pdf"}`}
                             style={{
+                              width: "36px",
+                              height: "36px",
                               fontSize: "11px",
-                              fontWeight: 800,
-                              padding: "4px 8px",
-                              borderRadius: "6px",
-                              background: item.fileType === "pdf" ? "#ffebeb" : "#fff0df",
-                              color: item.fileType === "pdf" ? "#d94d4d" : "#d78020",
+                              borderRadius: "8px",
                             }}
                           >
-                            {itemExt} #{idx + 1}
+                            #{idx + 1}
                           </span>
                           <span
                             style={{
                               fontSize: "14px",
                               fontWeight: isSelected ? 700 : 500,
-                              color: isSelected ? "var(--green)" : "var(--text)",
+                              color: isSelected ? "var(--primary)" : "var(--text)",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
@@ -252,15 +273,17 @@ function ResourceDetailContent() {
                             className="btn btn-outline"
                             style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "8px" }}
                           >
-                            {isSelected ? "Viewing" : "Preview"}
+                            <Eye size={12} />
+                            <span>{isSelected ? "Viewing" : "Preview"}</span>
                           </button>
                           <a
                             href={getFileDownloadUrl(item._id)}
                             download
                             className="btn btn-primary"
-                            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "8px" }}
+                            style={{ padding: "6px 10px", fontSize: "12px", borderRadius: "8px" }}
+                            title="Download file"
                           >
-                            📥
+                            <Download size={13} />
                           </a>
                         </div>
                       </div>
@@ -270,7 +293,7 @@ function ResourceDetailContent() {
 
                 {/* Currently Selected Document Preview Frame */}
                 {currentItem?.fileType === "pdf" && (
-                  <div style={{ width: "100%", height: "450px", marginTop: "14px" }}>
+                  <div style={{ width: "100%", height: "480px", marginTop: "14px" }}>
                     <iframe
                       src={getFileStreamUrl(currentId)}
                       style={{
@@ -287,7 +310,7 @@ function ResourceDetailContent() {
               </div>
             ) : resource?.fileType === "pdf" ? (
               /* Single PDF Viewer */
-              <div style={{ width: "100%", height: "550px" }}>
+              <div style={{ width: "100%", height: "560px" }}>
                 <iframe
                   src={getFileStreamUrl(resourceId)}
                   style={{
@@ -301,24 +324,35 @@ function ResourceDetailContent() {
                 />
               </div>
             ) : (
-              /* Other format placeholder */
-              <div style={{ width: "100%", textAlign: "center" }}>
-                <div className="preview-sheet" style={{ margin: "0 auto" }}>
-                  <strong style={{ fontFamily: "Manrope", fontSize: "12px", fontWeight: 700 }}>
-                    {resource?.courseCode || "STUDY MATERIAL"}
+              /* Tasteful file preview placeholder */
+              <div style={{ width: "100%", textAlign: "center", padding: "30px 0" }}>
+                <div
+                  style={{
+                    width: "220px",
+                    background: "var(--surface)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "16px",
+                    boxShadow: "var(--shadow)",
+                    padding: "24px 20px",
+                    margin: "0 auto",
+                    textAlign: "left",
+                  }}
+                >
+                  <div className={`file-type ${badgeTypeClass}`} style={{ width: "36px", height: "36px", marginBottom: "16px" }}>
+                    {getTypeBadge()}
+                  </div>
+                  <strong style={{ fontFamily: "Manrope", fontSize: "13px", fontWeight: 700, display: "block" }}>
+                    {resource?.courseCode || "ACADEMIC DOCUMENT"}
                   </strong>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <p style={{ fontSize: "9px", color: "var(--muted)", marginTop: "20px" }}>
+                  <div style={{ height: "6px", background: "var(--surface-3)", borderRadius: "4px", margin: "14px 0 8px" }} />
+                  <div style={{ height: "6px", width: "70%", background: "var(--surface-3)", borderRadius: "4px", margin: "8px 0" }} />
+                  <div style={{ height: "6px", width: "85%", background: "var(--surface-3)", borderRadius: "4px", margin: "8px 0" }} />
+                  <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "24px", marginBottom: 0 }}>
                     {getTypeDescription()}
                   </p>
                 </div>
-                <p className="muted" style={{ margin: "18px 0 0" }}>
-                  {getTypeDescription()} · Ready for download
+                <p className="muted" style={{ margin: "20px 0 0", fontSize: "14px" }}>
+                  {getTypeDescription()} · Ready for instant download or Telegram delivery
                 </p>
               </div>
             )}
@@ -328,64 +362,70 @@ function ResourceDetailContent() {
           <aside className="detail-side">
             <div className={`file-type ${badgeTypeClass}`}>{getTypeBadge()}</div>
 
-            <h3 style={{ marginTop: "16px" }}>
+            <h3 style={{ marginTop: "16px", fontSize: "18px" }}>
               {displayTitle}
             </h3>
 
             {resource?.caption && resource?.caption !== displayTitle && (
-              <p className="muted" style={{ fontSize: "13px", marginTop: "8px" }}>
+              <p className="muted" style={{ fontSize: "13px", marginTop: "8px", lineHeight: "1.5" }}>
                 {resource.caption}
               </p>
             )}
 
             <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "18px 0" }} />
 
-            <div className="resource-meta" style={{ display: "grid", gap: "14px" }}>
+            <div style={{ display: "grid", gap: "16px" }}>
               <div>
-                <span className="muted" style={{ display: "block", fontSize: "11px" }}>
-                  Subject / University
+                <span className="muted" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <Building2 size={12} />
+                  <span>Subject / University</span>
                 </span>
-                <strong style={{ color: "var(--text)", fontSize: "14px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "14px", display: "block", marginTop: "3px" }}>
                   {resource?.university || resource?.courseCode || "General University Studies"}
                 </strong>
               </div>
 
               <div>
-                <span className="muted" style={{ display: "block", fontSize: "11px" }}>
-                  Resource Type
+                <span className="muted" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <BookOpen size={12} />
+                  <span>Resource Classification</span>
                 </span>
-                <strong style={{ color: "var(--text)", fontSize: "14px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "14px", display: "block", marginTop: "3px" }}>
                   {getTypeDescription()}
                 </strong>
               </div>
 
               <div>
-                <span className="muted" style={{ display: "block", fontSize: "11px" }}>
-                  {isGroup ? "Total Bundle Size" : "File Size"}
+                <span className="muted" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <HardDrive size={12} />
+                  <span>{isGroup ? "Total Bundle Size" : "File Size"}</span>
                 </span>
-                <strong style={{ color: "var(--text)", fontSize: "14px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "14px", display: "block", marginTop: "3px" }}>
                   {formatFileSize(resource?.fileSize)}
                 </strong>
               </div>
 
               <div>
-                <span className="muted" style={{ display: "block", fontSize: "11px" }}>
-                  Source Community
+                <span className="muted" style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <Send size={12} />
+                  <span>Source Channel</span>
                 </span>
-                <strong style={{ color: "var(--text)", fontSize: "14px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "14px", display: "block", marginTop: "3px" }}>
                   {resource?.channelUsername ? `@${resource.channelUsername}` : "Verified Student Channel"}
                 </strong>
               </div>
             </div>
 
-            <div style={{ marginTop: "24px", display: "grid", gap: "10px" }}>
+            {/* Action Buttons */}
+            <div style={{ marginTop: "26px", display: "grid", gap: "10px" }}>
               <a
                 className="btn btn-primary"
                 href={getTelegramBotDeepLink(resourceId, isGroup)}
                 target="_blank"
                 rel="noreferrer"
               >
-                {getTelegramButtonText()}
+                <Send size={15} />
+                <span>{getTelegramButtonText()}</span>
               </a>
 
               <a
@@ -395,15 +435,17 @@ function ResourceDetailContent() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {isDocBundle ? `Download Selected File 📥` : `Direct Download 📥`}
+                <Download size={15} />
+                <span>{isDocBundle ? "Download Selected File" : "Direct Download"}</span>
               </a>
 
               <Link
                 className="btn btn-ghost"
-                style={{ width: "100%", borderRadius: "999px", fontSize: "13px" }}
+                style={{ width: "100%", borderRadius: "12px", fontSize: "13px" }}
                 href={`/explore?q=${encodeURIComponent(resource?.courseCode || resource?.university || "")}`}
               >
-                Find similar resources
+                <Search size={14} />
+                <span>Find Similar Resources</span>
               </Link>
             </div>
           </aside>
@@ -417,7 +459,7 @@ export default function ResourceDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="container" style={{ padding: "60px 0", textAlign: "center" }}>
+        <div className="container" style={{ padding: "80px 0", textAlign: "center" }}>
           <p className="muted">Loading resource details...</p>
         </div>
       }

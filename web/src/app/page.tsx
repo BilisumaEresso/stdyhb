@@ -1,53 +1,131 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Search,
+  ArrowRight,
+  Zap,
+  BookOpen,
+  Send,
+  Sparkles,
+  CheckCircle2,
+  Code,
+  Cpu,
+  Database,
+  Network,
+  Calculator,
+  Atom,
+  FlaskConical,
+  Layers,
+  Bot,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
 
-const POPULAR_CHIPS = ["DBMS", "DSA", "OOP", "Calculus", "CN", "OS", "Exam"];
+const POPULAR_CHIPS = [
+  { label: "DBMS", query: "DBMS" },
+  { label: "DSA", query: "DSA" },
+  { label: "OOP", query: "OOP" },
+  { label: "Calculus", query: "Calculus" },
+  { label: "Operating Systems", query: "Operating Systems" },
+  { label: "Computer Networks", query: "Computer Networks" },
+  { label: "Past Exams", query: "Exam", filter: "exam" },
+];
 
 const SUBJECTS = [
   {
     title: "Computer Science",
-    desc: "Algorithms, systems and more",
-    icon: "⌘",
+    desc: "Algorithms, operating systems, compiler design & core theory",
+    icon: Code,
     query: "Computer Science",
   },
   {
     title: "Software Engineering",
-    desc: "Design, testing and development",
-    icon: "⚙",
+    desc: "System design, agile testing, OOP & software architecture",
+    icon: Cpu,
     query: "Software Engineering",
   },
   {
     title: "Database Systems",
-    desc: "DBMS, SQL and data",
-    icon: "▤",
-    query: "Database Systems",
+    desc: "Relational DBMS, SQL queries, normalization & ER modeling",
+    icon: Database,
+    query: "Database Systems DBMS",
   },
   {
     title: "Computer Networks",
-    desc: "Networking fundamentals",
-    icon: "⌘",
+    desc: "OSI architecture, packet protocols, subnetting & socket labs",
+    icon: Network,
     query: "Computer Networks",
   },
   {
     title: "Mathematics",
-    desc: "Calculus, algebra and more",
-    icon: "▦",
-    query: "Mathematics",
+    desc: "Calculus I & II, linear algebra, discrete math & probability",
+    icon: Calculator,
+    query: "Mathematics Calculus",
   },
   {
     title: "Physics",
-    desc: "Core physics materials",
-    icon: "⚛",
-    query: "Physics",
+    desc: "Classical mechanics, electromagnetism, optics & solved midterms",
+    icon: Atom,
+    query: "General Physics",
+  },
+  {
+    title: "Chemistry",
+    desc: "General chemistry, analytical labs & freshman question papers",
+    icon: FlaskConical,
+    query: "General Chemistry",
+  },
+  {
+    title: "Information Systems",
+    desc: "Enterprise architecture, systems analysis & IT management",
+    icon: Layers,
+    query: "Information Systems",
+  },
+  {
+    title: "Artificial Intelligence",
+    desc: "Machine learning, neural networks & intelligent agents",
+    icon: Bot,
+    query: "Artificial Intelligence Machine Learning",
   },
 ];
 
+interface StatsData {
+  totalResources: number;
+  totalChannels: number;
+}
+
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [stats, setStats] = useState<StatsData>({ totalResources: 79650, totalChannels: 28 });
+  const [recentResources, setRecentResources] = useState<any[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    // Fetch live system stats from API
+    fetch("/api/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && data.data) {
+          setStats({
+            totalResources: data.data.totalResources || 79650,
+            totalChannels: data.data.totalChannels || 28,
+          });
+        }
+      })
+      .catch(() => {});
+
+    // Fetch a few featured/recent resources for preview
+    fetch("/api/search?limit=3")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.data && Array.isArray(data.data)) {
+          setRecentResources(data.data.slice(0, 3));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,9 +136,15 @@ export default function HomePage() {
     }
   };
 
-  const handleChipClick = (chip: string) => {
-    router.push(`/explore?q=${encodeURIComponent(chip)}`);
+  const handleChipClick = (chip: { label: string; query: string; filter?: string }) => {
+    if (chip.filter) {
+      router.push(`/explore?filter=${chip.filter}`);
+    } else {
+      router.push(`/explore?q=${encodeURIComponent(chip.query)}`);
+    }
   };
+
+  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
 
   return (
     <main>
@@ -69,7 +153,7 @@ export default function HomePage() {
         <div className="container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow">
-              <i className="dot"></i> Academic Resource Search
+              <span className="dot"></span> Academic Resource Discovery
             </span>
 
             <h1>
@@ -79,33 +163,38 @@ export default function HomePage() {
             </h1>
 
             <p>
-              Search past exams, lecture notes, PDFs, presentations and more from Ethiopian university
-              channels.
+              Discover past exams, lecture notes, presentations, and academic materials from Ethiopian
+              university communities — all in one focused search platform.
             </p>
 
+            {/* Omnibar Search Form */}
             <form className="searchbar" onSubmit={handleSearch}>
-              <span className="search-icon">⌕</span>
+              <span className="search-icon">
+                <Search size={20} />
+              </span>
               <input
                 aria-label="Search study materials"
-                placeholder="Search study materials (e.g. DBMS, Calculus, CS301)..."
+                placeholder="Search courses, past exams, lecture notes, or codes (e.g. DBMS, Calculus)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <button type="submit" className="btn btn-primary">
-                Search&nbsp; →
+                <span>Search</span>
+                <ArrowRight size={15} />
               </button>
             </form>
 
+            {/* Popular Search Suggestions */}
             <div className="popular">
               <strong>Popular:</strong>
               {POPULAR_CHIPS.map((chip) => (
                 <button
-                  key={chip}
+                  key={chip.label}
                   type="button"
                   className="chip"
                   onClick={() => handleChipClick(chip)}
                 >
-                  {chip}
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -114,43 +203,84 @@ export default function HomePage() {
           <div className="hero-art">
             <img
               src="/assets/hero-illustration.svg"
-              alt="Stack of study books and academic files"
+              alt="StudyHub academic learning stack and resources"
             />
           </div>
         </div>
       </section>
 
-      {/* ── Stats Strip ─────────────────────────────────────────────── */}
+      {/* ── Stats & Trust Strip ─────────────────────────────────────── */}
       <section className="container stats-strip">
         <div className="stat-card">
-          <div className="stat-icon">ϟ</div>
+          <div className="stat-icon">
+            <Zap size={22} />
+          </div>
           <div>
-            <strong>Lightning fast</strong>
-            <small>Get results in seconds</small>
+            <strong>Fast Discovery</strong>
+            <small>Instant relevance ranking</small>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">✓</div>
+          <div className="stat-icon">
+            <BookOpen size={22} />
+          </div>
           <div>
-            <strong>80,000+ Files</strong>
-            <small>From 27+ University Channels</small>
+            <strong>{stats.totalResources.toLocaleString()}+ Materials</strong>
+            <small>Across {stats.totalChannels}+ University Channels</small>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">➤</div>
+          <div className="stat-icon">
+            <Send size={22} />
+          </div>
           <div>
-            <strong>Telegram powered</strong>
-            <small>Search and access easily</small>
+            <strong>Telegram Connected</strong>
+            <small>1-Tap bot delivery</small>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">▥</div>
+          <div className="stat-icon">
+            <CheckCircle2 size={22} />
+          </div>
           <div>
-            <strong>Smart ranking</strong>
-            <small>Find the most relevant</small>
+            <strong>Verified Academic Files</strong>
+            <small>AAU, ASTU, AASTU, Jimma</small>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How StudyHub Works ──────────────────────────────────────── */}
+      <section className="section container">
+        <div className="section-head">
+          <div>
+            <span className="eyebrow" style={{ marginBottom: "10px" }}>
+              Simple 3-Step Process
+            </span>
+            <h2>How StudyHub Works</h2>
+            <p>Designed to help you find academic resources without jumping across dozens of chat groups.</p>
+          </div>
+        </div>
+
+        <div className="steps-grid">
+          <div className="step-card">
+            <span className="step-badge">STEP 01</span>
+            <h3>Search</h3>
+            <p>Type any topic, course code, or exam title in natural language to query indexed university channels.</p>
+          </div>
+
+          <div className="step-card">
+            <span className="step-badge">STEP 02</span>
+            <h3>Discover</h3>
+            <p>Browse structured results with file-type badges, multi-page exam photo albums, and curated PDF bundles.</p>
+          </div>
+
+          <div className="step-card">
+            <span className="step-badge">STEP 03</span>
+            <h3>Access</h3>
+            <p>Read PDFs directly in your browser or receive the original files instantly via Telegram bot.</p>
           </div>
         </div>
       </section>
@@ -159,42 +289,136 @@ export default function HomePage() {
       <section className="section container">
         <div className="section-head">
           <div>
-            <h2>Popular subjects</h2>
-            <p>Explore resources by subject</p>
+            <h2>Popular Academic Subjects</h2>
+            <p>Explore past exams, lecture slides, and notes grouped by academic discipline.</p>
           </div>
           <Link className="btn btn-outline" href="/subjects">
-            View all subjects&nbsp; →
+            <span>Browse All Subjects</span>
+            <ArrowRight size={15} />
           </Link>
         </div>
 
         <div className="subject-grid">
-          {SUBJECTS.map((subj) => (
-            <Link
-              key={subj.title}
-              className="subject-card"
-              href={`/explore?q=${encodeURIComponent(subj.query)}`}
-            >
-              <div className="subject-icon">{subj.icon}</div>
-              <div>
-                <h3>{subj.title}</h3>
-                <small>{subj.desc}</small>
-              </div>
-              <span className="arrow">→</span>
-            </Link>
-          ))}
+          {SUBJECTS.map((subj) => {
+            const Icon = subj.icon;
+            return (
+              <Link
+                key={subj.title}
+                className="subject-card"
+                href={`/explore?q=${encodeURIComponent(subj.query)}`}
+              >
+                <div className="subject-icon">
+                  <Icon size={24} />
+                </div>
+                <div>
+                  <h3>{subj.title}</h3>
+                  <small>{subj.desc}</small>
+                </div>
+                <span className="arrow">
+                  <ArrowRight size={18} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      {/* ── CTA Banner ──────────────────────────────────────────────── */}
+      {/* ── Featured / Recent Resources ─────────────────────────────── */}
+      {recentResources.length > 0 && (
+        <section className="section container">
+          <div className="section-head">
+            <div>
+              <h2>Recently Indexed Materials</h2>
+              <p>Fresh exams, slides, and lecture notes added to the StudyHub repository.</p>
+            </div>
+            <Link className="btn btn-outline" href="/explore">
+              <span>View All</span>
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="resource-grid">
+            {recentResources.map((item) => {
+              const displayTitle = item.cleanTitle || item.title || item.fileName || "Academic Resource";
+              const isExam = item.isExam;
+              const type = (item.fileType || "pdf").toLowerCase();
+              return (
+                <article key={item._id} className="resource-card">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div className={`file-type ${type}`}>
+                      {type.toUpperCase()}
+                    </div>
+                    {isExam && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: "8px",
+                          background: "var(--gold-soft)",
+                          color: "var(--gold)",
+                        }}
+                      >
+                        PAST EXAM
+                      </span>
+                    )}
+                  </div>
+
+                  <h3>
+                    <Link href={`/resource/${item._id}`} style={{ color: "inherit" }}>
+                      {displayTitle}
+                    </Link>
+                  </h3>
+
+                  <div className="resource-meta">
+                    <span>{item.university || "Ethiopian University"}</span>
+                    {item.channelUsername && (
+                      <>
+                        <span>•</span>
+                        <span>@{item.channelUsername}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="resource-bottom">
+                    <span className="source">
+                      {item.fileSize ? `${(item.fileSize / (1024 * 1024)).toFixed(1)} MB` : "Document"}
+                    </span>
+                    <Link className="resource-link" href={`/resource/${item._id}`}>
+                      <span>View Resource</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Call to Action Banner ───────────────────────────────────── */}
       <section className="section container">
         <div className="cta">
           <div>
             <h2>Your next study session starts here.</h2>
-            <p>Find useful material, explore subjects, and get back to learning.</p>
+            <p>Find past exams, lecture slides, and notes in seconds — on the web or directly in Telegram.</p>
           </div>
-          <Link className="btn" href="/explore">
-            Explore resources&nbsp; →
-          </Link>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", zIndex: 1 }}>
+            <Link className="btn" href="/explore">
+              <span>Explore All Resources</span>
+              <ArrowRight size={15} />
+            </Link>
+            <a
+              className="btn"
+              href={`https://t.me/${botUsername}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF", border: "1px solid rgba(255, 255, 255, 0.3)" }}
+            >
+              <Send size={15} />
+              <span>Open Bot</span>
+            </a>
+          </div>
         </div>
       </section>
     </main>

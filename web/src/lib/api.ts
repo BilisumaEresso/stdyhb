@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/+$/, "");
 
 export interface ResourceItem {
   _id: string;

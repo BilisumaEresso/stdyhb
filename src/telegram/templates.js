@@ -64,7 +64,7 @@ function getFileLabel(fileType, isGrouped, groupSize = null) {
 
 // ─── title helper ─────────────────────────────────────────────────────────────
 function getTitle(resource) {
-  let title = resource.title || resource.fileName;
+  let title = resource.cleanTitle || resource.title || resource.fileName;
   if (!title && resource.caption) title = resource.caption;
   if (!title) title = "Untitled Resource";
   if (title.length > 52) title = title.substring(0, 51) + "…";

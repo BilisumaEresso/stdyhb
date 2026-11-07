@@ -138,6 +138,7 @@ function renderCommandsGuide(isAdmin = false) {
 
   text += `<b>🎓 Student Commands:</b>\n`;
   text += `• <code>/search &lt;query&gt;</code> — Search past exams, slides, and lecture notes\n`;
+  text += `• <code>/web</code> — Open StudyHub Web & Telegram Mini App\n`;
   text += `• <code>/saves</code> — View and manage your saved bookmarks\n`;
   text += `• <code>/profile</code> — View and update your campus/department\n`;
   text += `• <code>/trending</code> — Browse this week's most downloaded study materials\n`;

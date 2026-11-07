@@ -129,6 +129,31 @@ async function bootstrap() {
     console.log(`🌐 Server running on port ${PORT}`);
   });
 
+  // Configure Telegram Chat Menu Button to open Web App
+  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  bot.telegram
+    .setChatMenuButton({
+      menuButton: {
+        type: "web_app",
+        text: "🔍 Search Hub",
+        web_app: { url: webAppUrl },
+      },
+    })
+    .then(() => console.log(`✅ Chat Menu Button set to Web App: ${webAppUrl}`))
+    .catch((err) => console.warn(`⚠️ Failed to set Chat Menu Button: ${err.message}`));
+
+  // Register official Telegram command list menu
+  bot.telegram
+    .setMyCommands([
+      { command: "search", description: "Search past exams, lecture slides & notes" },
+      { command: "web", description: "Open StudyHub Web & Telegram Mini App" },
+      { command: "help", description: "Open Help Center & Search Guide" },
+      { command: "saves", description: "View your saved materials" },
+      { command: "profile", description: "Set or view your university profile" },
+    ])
+    .then(() => console.log("✅ Bot commands menu registered with Telegram"))
+    .catch((err) => console.warn(`⚠️ Failed to set commands: ${err.message}`));
+
   // Keep Render free tier alive — ping self every 10 minutes
   if (process.env.NODE_ENV === "production") {
     const https = require("https");

@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const TelegramResource = require("../db/models/TelegramResource");
 const TelegramChannel = require("../db/models/TelegramChannel");
 const { notifyAdmin } = require("../services/notify.service");
+const { generateDisplayTitle } = require("../utils/titleGenerator");
 
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
@@ -350,8 +351,9 @@ const groupCaption =
     const tags = extractTags(caption, fileName);
     const exam = isExam(caption, fileName);
 
-    // ── Gate 2: Images without any academic signal are skipped ──
-    if (fileType === "image" && tags.length === 0 && !exam) {
+    // ── Gate 2: Single images are NEVER academic resources — reject unless part of an album ──
+    const isGroupedImage = Boolean(msg.groupedId || msgs[0]?.groupedId);
+    if (fileType === "image" && (!isGroupedImage || (tags.length === 0 && !exam))) {
       bSkipped++;
       continue;
     }
@@ -369,6 +371,13 @@ const groupCaption =
       chatId: msg.peerId?.channelId?.toString() || "",
       channelUsername,
       fileName,
+      cleanTitle: generateDisplayTitle({
+        fileName,
+        caption,
+        fileType,
+        courseCode: extractCourseCode(textToAnalyze),
+        tags,
+      }),
       caption,
       fileType,
       fileSize,

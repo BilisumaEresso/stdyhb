@@ -10,6 +10,7 @@ const TelegramResourceSchema = new mongoose.Schema({
 
   // File metadata
   fileName: { type: String, default: "" },
+  cleanTitle: { type: String, default: "" },
   caption: { type: String, default: "" },
   fileType: {
     type: String,

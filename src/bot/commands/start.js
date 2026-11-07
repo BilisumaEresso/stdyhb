@@ -35,10 +35,11 @@ async function startCommand(ctx, skipWizard = false) {
       return ctx.scene.enter("onboarding");
     }
 
+    const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
     const keyboard = Markup.keyboard([
-      [LABELS.SEARCH, LABELS.SAVES],
-      [LABELS.RECOMMEND, LABELS.HELP],
-      [LABELS.PROFILE, LABELS.TRENDING],
+      [Markup.button.webApp("🌐 Open Web App", webAppUrl), LABELS.SEARCH],
+      [LABELS.SAVES, LABELS.RECOMMEND],
+      [LABELS.PROFILE, LABELS.HELP],
     ]).resize();
 
     // Decide which welcome message to send

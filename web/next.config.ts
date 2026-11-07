@@ -13,8 +13,18 @@ const nextConfig: NextConfig = {
   },
   devIndicators: false,
   async rewrites() {
-    // Proxy all /api calls to the Express server on port 5000
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+    // Determine the backend target URL:
+    // 1. Explicit BACKEND_URL environment variable (from Vercel or .env.local)
+    // 2. In production (if unset), default to the deployed backend: https://studyhubbot.onrender.com
+    // 3. In local development (if unset), default to local server: http://localhost:5000
+    const rawBackendUrl =
+      process.env.BACKEND_URL ||
+      (process.env.NODE_ENV === "production"
+        ? "https://studyhubbot.onrender.com"
+        : "http://localhost:5000");
+
+    const backendUrl = rawBackendUrl.replace(/\/+$/, "");
+
     return [
       {
         source: "/api/:path*",

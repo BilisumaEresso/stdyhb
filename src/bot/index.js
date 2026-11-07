@@ -2,7 +2,7 @@ const dns = require("dns");
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder("ipv4first");
 }
-const { Telegraf, session, Scenes } = require("telegraf");
+const { Telegraf, session, Scenes, Markup } = require("telegraf");
 const { setBot } = require("./botInstance");
 const startCommand = require("./commands/start");
 const {
@@ -111,6 +111,19 @@ bot.command("about", aboutCommand);
 bot.command("developer", developerCommand);
 bot.command("dev", developerCommand);
 bot.command("saves", savesCommand);
+bot.command(["web", "app", "webapp"], async (ctx) => {
+  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  await ctx.reply(
+    "🌐 <b>StudyHub Web & Mini App</b>\n\nExperience StudyHub with instant multi-filter search, in-browser PDF reader, exam photo lightboxes, and university browsing.\n\nTap below to launch:",
+    {
+      parse_mode: "HTML",
+      ...Markup.inlineKeyboard([
+        [Markup.button.webApp("🚀 Launch Web App", webAppUrl)],
+        [Markup.button.url("↗️ Open in Browser", webAppUrl)],
+      ]),
+    }
+  );
+});
 
 bot.action("edit_profile", (ctx) => {
   ctx.answerCbQuery().catch(() => {});

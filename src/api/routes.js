@@ -3,6 +3,7 @@ const router = express.Router();
 const TelegramResource = require("../db/models/TelegramResource");
 const searchService = require("../search/search.service");
 const { getClient } = require("../search/telegramIndexer");
+const { generateDisplayTitle } = require("../utils/titleGenerator");
 
 // ─── Lightweight CORS & JSON Middleware ──────────────────────────────────────
 router.use((req, res, next) => {
@@ -52,8 +53,8 @@ router.get("/trending", async (req, res) => {
     res.json({
       success: true,
       data: {
-        topDownloaded,
-        recentExams
+        topDownloaded: topDownloaded.map(r => ({ ...r, title: r.cleanTitle || generateDisplayTitle(r) })),
+        recentExams: recentExams.map(r => ({ ...r, title: r.cleanTitle || generateDisplayTitle(r) }))
       }
     });
   } catch (err) {
@@ -128,9 +129,14 @@ router.get("/search", async (req, res) => {
         .lean()
     ]);
 
+    const formattedItems = items.map(r => ({
+      ...r,
+      title: r.cleanTitle || generateDisplayTitle(r)
+    }));
+
     res.json({
       success: true,
-      data: items,
+      data: formattedItems,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -166,7 +172,11 @@ router.get("/resources/:id", async (req, res) => {
       success: true,
       data: {
         ...resource,
-        groupItems
+        title: resource.cleanTitle || generateDisplayTitle(resource),
+        groupItems: groupItems.map(g => ({
+          ...g,
+          title: g.cleanTitle || generateDisplayTitle(g)
+        }))
       }
     });
   } catch (err) {

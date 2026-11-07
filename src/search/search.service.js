@@ -3,6 +3,7 @@ const TelegramResource = require("../db/models/TelegramResource");
 const { searchGitHub } = require("./providers/github");
 const { expandQuery } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
+const { generateDisplayTitle } = require("../utils/titleGenerator");
 
 
 // Search debugging logger
@@ -233,9 +234,14 @@ class SearchService {
       score -= 150;
     }
 
-    // Boost by popularity
+    // 📈 Calibrated ISR Popularity Boosting (High-delivery priority)
     if (resource.downloadCount && resource.downloadCount > 0) {
-      score += Math.min(resource.downloadCount * 2, 50);
+      const dl = resource.downloadCount;
+      if (dl >= 5) score += 150;
+      else if (dl === 4) score += 120;
+      else if (dl === 3) score += 90;
+      else if (dl === 2) score += 60;
+      else score += 35; // 1 download
     }
 
     return Math.max(0, score);
@@ -310,8 +316,8 @@ class SearchService {
         const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user);
 
         const computedTitle =
-          resource.fileName ||
-          this.cleanCaptionTitle(resource.caption) ||
+          resource.cleanTitle ||
+          generateDisplayTitle(resource) ||
           "Untitled Resource";
 
         return {
@@ -582,13 +588,8 @@ class SearchService {
              r._isGrouped = true;
              r.groupSize = r.groupTotal || 1;
 
-             // If the origin channel provided a caption for the group, use it as the bundle title
-             if (r.caption && r.caption.trim()) {
-               const cleanTitle = this.cleanCaptionTitle(r.caption, r.title);
-               if (cleanTitle && cleanTitle !== "Study Material" && cleanTitle !== "Exam Material") {
-                 r.title = cleanTitle;
-               }
-             }
+             // Clean title for collapsed bundle
+             r.title = r.cleanTitle || generateDisplayTitle(r);
           }
           collapsed.push(r);
         }

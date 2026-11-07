@@ -16,6 +16,7 @@ const TelegramResourceQuarantineSchema = new mongoose.Schema({
   chatId: { type: Number },
   channelUsername: { type: String },
   fileName: { type: String, default: "" },
+  cleanTitle: { type: String, default: "" },
   caption: { type: String, default: "" },
   fileType: { type: String },
   fileSize: { type: Number, default: 0 },
