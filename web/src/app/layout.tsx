@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    google: "1HJnf6a54rO7xWmtpjbtQMdqvd7Ls-Ry765WAxWYZXk",
   },
 };
 
@@ -137,6 +137,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="1HJnf6a54rO7xWmtpjbtQMdqvd7Ls-Ry765WAxWYZXk"
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
