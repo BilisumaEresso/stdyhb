@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BookOpen,
@@ -10,6 +11,21 @@ import {
   Zap,
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
+
+export const metadata: Metadata = {
+  title: "About StudyHub — Mission & Campus Community",
+  description:
+    "Learn about StudyHub's mission to empower Ethiopian university students with instant, open access to academic resources, past exams, and lecture notes.",
+  alternates: {
+    canonical: "/about",
+  },
+  openGraph: {
+    title: "About StudyHub — Ethiopian Academic Knowledge Platform",
+    description:
+      "StudyHub connects Ethiopian university students with shared learning materials from campus Telegram communities.",
+    url: "/about",
+  },
+};
 
 export default function AboutPage() {
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
