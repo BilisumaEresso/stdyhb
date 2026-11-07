@@ -17,7 +17,6 @@ import {
 import BrandEmblem from "@/components/BrandEmblem";
 import {
   FileExamIcon,
-  TrustTelegramIcon,
 } from "@/components/icons";
 
 interface FAQItem {
@@ -200,7 +199,7 @@ export default function HelpPage() {
 
           <div className="step-card">
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <TrustTelegramIcon size={24} style={{ color: "var(--cyan)" }} />
+              <Send size={20} style={{ color: "var(--cyan)" }} />
               <h3 style={{ margin: 0, fontSize: "17px" }}>1-Tap Telegram Delivery</h3>
             </div>
             <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6" }}>
@@ -269,7 +268,7 @@ export default function HelpPage() {
           {/* Bot Info & Commands */}
           <div className="sim-info-view">
             <span className="eyebrow" style={{ marginBottom: "12px" }}>
-              <TrustTelegramIcon size={16} />
+              <Send size={14} />
               <span>Mobile-First Companion</span>
             </span>
             <h2 style={{ fontSize: "24px", margin: "0 0 10px" }}>

@@ -39,7 +39,6 @@ import {
   SubjectIsIcon,
   SubjectAiIcon,
   TrustSpeedIcon,
-  TrustTelegramIcon,
   TrustVerifiedIcon,
   TrustLibraryIcon,
 } from "@/components/icons";
@@ -254,7 +253,7 @@ export default function HomePage() {
 
         <div className="stat-card">
           <div className="stat-icon">
-            <TrustTelegramIcon size={24} />
+            <Send size={22} />
           </div>
           <div>
             <strong>Telegram Connected</strong>
