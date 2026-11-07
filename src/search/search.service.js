@@ -5,6 +5,17 @@ const { expandQuery } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
 const { generateDisplayTitle } = require("../utils/titleGenerator");
 
+// Curated book & literature channels where files must never be bundled
+const BOOK_CHANNELS = new Set([
+  "amharic_fiction_books",
+  "muscatnonfiction",
+  "ethio_pdf_books",
+  "academicbookspdf",
+  "best_book_for_students",
+  "medallbooks",
+  "freshmanebook",
+]);
+
 
 // Search debugging logger
 class SearchLogger {
@@ -145,6 +156,9 @@ class SearchService {
     if (/\b(assignment|project|report|lab|lab manual|worksheet|practical|exercise|solution)\b/i.test(q)) {
       intent.assignmentLab = true;
     }
+    if (/\b(book|books|fiction|novel|novels|nonfiction|non-fiction|reading|literature|\u1218\u133d\u1210\u134d|\u1218\u133d\u1210\u134d\u1275|\u12f0\u122b\u1232|\u1275\u122d\u1309\u121d|\u1295\u1263\u1265|\u134d\u1245\u122d|\u122d\u12cb\u12ed)\b/i.test(q)) {
+      intent.book = true;
+    }
 
     const yearMatch = query.match(/\b(201\d|202\d)\b/);
     if (yearMatch) {
@@ -171,23 +185,41 @@ class SearchService {
 
     const isImageGroup = (resource.groupId && resource.fileType === "image") || (resource._isGrouped && resource.fileType === "image");
     const isDocGroup = Boolean(resource.groupId && resource.fileType !== "image");
+    const channelLower = (resource.channelUsername || "").toLowerCase();
+    const isBookChannel = BOOK_CHANNELS.has(channelLower);
+    const hasAmharicQuery = /[ሀ-፼]/.test(query);
 
     // Explicit format matching vs Default Exam Photo Set Priority
     if (intent.explicitFormat) {
       if (intent.ppt && resource.fileType === "ppt") score += 200;
       if (intent.pdf && resource.fileType === "pdf") score += 200;
       if (intent.doc && resource.fileType === "doc") score += 200;
-      if (isDocGroup) score += 40; // extra boost for matching curated document packs
+      if (isDocGroup && !isBookChannel) score += 40;
     } else {
-      // User did not specify a format: Prioritize comprehensive bundles and exam sets!
+      // User did not specify a format: Prioritize contextually
       if (isImageGroup) {
-        score += 160; // Top priority for exam photo bundles
-      } else if (isDocGroup) {
+        if (intent.book) {
+          score += 10; // Do not prioritize image covers when user is searching for books
+        } else if (intent.exam || resource.isExam) {
+          score += 160; // Top priority for exam photo bundles
+        } else if (hasAmharicQuery) {
+          score += 40; // Do not allow exam photo albums to bury Amharic books
+        } else {
+          score += 90;
+        }
+      } else if (isDocGroup && !isBookChannel) {
         score += 120; // High priority for curated document bundles (e.g. 10-pdf exam pack, slide set)
       } else if (resource.fileType === "image" && resource.isExam) {
         score += 100;
       } else if (resource.fileType === "pdf") {
-        score += 30;
+        score += 50;
+        // Priority for books and curated book channels
+        if (isBookChannel || intent.book) {
+          score += 130; // Direct boost for books from @Amharic_Fiction_Books, @muscatnonfiction, etc.
+        }
+        if (hasAmharicQuery && /[ሀ-፼]/.test(resource.fileName || resource.cleanTitle || "")) {
+          score += 100; // Strong match for Amharic literature/books
+        }
       } else if (resource.fileType === "ppt") {
         score += 20;
       } else if (resource.fileType === "doc") {
@@ -582,7 +614,11 @@ class SearchService {
         const seenGroups = new Set();
 
         for (const r of allResults) {
-          if (r.groupId) {
+          const chLower = (r.channelUsername || "").toLowerCase();
+          const isBook = BOOK_CHANNELS.has(chLower);
+
+          // Books are distinct literature files, NOT pages/parts of one bundle!
+          if (r.groupId && !isBook) {
              if (seenGroups.has(r.groupId)) continue;
              seenGroups.add(r.groupId);
              r._isGrouped = true;

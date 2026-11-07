@@ -30,7 +30,8 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
     if (typeof window === "undefined") return;
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
-      setIsInsideTelegram(true);
+      const isInTelegram = Boolean(tg.initData && tg.initData.length > 0);
+      setIsInsideTelegram(isInTelegram);
       if (tg.initDataUnsafe?.user) {
         setUser(tg.initDataUnsafe.user);
       }

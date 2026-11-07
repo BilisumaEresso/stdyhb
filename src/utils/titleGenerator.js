@@ -4,6 +4,7 @@
  * Professional Display Title Normalizer for StudyHub.
  * Converts raw filenames, messy captions, and scanner artifacts into
  * clean, consistent, professional titles for both Web and Bot display.
+ * Fully supports Amharic/Ethiopic script and English academic literature.
  */
 
 // Known acronyms to preserve in UPPERCASE
@@ -23,6 +24,9 @@ const GENERIC_CHAPTER_RE = /^(chapter|unit|lecture|part|section|module|ch)\s*[-_
 
 // Priority academic / exam keywords for caption line picking
 const ACADEMIC_PRIORITY_RE = /\b(exam|mid|midterm|final|quiz|test|chapter|lecture|notes?|slides?|handout|module|course\s*outline|assignment|solutions?|worksheet)\b/i;
+
+// Ethiopic script range (Amharic, Tigrinya, Ge'ez)
+const ETHIOPIC_RE = /[ሀ-፼]/;
 
 /**
  * Capitalizes a word respecting academic acronyms and standard English rules.
@@ -49,6 +53,7 @@ function titleCaseWord(word, index, totalWords) {
 
 /**
  * Cleans text from emojis, URLs, channels, hashtags, and formatting noise.
+ * Fully preserves Unicode/Ethiopic letters.
  */
 function cleanRawText(str) {
   if (!str) return "";
@@ -74,8 +79,8 @@ function cleanRawText(str) {
     // Remove leading numbering like "01Chapter" -> "Chapter" or "1. " -> ""
     .replace(/^\s*\d{1,2}[\.\-\s]+(?=[A-Za-z])/g, "")
     .replace(/^\s*0\d(?=[A-Za-z])/g, "")
-    // Remove stray special chars at start/end
-    .replace(/^[^\w\s\(\)]+|[^\w\s\(\)]+$/g, "")
+    // Remove stray special chars at start/end using Unicode-aware property escapes
+    .replace(/^[^\p{L}\p{N}\(\)]+|[^\p{L}\p{N}\(\)]+$/gu, "")
     // Collapse multiple whitespace
     .replace(/\s+/g, " ")
     .trim();
@@ -89,7 +94,7 @@ function extractTitleFromCaption(caption) {
   const lines = caption
     .split(/\r?\n/)
     .map((l) => cleanRawText(l))
-    .filter((l) => l.length >= 3 && /[a-zA-Z]/.test(l));
+    .filter((l) => l.length >= 3 && /[\p{L}]/u.test(l));
 
   if (lines.length === 0) return "";
 
@@ -124,16 +129,29 @@ function generateDisplayTitle(resource) {
   const rawFileName = (resource.fileName || "").trim();
   const rawCaption = (resource.caption || "").trim();
 
+  // 1. Amharic / Ethiopic titles: the filename IS the title of the book!
+  // No need to change name or title, display them with confidence.
+  if (ETHIOPIC_RE.test(rawFileName)) {
+    let cleanAmharic = cleanRawText(rawFileName)
+      .replace(/\s*-\s*/g, " - ")
+      .replace(/[:\-,\s]+$/, "")
+      .trim();
+    if (cleanAmharic.length > 0) {
+      if (cleanAmharic.length > 70) cleanAmharic = cleanAmharic.substring(0, 69) + "…";
+      return cleanAmharic;
+    }
+  }
+
   let candidate = "";
 
-  // 1. Check if fileName exists and is NOT a generic scanner artifact
+  // 2. Check if fileName exists and is NOT a generic scanner artifact
   const isScanner = !rawFileName || SCANNER_ARTIFACT_RE.test(cleanRawText(rawFileName));
 
   if (!isScanner) {
     candidate = cleanRawText(rawFileName);
   }
 
-  // 2. If candidate is a generic chapter name (e.g., "Chapter 1"), try enriching from caption
+  // 3. If candidate is a generic chapter name (e.g., "Chapter 1"), try enriching from caption
   if (candidate && GENERIC_CHAPTER_RE.test(candidate)) {
     const capTitle = extractTitleFromCaption(rawCaption);
     if (capTitle && capTitle.length >= 4 && !GENERIC_CHAPTER_RE.test(capTitle)) {
@@ -141,12 +159,12 @@ function generateDisplayTitle(resource) {
     }
   }
 
-  // 3. If no valid fileName (or it was a scanner artifact), extract from caption
+  // 4. If no valid fileName (or it was a scanner artifact), extract from caption
   if (!candidate || candidate.length < 4) {
     candidate = extractTitleFromCaption(rawCaption);
   }
 
-  // 4. Fallback to courseCode / tags / generic
+  // 5. Fallback to courseCode / tags / generic
   if (!candidate || candidate.length < 3) {
     if (resource.courseCode) {
       candidate = `${resource.courseCode.toUpperCase()} Study Material`;
@@ -158,19 +176,29 @@ function generateDisplayTitle(resource) {
     }
   }
 
-  // 5. Format into Title Case
+  // 6. If candidate contains Ethiopic characters, preserve as-is without English casing
+  if (ETHIOPIC_RE.test(candidate)) {
+    let cleanAmharic = candidate
+      .replace(/\s*-\s*/g, " - ")
+      .replace(/[:\-,\s]+$/, "")
+      .trim();
+    if (cleanAmharic.length > 70) cleanAmharic = cleanAmharic.substring(0, 69) + "…";
+    return cleanAmharic;
+  }
+
+  // 7. Format English into Title Case
   const words = candidate.split(/\s+/).filter(Boolean);
   const titleCased = words
     .map((w, idx) => titleCaseWord(w, idx, words.length))
     .join(" ");
 
-  // 6. Clean punctuation spacing
+  // 8. Clean punctuation spacing
   let finalTitle = titleCased
     .replace(/\s*-\s*/g, " - ")
     .replace(/[:\-,\s]+$/, "")
     .trim();
 
-  // 7. Graceful truncation: max 65 chars at word boundary
+  // 9. Graceful truncation: max 65 chars at word boundary
   const MAX_LEN = 65;
   if (finalTitle.length > MAX_LEN) {
     const truncated = finalTitle.substring(0, MAX_LEN);

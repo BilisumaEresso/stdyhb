@@ -65,13 +65,23 @@ export default function Navbar() {
           <Link className={isActive("/about") ? "active" : ""} href="/about">
             About
           </Link>
+          <a
+            className="nav-bot-link"
+            href={`https://t.me/${botUsername}`}
+            target="_blank"
+            rel="noreferrer"
+            title="Open StudyHub Bot on Telegram"
+          >
+            <Send size={13} />
+            <span>Open Bot</span>
+          </a>
         </nav>
 
         {/* Actions */}
         <div className="navactions">
           {!isInsideTelegram && (
             <a
-              className="btn btn-primary"
+              className="btn btn-primary nav-bot-cta"
               href={`https://t.me/${botUsername}`}
               target="_blank"
               rel="noreferrer"
@@ -144,14 +154,14 @@ export default function Navbar() {
         </Link>
         {!isInsideTelegram && (
           <a
+            className="mobile-bot-card"
             href={`https://t.me/${botUsername}`}
             target="_blank"
             rel="noreferrer"
             onClick={() => setMobileMenuOpen(false)}
-            style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--primary)" }}
           >
             <Send size={15} />
-            <span>Open Telegram Bot ↗</span>
+            <span>Open Telegram Bot (@{botUsername})</span>
           </a>
         )}
       </nav>

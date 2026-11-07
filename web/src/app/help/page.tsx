@@ -1,265 +1,403 @@
+"use client";
+
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  HelpCircle,
   Search,
   Send,
   Download,
-  BookOpen,
-  FolderArchive,
-  Images,
-  FileText,
-  ShieldCheck,
-  Sparkles,
+  ChevronDown,
   ArrowRight,
   ExternalLink,
-  MessageCircle,
+  HelpCircle,
+  FileSearch,
+  Layers,
+  GraduationCap,
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
 import {
-  FilePdfIcon,
   FileExamIcon,
-  BundleAlbumIcon,
-  BundlePdfIcon,
   TrustTelegramIcon,
-  TrustVerifiedIcon,
-  TrustSpeedIcon,
 } from "@/components/icons";
 
-export const metadata = {
-  title: "Help & Student Guide | StudyHub",
-  description:
-    "Learn how to discover academic materials, past exams, lecture notes, and receive files instantly via the StudyHub Telegram bot.",
-};
+interface FAQItem {
+  id: string;
+  category: "all" | "bot" | "exams" | "formats" | "universities";
+  categoryLabel: string;
+  question: string;
+  answer: string;
+}
 
-const faqs = [
+const FAQS: FAQItem[] = [
   {
-    q: "How do I receive materials directly on my Telegram?",
-    a: "Every resource card has a 'Send to Bot' button. Clicking it opens our official Telegram companion (@studyhub_resource_bot) and automatically delivers the document or past exam straight to your Telegram chat or Saved Messages. This allows you to study without downloading large files through a mobile browser.",
+    id: "telegram-bot-dl",
+    category: "bot",
+    categoryLabel: "Telegram Bot",
+    question: "How do I receive academic documents directly to Telegram?",
+    answer:
+      "Every document, slide deck, or exam on StudyHub includes a 'Send to Bot' button. Clicking it launches our official companion bot (@studyhub_resource_bot) in Telegram. The bot immediately transfers the original uncompressed PDF or document straight into your chat. This saves significant mobile internet data by avoiding third-party browser download redirections.",
   },
   {
-    q: "Is StudyHub completely free to use?",
-    a: "Yes! StudyHub is 100% free for all Ethiopian university students. Our mission is to make educational resources, past examinations, and reference lecture notes open and universally accessible.",
+    id: "free-access",
+    category: "all",
+    categoryLabel: "General",
+    question: "Is StudyHub completely free for Ethiopian university students?",
+    answer:
+      "Yes, 100% free. StudyHub was created to eliminate the friction of searching through chaotic Telegram channels. All past exams, model answer keys, lecture slides, and course handouts are freely accessible without paywalls, sign-up requirements, or advertising traps.",
   },
   {
-    q: "What is the difference between Single Files, Curated Bundles, and Photo Albums?",
-    a: "A Single File is a standalone PDF, slide presentation, or document. A Curated Bundle is a multi-file collection grouped by topic or course (e.g., lecture slides + syllabus + lab manual). A Photo Album is a multi-page scanned exam or handwritten model answer presented in a responsive lightbox viewer.",
+    id: "finding-exams",
+    category: "exams",
+    categoryLabel: "Past Exams",
+    question: "How do I find past midterm, final, and university exit exams?",
+    answer:
+      "You can filter specifically for exams on the Explore page by selecting 'Past Exam' in the format selector, or search by course code (e.g., 'CoSc2011', 'Math1011') or keywords like 'Exit Exam', 'COC', 'Midterm', or 'Model Exam'. Many exam listings also include handwritten step-by-step model solutions from top scoring students.",
   },
   {
-    q: "Which Ethiopian universities are represented on StudyHub?",
-    a: "Materials are aggregated and indexed from public student channels across Addis Ababa University (AAU), Adama Science and Technology University (ASTU), Addis Ababa Science and Technology University (AASTU), Jimma University, Hawassa University, Bahir Dar University, University of Gondar, and specialized engineering colleges.",
+    id: "formats-diff",
+    category: "formats",
+    categoryLabel: "Resource Formats",
+    question: "What is the difference between Single Files, Curated Bundles, and Photo Albums?",
+    answer:
+      "Single Files are individual documents like lecture slides (.pptx) or lab handouts (.pdf). Curated Bundles are complete course packages containing multiple chapters, sample exercises, and reference notes organized together. Photo Exam Albums are multi-page scans of physical paper exams displayed in a full-screen, pinch-to-zoom web lightbox viewer.",
   },
   {
-    q: "How can I search for past exams specifically?",
-    a: "You can go to the Explore page and select 'Past Exam' under the File Type filter, or search keywords such as 'Midterm', 'Final Exam', 'Exit Exam', or 'COC'. Popular search tags on the homepage also offer 1-tap filters for common exam topics.",
+    id: "offline-reading",
+    category: "bot",
+    categoryLabel: "Telegram Bot",
+    question: "Can I save materials to study offline when internet is unavailable?",
+    answer:
+      "Yes! When our Telegram bot delivers your requested material, tap the file menu and select 'Save to Downloads' or forward it to your Telegram 'Saved Messages'. Telegram stores downloaded documents on your device so you can review lecture notes and past exams without an active data connection.",
   },
   {
-    q: "Can my student batch or department channel contribute materials?",
-    a: "Yes! If you manage a Telegram study group, academic batch channel, or have verified exam archives, reach out to our bot via @studyhub_resource_bot or our Telegram student support. We verify materials before making them publicly searchable.",
+    id: "supported-universities",
+    category: "universities",
+    categoryLabel: "Universities",
+    question: "Which Ethiopian universities and colleges are indexed?",
+    answer:
+      "StudyHub indexes academic repositories across Addis Ababa University (AAU - 4 Kilo, 5 Kilo, 6 Kilo, FBE), Adama Science & Technology University (ASTU), Addis Ababa Science & Technology University (AASTU), Jimma University (JU), Hawassa University (HU), Bahir Dar University (BDU), University of Gondar (UoG), Haramaya University, and specialized medical and engineering faculties.",
+  },
+  {
+    id: "contribute-channel",
+    category: "universities",
+    categoryLabel: "Universities",
+    question: "How can our campus channel or student batch submit study materials?",
+    answer:
+      "If you manage an academic batch channel, study group, or have digital copies of verified previous year exams, message @studyhub_resource_bot with the '/contribute' command or share your channel link. Our academic review team verifies files for quality and legibility before publishing them to the public discovery index.",
+  },
+  {
+    id: "preview-issues",
+    category: "formats",
+    categoryLabel: "Troubleshooting",
+    question: "What should I do if a web PDF preview loads slowly or fails?",
+    answer:
+      "Certain complex PDF files containing embedded high-resolution graphics can take longer to stream in the web browser on slow 3G mobile connections. If a preview stalls, simply tap 'Send to Bot' to have the complete file delivered instantly over Telegram's optimized protocol.",
   },
 ];
 
 export default function HelpPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [openFaqId, setOpenFaqId] = useState<string | null>("telegram-bot-dl");
+
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
+
+  const categories = [
+    { id: "all", label: "All Questions" },
+    { id: "bot", label: "Telegram Bot Companion" },
+    { id: "exams", label: "Past Exams & Midterms" },
+    { id: "formats", label: "PDFs, Bundles & Albums" },
+    { id: "universities", label: "Universities & Contributing" },
+  ];
+
+  const filteredFaqs = useMemo(() => {
+    return FAQS.filter((faq) => {
+      const matchesCategory =
+        activeCategory === "all" || faq.category === activeCategory;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        faq.question.toLowerCase().includes(q) ||
+        faq.answer.toLowerCase().includes(q) ||
+        faq.categoryLabel.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, searchQuery]);
 
   return (
     <main>
-      {/* Page Hero */}
-      <section className="page-hero container">
-        <span className="eyebrow">
-          <BrandEmblem size={16} />
-          <span>Student Guide & FAQ</span>
-        </span>
-        <h1>
-          How to get the most out of <span className="accent">StudyHub.</span>
-        </h1>
-        <p>
-          Find past examinations, lecture notes, and reference books easily. Learn how to search,
-          preview in browser, or receive files directly inside Telegram.
-        </p>
+      {/* Redesigned Student Help Hero */}
+      <section className="container">
+        <div className="help-hero">
+          <span className="eyebrow" style={{ display: "inline-flex", margin: "0 auto 16px" }}>
+            <BrandEmblem size={16} />
+            <span>Student Knowledge & Help Center</span>
+          </span>
+          <h1>
+            How can we help your <span className="accent">studies today?</span>
+          </h1>
+          <p>
+            Quick guides, search strategies, Telegram bot companion commands, and answers to common
+            student questions across Ethiopian universities.
+          </p>
+
+          {/* Interactive Search Bar */}
+          <div className="help-search-box">
+            <Search size={18} style={{ color: "var(--primary)", flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Search help topics, exit exams, bot commands, or file formats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="btn btn-ghost"
+                style={{ width: "28px", height: "28px", fontSize: "12px", border: "0" }}
+                onClick={() => setSearchQuery("")}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="help-category-pills">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={`help-pill ${activeCategory === cat.id ? "active" : ""}`}
+                onClick={() => setActiveCategory(cat.id)}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* 3 Quick-Start Steps */}
+      {/* 4 Featured Quick Guide Cards */}
       <section className="container section" style={{ paddingTop: 0 }}>
         <div className="section-head">
           <div>
             <h2>
-              Getting Started in <span className="accent">3 Easy Steps</span>
+              Essential Guides for <span className="accent">Academic Success</span>
             </h2>
-            <p>Master resource discovery on StudyHub in less than two minutes.</p>
+            <p>Four key techniques to locate course materials faster than ever before.</p>
           </div>
         </div>
 
-        <div className="steps-grid">
+        <div className="steps-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           <div className="step-card">
-            <span className="step-badge">Step 01</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-              <Search size={20} style={{ color: "var(--primary)" }} />
-              <h3 style={{ margin: 0 }}>Search with Precision</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <FileSearch size={22} style={{ color: "var(--primary)" }} />
+              <h3 style={{ margin: 0, fontSize: "17px" }}>Course Code Queries</h3>
             </div>
             <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6" }}>
-              Enter your course code (e.g., <code>CoSc2011</code>), course title, or subject. Filter by
-              resource format: Single PDF, Curated Course Bundle, or Photo Exam Album.
+              Use official curriculum course numbers such as <code>CoSc2011</code>, <code>Math1011</code>, or <code>Phys1011</code>. This returns exact department syllabus matches.
             </p>
           </div>
 
           <div className="step-card">
-            <span className="step-badge">Step 02</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-              <TrustTelegramIcon size={22} style={{ color: "var(--primary)" }} />
-              <h3 style={{ margin: 0 }}>1-Tap Telegram Delivery</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <TrustTelegramIcon size={24} style={{ color: "var(--cyan)" }} />
+              <h3 style={{ margin: 0, fontSize: "17px" }}>1-Tap Telegram Delivery</h3>
             </div>
             <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6" }}>
-              Click <strong>&quot;Send to Bot&quot;</strong> on any resource. Our companion bot{" "}
-              <code>@{botUsername}</code> instantly sends the original document file right into your
-              Telegram app.
+              Tap <strong>&quot;Send to Bot&quot;</strong> on any resource. Our verified Telegram companion sends the file straight into your Telegram app with zero mobile browser data waste.
             </p>
           </div>
 
           <div className="step-card">
-            <span className="step-badge">Step 03</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-              <Download size={20} style={{ color: "var(--primary)" }} />
-              <h3 style={{ margin: 0 }}>Study Offline Any Time</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <Layers size={22} style={{ color: "var(--gold)" }} />
+              <h3 style={{ margin: 0, fontSize: "17px" }}>Curated Bundles</h3>
             </div>
             <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6" }}>
-              Save incoming documents to your Telegram &quot;Saved Messages&quot; or forward them to your study
-              circle. Once downloaded, files remain available even with intermittent mobile data.
+              Don&apos;t download files one by one. Curated bundles combine lecture slides, lab manuals, and chapter worksheets into one coherent multi-file course packet.
+            </p>
+          </div>
+
+          <div className="step-card">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <FileExamIcon size={22} style={{ color: "var(--green)" }} />
+              <h3 style={{ margin: 0, fontSize: "17px" }}>Exam Model Solutions</h3>
+            </div>
+            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6" }}>
+              Search for midterm and final papers with handwritten step-by-step workings and model answers verified by senior top-scoring students.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Resource Types Guide */}
+      {/* Telegram Bot Simulation Card */}
       <section className="container section">
-        <div className="section-head">
-          <div>
-            <h2>
-              Understanding <span className="accent">Resource Formats</span>
+        <div className="telegram-sim-box">
+          {/* Simulated Chat Interface */}
+          <div className="sim-chat-view">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)" }} />
+              <strong style={{ fontSize: "13px", color: "var(--muted)" }}>
+                StudyHub Bot Demo Chat
+              </strong>
+            </div>
+
+            <div className="sim-bubble-user">
+              <span>/exams Database Systems</span>
+            </div>
+
+            <div className="sim-bubble-bot">
+              <p style={{ margin: "0 0 6px 0", fontWeight: 700, fontSize: "13px", color: "var(--primary)" }}>
+                StudyHub Resource Bot
+              </p>
+              <p style={{ margin: 0, fontSize: "13px" }}>
+                Found <strong>6 verified past examinations</strong> for Database Systems (AAU / ASTU / AASTU).
+              </p>
+              <div className="sim-btn-row">
+                <span className="sim-inline-btn">
+                  <Download size={13} />
+                  <span>Download Exam PDF (3.4 MB)</span>
+                </span>
+                <span className="sim-inline-btn">
+                  <ExternalLink size={13} />
+                  <span>Preview Solutions</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bot Info & Commands */}
+          <div className="sim-info-view">
+            <span className="eyebrow" style={{ marginBottom: "12px" }}>
+              <TrustTelegramIcon size={16} />
+              <span>Mobile-First Companion</span>
+            </span>
+            <h2 style={{ fontSize: "24px", margin: "0 0 10px" }}>
+              The Power of @{botUsername}
             </h2>
-            <p>StudyHub indexes academic content in three distinct tiers.</p>
-          </div>
-        </div>
-
-        <div className="value-grid">
-          <div className="value-card" style={{ borderLeft: "4px solid var(--primary)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <FilePdfIcon size={24} style={{ color: "var(--primary)" }} />
-              <h3 style={{ margin: 0, fontSize: "17px" }}>Single Documents & PDFs</h3>
-            </div>
-            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6", margin: 0 }}>
-              Standard academic files: official course syllabi, professor lecture slides (.pptx),
-              laboratory manuals, and past midterm question sheets. You can preview PDF documents
-              directly inside the web browser.
+            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "22px" }}>
+              Students in Ethiopia often face intermittent mobile networks. Our Telegram bot transfers original files using Telegram&apos;s reliable resume-capable protocol.
             </p>
-          </div>
 
-          <div className="value-card" style={{ borderLeft: "4px solid var(--gold)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <BundlePdfIcon size={24} style={{ color: "var(--gold)" }} />
-              <h3 style={{ margin: 0, fontSize: "17px" }}>Curated Multi-File Bundles</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "10px", fontSize: "13px" }}>
+                <code style={{ color: "var(--primary)", fontWeight: 700 }}>/start</code>
+                <span className="muted">Initialize bot & access directory categories</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "10px", fontSize: "13px" }}>
+                <code style={{ color: "var(--primary)", fontWeight: 700 }}>/search [course]</code>
+                <span className="muted">Instant query across 70,000+ indexed academic resources</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "10px", fontSize: "13px" }}>
+                <code style={{ color: "var(--primary)", fontWeight: 700 }}>/exams [subject]</code>
+                <span className="muted">Filter directly for midterms, finals, and COC papers</span>
+              </div>
             </div>
-            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6", margin: 0 }}>
-              Comprehensive semester archives containing multiple related files. When you request a bundle,
-              the Telegram bot delivers all chapters, worksheets, and model solutions in a coherent packet.
-            </p>
-          </div>
 
-          <div className="value-card" style={{ borderLeft: "4px solid var(--green)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <BundleAlbumIcon size={24} style={{ color: "var(--green)" }} />
-              <h3 style={{ margin: 0, fontSize: "17px" }}>Photo Exam Lightboxes</h3>
-            </div>
-            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6", margin: 0 }}>
-              Scanned paper exams and handwritten board solutions shared across campus channels. View each
-              page high-resolution in our full-screen responsive image viewer.
-            </p>
+            <a
+              className="btn btn-primary"
+              href={`https://t.me/${botUsername}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            >
+              <Send size={15} />
+              <span>Launch @{botUsername}</span>
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Frequently Asked Questions */}
+      {/* Interactive FAQ Accordion */}
       <section className="container section">
-        <div className="section-head">
-          <div>
-            <h2>
-              Frequently Asked <span className="accent">Questions</span>
-            </h2>
-            <p>Quick answers to common questions about finding and sharing materials.</p>
-          </div>
+        <div className="section-head" style={{ textAlign: "center", display: "block", marginBottom: "32px" }}>
+          <h2>
+            Frequently Asked <span className="accent">Questions</span>
+          </h2>
+          <p>
+            {filteredFaqs.length} {filteredFaqs.length === 1 ? "answer" : "answers"} found
+            {activeCategory !== "all" && ` in ${categories.find((c) => c.id === activeCategory)?.label}`}
+            {searchQuery && ` matching "${searchQuery}"`}.
+          </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "18px" }}>
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line)",
-                borderRadius: "16px",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
+        {filteredFaqs.length === 0 ? (
+          <div className="empty" style={{ maxWidth: "600px", margin: "0 auto" }}>
+            <HelpCircle size={40} style={{ color: "var(--muted)", margin: "0 auto 12px" }} />
+            <h3>No matching questions found</h3>
+            <p className="muted" style={{ fontSize: "14px" }}>
+              Try searching with different terms or reset your category filter.
+            </p>
+            <button
+              className="btn btn-outline"
+              style={{ marginTop: "14px" }}
+              onClick={() => {
+                setSearchQuery("");
+                setActiveCategory("all");
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                <span
-                  style={{
-                    color: "var(--primary)",
-                    background: "var(--primary-soft)",
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "8px",
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                    fontSize: "13px",
-                    fontWeight: 700,
-                  }}
-                >
-                  Q
-                </span>
-                <strong style={{ fontSize: "15px", color: "var(--text)", lineHeight: "1.4" }}>
-                  {faq.q}
-                </strong>
-              </div>
-              <p
-                className="muted"
-                style={{ fontSize: "14px", lineHeight: "1.6", margin: 0, paddingLeft: "38px" }}
-              >
-                {faq.a}
-              </p>
-            </div>
-          ))}
-        </div>
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div className="faq-list">
+            {filteredFaqs.map((faq) => {
+              const isOpen = openFaqId === faq.id;
+              return (
+                <div key={faq.id} className={`faq-card ${isOpen ? "open" : ""}`}>
+                  <button
+                    className="faq-header"
+                    onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
+                    aria-expanded={isOpen}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                      <span className="faq-icon-tag">
+                        <HelpCircle size={17} />
+                      </span>
+                      <span>{faq.question}</span>
+                    </div>
+                    <ChevronDown size={18} className="faq-chevron" />
+                  </button>
+
+                  {isOpen && (
+                    <div className="faq-body">
+                      <p style={{ margin: 0 }}>{faq.answer}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Telegram Bot Commands Strip */}
-      <section className="container section">
+      {/* Campus Channel Contribution & Support Banner */}
+      <section className="container section" style={{ paddingBottom: "70px" }}>
         <div
           style={{
             background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)",
-            border: "1px solid var(--line)",
-            borderRadius: "20px",
-            padding: "32px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "28px",
-            alignItems: "center",
+            border: "1px solid var(--card-border)",
+            borderRadius: "22px",
+            padding: "44px 32px",
+            textAlign: "center",
+            boxShadow: "var(--shadow-card)",
           }}
         >
-          <div>
-            <span className="eyebrow" style={{ marginBottom: "12px" }}>
-              <TrustTelegramIcon size={16} />
-              <span>Telegram Companion</span>
-            </span>
-            <h2 style={{ fontSize: "24px", marginBottom: "12px" }}>
-              StudyHub Bot Commands
-            </h2>
-            <p className="muted" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "20px" }}>
-              You can search directly inside Telegram without opening a browser. Open a chat with{" "}
-              <strong>@{botUsername}</strong> and try these commands:
-            </p>
+          <span className="eyebrow" style={{ display: "inline-flex", margin: "0 auto 14px" }}>
+            <GraduationCap size={16} />
+            <span>Campus Community Program</span>
+          </span>
+          <h2 style={{ fontSize: "26px", margin: "0 auto 12px", maxWidth: "600px" }}>
+            Missing course materials from <span className="accent">your department?</span>
+          </h2>
+          <p
+            className="muted"
+            style={{ fontSize: "15px", lineHeight: "1.6", maxWidth: "580px", margin: "0 auto 24px" }}
+          >
+            StudyHub grows through community collaboration. If your class batch channel or student group has past exams, notes, or lab sheets, send them our way!
+          </p>
+
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <a
               className="btn btn-primary"
               href={`https://t.me/${botUsername}`}
@@ -267,65 +405,11 @@ export default function HelpPage() {
               rel="noreferrer"
             >
               <Send size={15} />
-              <span>Launch @{botUsername}</span>
+              <span>Submit Materials via Bot</span>
             </a>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--line)",
-              borderRadius: "14px",
-              padding: "18px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-              <code style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px" }}>/start</code>
-              <span className="muted" style={{ fontSize: "13px" }}>
-                Initialize the bot and browse main academic categories.
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-              <code style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px" }}>/help</code>
-              <span className="muted" style={{ fontSize: "13px" }}>
-                View instructions and tips for locating rare course notes.
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-              <code style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px" }}>/search [term]</code>
-              <span className="muted" style={{ fontSize: "13px" }}>
-                Instant query across 80,000+ indexed documents.
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-              <code style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px" }}>/exams</code>
-              <span className="muted" style={{ fontSize: "13px" }}>
-                Filter exclusively for university midterm and exit exams.
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Box */}
-      <section className="container section" style={{ paddingBottom: "70px" }}>
-        <div className="cta-box">
-          <h2>
-            Ready to find your <span className="accent">study materials?</span>
-          </h2>
-          <p>
-            Search thousands of past exams, lecture notes, and reference books tailored for Ethiopian university students.
-          </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link className="btn btn-primary" href="/explore">
-              <span>Start Searching</span>
+            <Link className="btn btn-outline" href="/explore">
+              <span>Back to Library</span>
               <ArrowRight size={15} />
-            </Link>
-            <Link className="btn btn-outline" href="/subjects">
-              <span>Browse Subjects</span>
             </Link>
           </div>
         </div>
