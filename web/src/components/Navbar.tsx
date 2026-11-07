@@ -59,6 +59,9 @@ export default function Navbar() {
           <Link className={isActive("/subjects") ? "active" : ""} href="/subjects">
             Subjects
           </Link>
+          <Link className={isActive("/help") ? "active" : ""} href="/help">
+            Help
+          </Link>
           <Link className={isActive("/about") ? "active" : ""} href="/about">
             About
           </Link>
@@ -124,6 +127,13 @@ export default function Navbar() {
           onClick={() => setMobileMenuOpen(false)}
         >
           Subjects
+        </Link>
+        <Link
+          className={isActive("/help") ? "active" : ""}
+          href="/help"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Help
         </Link>
         <Link
           className={isActive("/about") ? "active" : ""}

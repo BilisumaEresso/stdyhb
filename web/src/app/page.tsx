@@ -24,6 +24,25 @@ import {
   ExternalLink,
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
+import {
+  FilePdfIcon,
+  FilePptIcon,
+  FileDocIcon,
+  FileImageIcon,
+  SubjectCsIcon,
+  SubjectSeIcon,
+  SubjectDbmsIcon,
+  SubjectNetworksIcon,
+  SubjectMathIcon,
+  SubjectPhysicsIcon,
+  SubjectChemistryIcon,
+  SubjectIsIcon,
+  SubjectAiIcon,
+  TrustSpeedIcon,
+  TrustTelegramIcon,
+  TrustVerifiedIcon,
+  TrustLibraryIcon,
+} from "@/components/icons";
 
 const POPULAR_CHIPS = [
   { label: "DBMS", query: "DBMS" },
@@ -39,55 +58,55 @@ const SUBJECTS = [
   {
     title: "Computer Science",
     desc: "Algorithms, operating systems, compiler design & core theory",
-    icon: Code,
+    icon: SubjectCsIcon,
     query: "Computer Science",
   },
   {
     title: "Software Engineering",
     desc: "System design, agile testing, OOP & software architecture",
-    icon: Cpu,
+    icon: SubjectSeIcon,
     query: "Software Engineering",
   },
   {
     title: "Database Systems",
     desc: "Relational DBMS, SQL queries, normalization & ER modeling",
-    icon: Database,
+    icon: SubjectDbmsIcon,
     query: "Database Systems DBMS",
   },
   {
     title: "Computer Networks",
     desc: "OSI architecture, packet protocols, subnetting & socket labs",
-    icon: Network,
+    icon: SubjectNetworksIcon,
     query: "Computer Networks",
   },
   {
     title: "Mathematics",
     desc: "Calculus I & II, linear algebra, discrete math & probability",
-    icon: Calculator,
+    icon: SubjectMathIcon,
     query: "Mathematics Calculus",
   },
   {
     title: "Physics",
     desc: "Classical mechanics, electromagnetism, optics & solved midterms",
-    icon: Atom,
+    icon: SubjectPhysicsIcon,
     query: "General Physics",
   },
   {
     title: "Chemistry",
     desc: "General chemistry, analytical labs & freshman question papers",
-    icon: FlaskConical,
+    icon: SubjectChemistryIcon,
     query: "General Chemistry",
   },
   {
     title: "Information Systems",
     desc: "Enterprise architecture, systems analysis & IT management",
-    icon: Layers,
+    icon: SubjectIsIcon,
     query: "Information Systems",
   },
   {
     title: "Artificial Intelligence",
     desc: "Machine learning, neural networks & intelligent agents",
-    icon: Bot,
+    icon: SubjectAiIcon,
     query: "Artificial Intelligence Machine Learning",
   },
 ];
@@ -215,7 +234,7 @@ export default function HomePage() {
       <section className="container stats-strip">
         <div className="stat-card">
           <div className="stat-icon">
-            <Zap size={22} />
+            <TrustSpeedIcon size={24} />
           </div>
           <div>
             <strong>Fast Discovery</strong>
@@ -225,7 +244,7 @@ export default function HomePage() {
 
         <div className="stat-card">
           <div className="stat-icon">
-            <BookOpen size={22} />
+            <TrustLibraryIcon size={24} />
           </div>
           <div>
             <strong>{stats.totalResources.toLocaleString()}+ Materials</strong>
@@ -235,7 +254,7 @@ export default function HomePage() {
 
         <div className="stat-card">
           <div className="stat-icon">
-            <Send size={22} />
+            <TrustTelegramIcon size={24} />
           </div>
           <div>
             <strong>Telegram Connected</strong>
@@ -245,7 +264,7 @@ export default function HomePage() {
 
         <div className="stat-card">
           <div className="stat-icon">
-            <CheckCircle2 size={22} />
+            <TrustVerifiedIcon size={24} />
           </div>
           <div>
             <strong>Verified Academic Files</strong>
@@ -348,8 +367,16 @@ export default function HomePage() {
               return (
                 <article key={item._id} className="resource-card">
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div className={`file-type ${type}`}>
-                      {type.toUpperCase()}
+                    <div className={`file-type ${type}`} title={`${type.toUpperCase()} Document`}>
+                      {type === "ppt" ? (
+                        <FilePptIcon size={22} />
+                      ) : type === "doc" ? (
+                        <FileDocIcon size={22} />
+                      ) : type === "image" ? (
+                        <FileImageIcon size={22} />
+                      ) : (
+                        <FilePdfIcon size={22} />
+                      )}
                     </div>
                     {isExam && (
                       <span

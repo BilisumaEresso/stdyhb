@@ -45,6 +45,7 @@ export default function Footer() {
             <h4>Platform</h4>
             <div className="footer-links">
               <Link href="/about">About StudyHub</Link>
+              <Link href="/help">Help & FAQ</Link>
               <a
                 href={`https://t.me/${botUsername}`}
                 target="_blank"

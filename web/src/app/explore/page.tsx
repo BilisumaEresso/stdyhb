@@ -20,6 +20,16 @@ import {
   getTelegramBotDeepLink,
 } from "@/lib/api";
 import BrandEmblem from "@/components/BrandEmblem";
+import {
+  FilePdfIcon,
+  FilePptIcon,
+  FileDocIcon,
+  FileImageIcon,
+  BundlePdfIcon,
+  BundleSlidesIcon,
+  BundleAlbumIcon,
+  BundleDocIcon,
+} from "@/components/icons";
 
 const FILTER_CHIPS = [
   { label: "All", query: "", filter: "" },
@@ -246,7 +256,17 @@ function ExploreContent() {
             return (
               <article key={item._id} className="resource-card">
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <div className={`file-type ${typeClass}`}>{typeBadge}</div>
+                  <div className={`file-type ${typeClass}`} title={`${typeBadge} Resource`}>
+                    {typeClass === "ppt" ? (
+                      <FilePptIcon size={22} />
+                    ) : typeClass === "doc" ? (
+                      <FileDocIcon size={22} />
+                    ) : typeClass === "image" ? (
+                      <FileImageIcon size={22} />
+                    ) : (
+                      <FilePdfIcon size={22} />
+                    )}
+                  </div>
                   {bundleBadge && (
                     <span
                       style={{
@@ -258,10 +278,18 @@ function ExploreContent() {
                         color: "var(--primary)",
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "4px",
+                        gap: "5px",
                       }}
                     >
-                      <Layers size={11} />
+                      {item.fileType === "image" ? (
+                        <BundleAlbumIcon size={13} />
+                      ) : item.fileType === "ppt" ? (
+                        <BundleSlidesIcon size={13} />
+                      ) : item.fileType === "doc" ? (
+                        <BundleDocIcon size={13} />
+                      ) : (
+                        <BundlePdfIcon size={13} />
+                      )}
                       <span>{bundleBadge}</span>
                     </span>
                   )}

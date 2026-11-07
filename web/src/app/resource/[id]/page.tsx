@@ -24,6 +24,16 @@ import {
   getFileDownloadUrl,
   getTelegramBotDeepLink,
 } from "@/lib/api";
+import {
+  FilePdfIcon,
+  FilePptIcon,
+  FileDocIcon,
+  FileImageIcon,
+  BundlePdfIcon,
+  BundleSlidesIcon,
+  BundleAlbumIcon,
+  BundleDocIcon,
+} from "@/components/icons";
 
 const API_BASE = "/api";
 
@@ -243,11 +253,18 @@ function ResourceDetailContent() {
                             style={{
                               width: "36px",
                               height: "36px",
-                              fontSize: "11px",
                               borderRadius: "8px",
                             }}
                           >
-                            #{idx + 1}
+                            {item.fileType === "ppt" ? (
+                              <FilePptIcon size={18} />
+                            ) : item.fileType === "doc" ? (
+                              <FileDocIcon size={18} />
+                            ) : item.fileType === "image" ? (
+                              <FileImageIcon size={18} />
+                            ) : (
+                              <FilePdfIcon size={18} />
+                            )}
                           </span>
                           <span
                             style={{
@@ -360,7 +377,36 @@ function ResourceDetailContent() {
 
           {/* ── Right Detail Sidebar ──────────────────────────────── */}
           <aside className="detail-side">
-            <div className={`file-type ${badgeTypeClass}`}>{getTypeBadge()}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div className={`file-type ${badgeTypeClass}`} style={{ width: "46px", height: "46px" }}>
+                {resource?.fileType === "ppt" ? (
+                  <FilePptIcon size={24} />
+                ) : resource?.fileType === "doc" ? (
+                  <FileDocIcon size={24} />
+                ) : resource?.fileType === "image" ? (
+                  <FileImageIcon size={24} />
+                ) : (
+                  <FilePdfIcon size={24} />
+                )}
+              </div>
+              <div>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "var(--primary)",
+                    display: "block",
+                  }}
+                >
+                  {getTypeBadge()}
+                </span>
+                <span className="muted" style={{ fontSize: "11px" }}>
+                  {isGroup ? `${bundleCount} Items Package` : "Single Document"}
+                </span>
+              </div>
+            </div>
 
             <h3 style={{ marginTop: "16px", fontSize: "18px" }}>
               {displayTitle}
