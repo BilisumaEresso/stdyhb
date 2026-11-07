@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
+import BrandEmblem from "@/components/BrandEmblem";
 
 export default function AboutPage() {
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot";
@@ -17,7 +18,8 @@ export default function AboutPage() {
     <main>
       <section className="page-hero container">
         <span className="eyebrow">
-          <span className="dot"></span> Our Mission & Platform
+          <BrandEmblem size={16} />
+          <span>Our Mission & Platform</span>
         </span>
         <h1>
           Making academic resources <span className="accent">easier to discover.</span>

@@ -19,6 +19,7 @@ import {
   searchResources,
   getTelegramBotDeepLink,
 } from "@/lib/api";
+import BrandEmblem from "@/components/BrandEmblem";
 
 const FILTER_CHIPS = [
   { label: "All", query: "", filter: "" },
@@ -121,7 +122,8 @@ function ExploreContent() {
       {/* ── Page Hero ─────────────────────────────────────────────── */}
       <section className="page-hero container">
         <span className="eyebrow">
-          <span className="dot"></span> Academic Resource Discovery
+          <BrandEmblem size={16} />
+          <span>Academic Resource Discovery</span>
         </span>
         <h1>
           Explore <span className="accent">Academic Resources</span>

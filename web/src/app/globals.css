@@ -316,13 +316,12 @@ button {
   border-color: color-mix(in srgb, var(--cyan) 25%, transparent);
 }
 
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
-  display: inline-block;
-  box-shadow: 0 0 10px var(--cyan);
+.eyebrow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  flex-shrink: 0;
 }
 
 h1, h2, h3, h4, p {

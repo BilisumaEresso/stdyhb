@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Search, Home } from "lucide-react";
+import { ArrowLeft, Search, Home, AlertCircle } from "lucide-react";
 
 export default function NotFound() {
   return (
@@ -18,7 +18,8 @@ export default function NotFound() {
         }}
       />
       <span className="eyebrow" style={{ marginBottom: "16px" }}>
-        Error 404
+        <AlertCircle size={14} className="eyebrow-icon" />
+        <span>Error 404</span>
       </span>
       <h1 style={{ fontSize: "clamp(32px, 4.5vw, 48px)", margin: "16px 0 12px" }}>
         Page not found.

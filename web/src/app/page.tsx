@@ -23,6 +23,7 @@ import {
   FileText,
   ExternalLink,
 } from "lucide-react";
+import BrandEmblem from "@/components/BrandEmblem";
 
 const POPULAR_CHIPS = [
   { label: "DBMS", query: "DBMS" },
@@ -153,7 +154,8 @@ export default function HomePage() {
         <div className="container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow">
-              <span className="dot"></span> Academic Resource Discovery
+              <BrandEmblem size={16} />
+              <span>Academic Resource Discovery</span>
             </span>
 
             <h1>
@@ -257,7 +259,8 @@ export default function HomePage() {
         <div className="section-head">
           <div>
             <span className="eyebrow" style={{ marginBottom: "10px" }}>
-              Simple 3-Step Process
+              <Zap size={14} className="eyebrow-icon" />
+              <span>Simple 3-Step Process</span>
             </span>
             <h2>How StudyHub Works</h2>
             <p>Designed to help you find academic resources without jumping across dozens of chat groups.</p>

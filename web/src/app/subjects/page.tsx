@@ -18,6 +18,7 @@ import {
   Binary,
   Compass,
 } from "lucide-react";
+import BrandEmblem from "@/components/BrandEmblem";
 
 const ALL_SUBJECTS = [
   {
@@ -127,7 +128,8 @@ export default function SubjectsPage() {
     <main>
       <section className="page-hero container">
         <span className="eyebrow">
-          <span className="dot"></span> Academic Discipline Directory
+          <BrandEmblem size={16} />
+          <span>Academic Discipline Directory</span>
         </span>
         <h1>
           Explore by <span className="accent">Subject</span>
