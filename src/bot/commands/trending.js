@@ -55,7 +55,7 @@ async function trendingCommand(ctx) {
         message += `   Type: <b>${type}</b>\n\n`;
       }
 
-      const action = resource.groupId && resource.fileType === "image"
+      const action = resource.groupId
         ? `grp_${resource._id}`
         : `get_${resource._id}`;
       buttons.push([Markup.button.callback(`📥 Get #${index + 1} (${title.slice(0, 22)})`, action)]);

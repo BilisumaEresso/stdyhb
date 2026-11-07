@@ -41,12 +41,24 @@ const FILE_LABEL = {
 };
 
 function getFileEmoji(fileType, isGrouped) {
-  if (isGrouped) return "🗂️"; // multi-page image set (exam album)
+  if (isGrouped) {
+    if (fileType === "image") return "📷"; // multi-page exam photo album
+    if (fileType === "pdf") return "📚";   // multi-file PDF collection
+    if (fileType === "ppt") return "📙";   // presentation slide pack
+    if (fileType === "doc") return "📗";   // document pack
+    return "📦";                           // mixed media bundle
+  }
   return FILE_EMOJI[fileType] || FILE_EMOJI.other;
 }
 
-function getFileLabel(fileType, isGrouped) {
-  if (isGrouped) return "Exam Set";
+function getFileLabel(fileType, isGrouped, groupSize = null) {
+  if (isGrouped) {
+    if (fileType === "image") return groupSize ? `${groupSize}-Page Photo Album` : "Photo Album";
+    if (fileType === "pdf") return groupSize ? `${groupSize}-File PDF Bundle` : "PDF Bundle";
+    if (fileType === "ppt") return groupSize ? `${groupSize}-Slide PPT Pack` : "Slide Pack";
+    if (fileType === "doc") return groupSize ? `${groupSize}-Doc Packet` : "Document Pack";
+    return groupSize ? `${groupSize}-Item Bundle` : "Resource Bundle";
+  }
   return FILE_LABEL[fileType] || FILE_LABEL.other;
 }
 
@@ -114,13 +126,16 @@ function renderListTemplate(
       const num = numberEmojis[idx] || `${idx + 1}.`;
       const title = getTitle(resource);
       const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
+      const bundleBadge = resource._isGrouped
+        ? ` <b>[${getFileLabel(resource.fileType, true, resource.groupSize)}]</b>`
+        : "";
       const exam = resource.isExam ? " 🎓" : "";
-      const size = formatSize(resource.fileSize);
+      const size = !resource._isGrouped ? formatSize(resource.fileSize) : "";
       const sizeTxt = size ? ` · <i>${size}</i>` : "";
       const campusBadge = isCampusResource(resource, user)
         ? ` 🏛️ <b>[${escapeHTML(user.university.toUpperCase())}]</b>`
         : "";
-      msg += `${num} ${emoji} ${title}${campusBadge}${exam}${sizeTxt}\n`;
+      msg += `${num} ${emoji} ${title}${bundleBadge}${campusBadge}${exam}${sizeTxt}\n`;
     });
   }
 
@@ -197,7 +212,7 @@ function renderFilterPills(queryHash, activeFilter = "all") {
 // ─── detail card ──────────────────────────────────────────────────────────────
 function renderDetailCard(resource, user = null) {
   const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
-  const label = getFileLabel(resource.fileType, resource._isGrouped);
+  const label = getFileLabel(resource.fileType, resource._isGrouped, resource.groupSize);
   const title = getTitle(resource);
   const size = formatSize(resource.fileSize);
   const isMyCampus = isCampusResource(resource, user);
@@ -212,7 +227,7 @@ function renderDetailCard(resource, user = null) {
   }
   if (resource.isExam) badges.push("🎓 Exam");
   badges.push(`📁 ${label}`);
-  if (size) badges.push(`💾 ${size}`);
+  if (size && !resource._isGrouped) badges.push(`💾 ${size}`);
   msg += badges.join("  ·  ") + "\n";
 
   // tags

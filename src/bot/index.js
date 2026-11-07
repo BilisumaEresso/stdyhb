@@ -213,7 +213,7 @@ bot.on("text", async (ctx, next) => {
     const botUsername =
       (ctx.botInfo && ctx.botInfo.username) ||
       process.env.BOT_USERNAME ||
-      "StudyHubBot";
+      "studyhub_resource_bot";
 
     const mentionPrefix = `@${botUsername.toLowerCase()}`;
     const textLower = text.toLowerCase();

@@ -85,9 +85,7 @@ function applyResultFilter(results, filter = "all", user = null) {
         combined.includes("test") ||
         combined.includes("quiz");
       return (
-        fileType === "image" ||
-        Boolean(item._isGrouped) ||
-        Boolean(item.groupId) ||
+        (fileType === "image" && (item.isExam || item.groupId)) ||
         Boolean(item.isExam) ||
         isExamText
       );
@@ -271,8 +269,22 @@ async function renderDetailCardHandler(
   if (resource._telegramResource) {
     cardText = templates.renderDetailCard(resource, user);
 
-    const isGroup = resource._isGrouped || false;
-    let buttonText = isGroup ? `📥 Get all ${resource.groupSize} images` : `📥 Get file`;
+    const isGroup = resource._isGrouped || Boolean(resource.groupId);
+    let buttonText = "📥 Get file";
+    if (isGroup) {
+      const count = resource.groupSize || resource.groupTotal || "";
+      if (resource.fileType === "image") {
+        buttonText = count ? `📥 Get all ${count} photos` : "📥 Get photo album";
+      } else if (resource.fileType === "pdf") {
+        buttonText = count ? `📥 Get all ${count} PDFs` : "📥 Get PDF bundle";
+      } else if (resource.fileType === "ppt") {
+        buttonText = count ? `📥 Get all ${count} slides` : "📥 Get slide pack";
+      } else if (resource.fileType === "doc") {
+        buttonText = count ? `📥 Get all ${count} docs` : "📥 Get document pack";
+      } else {
+        buttonText = count ? `📥 Get bundle (${count} files)` : "📥 Get bundle";
+      }
+    }
     let actionPrefix = isGroup ? "grp" : "get";
 
     buttons.push([
@@ -629,9 +641,11 @@ async function handleDownload(ctx, resourceId) {
 
 async function sendGroupToUser(ctx, targetChatId, relayGroupId, msgIds, resource = null) {
   try {
+    const isImage = resource?.fileType === "image";
+    const defaultTitle = isImage ? "Exam Paper" : "Course Materials";
     const rawTitle = resource
-      ? resource.fileName || resource.caption || "Exam Paper"
-      : "Exam Paper";
+      ? resource.fileName || resource.caption || defaultTitle
+      : defaultTitle;
     let cleanTitle = rawTitle.replace(/\s+/g, " ").trim();
     if (cleanTitle.length > 50) cleanTitle = cleanTitle.substring(0, 49) + "…";
     const channelInfo =
@@ -639,47 +653,65 @@ async function sendGroupToUser(ctx, targetChatId, relayGroupId, msgIds, resource
         ? `\n📡 Source: @${templates.escapeHTML(resource.channelUsername)}`
         : "";
 
-    // Extract photo fileIds from recentRelayMessages
-    const fileIds = [];
+    // Extract items with fileId and mediaType from recentRelayMessages
+    const items = [];
     for (const id of msgIds) {
       const data = recentRelayMessages.get(id);
       if (data && data.fileId) {
-        fileIds.push(data.fileId);
+        items.push(data);
       }
     }
 
-    // If all fileIds were captured as photos, deliver as native Media Group albums!
-    if (fileIds.length === msgIds.length && fileIds.length > 1) {
-      const CHUNK_SIZE = 10; // Telegram sendMediaGroup max items
-      for (let i = 0; i < fileIds.length; i += CHUNK_SIZE) {
-        const chunk = fileIds.slice(i, i + CHUNK_SIZE);
-        const startPage = i + 1;
-        const endPage = i + chunk.length;
-        const isMultiChunk = fileIds.length > CHUNK_SIZE;
+    // If all items were captured with fileId, deliver as native Media Group!
+    if (items.length === msgIds.length && items.length > 1) {
+      const allPhotos = items.every((it) => it.mediaType === "photo");
+      const allDocs = items.every((it) => it.mediaType === "document");
 
-        const caption = isMultiChunk
-          ? `🎓 <b>${templates.escapeHTML(cleanTitle)}</b> (Part ${Math.floor(i / CHUNK_SIZE) + 1} · Pages ${startPage}-${endPage})${channelInfo}`
-          : `🎓 <b>${templates.escapeHTML(cleanTitle)}</b> (${fileIds.length} pages)${channelInfo}`;
+      if (allPhotos || allDocs) {
+        const mediaType = allPhotos ? "photo" : "document";
+        const unitName = allPhotos ? "pages" : "files";
+        const icon = allPhotos ? "🎓" : "📦";
 
-        const mediaGroup = chunk.map((fileId, idx) => ({
-          type: "photo",
-          media: fileId,
-          caption: idx === 0 ? caption : undefined,
-          parse_mode: "HTML",
-        }));
+        const CHUNK_SIZE = 10; // Telegram sendMediaGroup max items
+        for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+          const chunk = items.slice(i, i + CHUNK_SIZE);
+          const startNum = i + 1;
+          const endNum = i + chunk.length;
+          const isMultiChunk = items.length > CHUNK_SIZE;
 
-        await ctx.telegram.sendMediaGroup(targetChatId, mediaGroup);
-        if (i + CHUNK_SIZE < fileIds.length) {
-          await new Promise((r) => setTimeout(r, 300));
+          const caption = isMultiChunk
+            ? `${icon} <b>${templates.escapeHTML(cleanTitle)}</b> (Part ${Math.floor(i / CHUNK_SIZE) + 1} · Items ${startNum}-${endNum})${channelInfo}`
+            : `${icon} <b>${templates.escapeHTML(cleanTitle)}</b> (${items.length} ${unitName})${channelInfo}`;
+
+          const mediaGroup = chunk.map((item, idx) => ({
+            type: mediaType,
+            media: item.fileId,
+            caption: idx === 0 ? caption : undefined,
+            parse_mode: "HTML",
+          }));
+
+          await ctx.telegram.sendMediaGroup(targetChatId, mediaGroup);
+          if (i + CHUNK_SIZE < items.length) {
+            await new Promise((r) => setTimeout(r, 300));
+          }
         }
+        return;
       }
-      return;
-    } else if (fileIds.length === 1 && msgIds.length === 1) {
-      const caption = `🎓 <b>${templates.escapeHTML(cleanTitle)}</b>${channelInfo}`;
-      await ctx.telegram.sendPhoto(targetChatId, fileIds[0], {
-        caption,
-        parse_mode: "HTML",
-      });
+    } else if (items.length === 1 && msgIds.length === 1) {
+      const item = items[0];
+      const icon = item.mediaType === "photo" ? "🎓" : "📄";
+      const caption = `${icon} <b>${templates.escapeHTML(cleanTitle)}</b>${channelInfo}`;
+      if (item.mediaType === "photo") {
+        await ctx.telegram.sendPhoto(targetChatId, item.fileId, {
+          caption,
+          parse_mode: "HTML",
+        });
+      } else {
+        await ctx.telegram.sendDocument(targetChatId, item.fileId, {
+          caption,
+          parse_mode: "HTML",
+        });
+      }
       return;
     }
   } catch (albumErr) {
@@ -738,17 +770,19 @@ async function handleGroupDownload(ctx, resourceId) {
       return await handleDownload(ctx, resourceId);
     }
 
-    const images = await TelegramResource.find({ groupId: resource.groupId }).sort({ messageDate: 1 });
-    if (images.length === 0) {
+    const items = await TelegramResource.find({ groupId: resource.groupId }).sort({ groupIndex: 1, messageDate: 1 });
+    if (items.length === 0) {
       activeUserRequests.delete(requestKey);
       return await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
     }
 
-    const actionInterval = startChatAction(ctx, targetChatId, 'upload_photo');
-    const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${images.length} images...</i>`, { parse_mode: "HTML" });
+    const isImage = resource.fileType === "image";
+    const chatAction = isImage ? 'upload_photo' : 'upload_document';
+    const unitName = isImage ? 'photos' : (resource.fileType === 'pdf' ? 'PDFs' : (resource.fileType === 'ppt' ? 'slides' : (resource.fileType === 'doc' ? 'docs' : 'files')));
+    const actionInterval = startChatAction(ctx, targetChatId, chatAction);
+    const statusMsg = await ctx.reply(`⏳ <i>Retrieving ${items.length} ${unitName}...</i>`, { parse_mode: "HTML" });
 
-
-    const messageIds = images.map(img => img.messageId);
+    const messageIds = items.map(it => it.messageId);
     let forwardedMessages;
     let usedArchive = false;
     let tg = null;
@@ -756,17 +790,17 @@ async function handleGroupDownload(ctx, resourceId) {
 
     try {
       tg = await getClient();
-      const archiveIds = images.map(img => img.archiveMessageId).filter(Boolean);
+      const archiveIds = items.map(it => it.archiveMessageId).filter(Boolean);
 
-      // 1. If images are in the archive, try ARCHIVE first! (Archive has NO forward restrictions!)
-      if (archiveChatId && archiveIds.length === images.length) {
+      // 1. If items are in the archive, try ARCHIVE first! (Archive has NO forward restrictions!)
+      if (archiveChatId && archiveIds.length === items.length) {
         try {
           forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
             messages: archiveIds,
             fromPeer: archiveChatId
           }));
           usedArchive = true;
-          console.log(`[DELIVERY] Retrieved full image set (${archiveIds.length} imgs) from archive`);
+          console.log(`[DELIVERY] Retrieved full bundle (${archiveIds.length} items) from archive`);
         } catch (archErr) {
           console.warn(`[DELIVERY] Archive group forward failed: ${archErr.message}. Trying original channel...`);
         }
@@ -783,14 +817,14 @@ async function handleGroupDownload(ctx, resourceId) {
           })
         );
 
-        if (archiveChatId && images.some((img) => !img.archiveMessageId)) {
-          autoArchiveGroup(tg, images, resource, archiveChatId).catch(() => {});
+        if (archiveChatId && items.some((it) => !it.archiveMessageId)) {
+          autoArchiveGroup(tg, items, resource, archiveChatId).catch(() => {});
         }
       }
     } catch (gramError) {
       console.warn(`[DELIVERY] Primary group forward failed: ${gramError.message}`);
       // 3. Fallback to archive if not yet used
-      const archiveIds = images.map(img => img.archiveMessageId).filter(Boolean);
+      const archiveIds = items.map(it => it.archiveMessageId).filter(Boolean);
       if (!usedArchive && archiveIds.length > 0 && archiveChatId && tg) {
         try {
           forwardedMessages = normalizeForwarded(await tg.forwardMessages(relayGroupId, {
@@ -798,7 +832,7 @@ async function handleGroupDownload(ctx, resourceId) {
             fromPeer: archiveChatId
           }));
           usedArchive = true;
-          console.log(`[DELIVERY] Fallback archive delivered ${archiveIds.length} of ${images.length} imgs`);
+          console.log(`[DELIVERY] Fallback archive delivered ${archiveIds.length} of ${items.length} items`);
         } catch (err) {
           console.warn('[ARCHIVE FALLBACK FAIL]', err.message);
         }
@@ -1181,9 +1215,15 @@ function registerFileDeliveryHandlers(bot) {
     if (ctx.chat.id === relayGroupId) {
       const msgId = ctx.message.message_id;
       const photo = ctx.message.photo;
+      const doc = ctx.message.document;
       const fileId =
-        photo && photo.length > 0 ? photo[photo.length - 1].file_id : null;
-      recentRelayMessages.set(msgId, { timestamp: Date.now(), fileId });
+        photo && photo.length > 0
+          ? photo[photo.length - 1].file_id
+          : doc
+          ? doc.file_id
+          : null;
+      const mediaType = photo && photo.length > 0 ? "photo" : doc ? "document" : "other";
+      recentRelayMessages.set(msgId, { timestamp: Date.now(), fileId, mediaType });
 
       for (const [id, data] of recentRelayMessages.entries()) {
         if (Date.now() - data.timestamp > 60000) recentRelayMessages.delete(id);
@@ -1263,6 +1303,7 @@ function registerFileDeliveryHandlers(bot) {
 }
 
 module.exports = {
+  applyResultFilter,
   sendPaginatedResults,
   sendPaginatedSaves,
   registerFileDeliveryHandlers,

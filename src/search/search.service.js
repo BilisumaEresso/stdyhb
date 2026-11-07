@@ -63,10 +63,10 @@ class SearchService {
   }
 
   /**
-   * Extract a clean, human-readable title from image captions
+   * Extract a clean, human-readable title from captions or origin channel text
    */
-  cleanCaptionTitle(caption) {
-    if (!caption) return "Exam Material";
+  cleanCaptionTitle(caption, fallback = "Study Material") {
+    if (!caption) return fallback;
     const lines = caption
       .split("\n")
       .map((line) => line.trim())
@@ -76,7 +76,7 @@ class SearchService {
         return /[\p{L}\p{N}]/u.test(line);
       });
 
-    if (lines.length === 0) return "Exam Material";
+    if (lines.length === 0) return fallback;
 
     let title = "";
     for (const l of lines) {
@@ -99,7 +99,7 @@ class SearchService {
     }
 
     if (title.length > 55) title = title.substring(0, 54) + "…";
-    return title || "Exam Material";
+    return title || fallback;
   }
 
   /**
@@ -168,17 +168,21 @@ class SearchService {
       score += intersection.length * 20; // +20 per matching tag
     }
 
-    const isImageGroup = (resource.groupId && resource.fileType === "image") || resource._isGrouped;
+    const isImageGroup = (resource.groupId && resource.fileType === "image") || (resource._isGrouped && resource.fileType === "image");
+    const isDocGroup = Boolean(resource.groupId && resource.fileType !== "image");
 
     // Explicit format matching vs Default Exam Photo Set Priority
     if (intent.explicitFormat) {
       if (intent.ppt && resource.fileType === "ppt") score += 200;
       if (intent.pdf && resource.fileType === "pdf") score += 200;
       if (intent.doc && resource.fileType === "doc") score += 200;
+      if (isDocGroup) score += 40; // extra boost for matching curated document packs
     } else {
-      // User did not specify a format: PRIORITIZE EXAM PHOTO SETS & IMAGES!
+      // User did not specify a format: Prioritize comprehensive bundles and exam sets!
       if (isImageGroup) {
         score += 160; // Top priority for exam photo bundles
+      } else if (isDocGroup) {
+        score += 120; // High priority for curated document bundles (e.g. 10-pdf exam pack, slide set)
       } else if (resource.fileType === "image" && resource.isExam) {
         score += 100;
       } else if (resource.fileType === "pdf") {
@@ -565,18 +569,26 @@ class SearchService {
       allResults.sort((a, b) => b.score - a.score);
 
       const telegramResults = allResults.filter((r) => r._telegramResource);
-      // Step 4: Deduplicate and collapse DB-assigned groups
+      // Step 4: Deduplicate and collapse DB-assigned groups (image albums & document bundles)
       if (telegramResults.length > 0) {
-        console.log(`\n📸 Collapsing grouped images...`);
+        console.log(`\n📦 Collapsing grouped bundles (images & documents)...`);
         const collapsed = [];
         const seenGroups = new Set();
 
         for (const r of allResults) {
-          if (r.groupId && r.fileType === "image") {
+          if (r.groupId) {
              if (seenGroups.has(r.groupId)) continue;
              seenGroups.add(r.groupId);
              r._isGrouped = true;
              r.groupSize = r.groupTotal || 1;
+
+             // If the origin channel provided a caption for the group, use it as the bundle title
+             if (r.caption && r.caption.trim()) {
+               const cleanTitle = this.cleanCaptionTitle(r.caption, r.title);
+               if (cleanTitle && cleanTitle !== "Study Material" && cleanTitle !== "Exam Material") {
+                 r.title = cleanTitle;
+               }
+             }
           }
           collapsed.push(r);
         }

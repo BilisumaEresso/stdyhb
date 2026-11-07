@@ -56,6 +56,9 @@ async function bootstrap() {
     });
   });
 
+  // Mount REST API for Web & Mobile
+  app.use("/api", require("./src/api/routes"));
+
   // Diagnostic endpoints for Render & Webhook status
   app.get("/webhook-info", async (req, res) => {
     try {

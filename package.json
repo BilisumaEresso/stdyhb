@@ -16,7 +16,11 @@
     "test": "node test-search.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "archive": "node scripts/backfill-archive.js"
+    "archive": "node scripts/backfill-archive.js",
+    "web:dev": "npm --prefix web run dev",
+    "web:dev:webpack": "npm --prefix web run dev:webpack",
+    "web:build": "npm --prefix web run build",
+    "web:start": "npm --prefix web run start"
   },
   "dependencies": {
     "axios": "^1.17.0",

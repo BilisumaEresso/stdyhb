@@ -1,0 +1,274 @@
+const express = require("express");
+const router = express.Router();
+const TelegramResource = require("../db/models/TelegramResource");
+const searchService = require("../search/search.service");
+const { getClient } = require("../search/telegramIndexer");
+
+// ─── Lightweight CORS & JSON Middleware ──────────────────────────────────────
+router.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Range");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length, Content-Disposition");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
+// ─── GET /api/stats ──────────────────────────────────────────────────────────
+router.get("/stats", async (req, res) => {
+  try {
+    const [totalResources, totalExams] = await Promise.all([
+      TelegramResource.countDocuments({ isAvailable: true }),
+      TelegramResource.countDocuments({ isAvailable: true, isExam: true })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalResources,
+        totalExams,
+        universities: ["ASTU", "AAU", "AASTU", "Jimma", "Hawassa", "Bahir Dar", "Haramaya"]
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/trending ───────────────────────────────────────────────────────
+router.get("/trending", async (req, res) => {
+  try {
+    const [topDownloaded, recentExams] = await Promise.all([
+      TelegramResource.find({ isAvailable: true })
+        .sort({ downloadCount: -1 })
+        .limit(10)
+        .lean(),
+      TelegramResource.find({ isAvailable: true, isExam: true })
+        .sort({ indexedAt: -1 })
+        .limit(10)
+        .lean()
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        topDownloaded,
+        recentExams
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/search ─────────────────────────────────────────────────────────
+router.get("/search", async (req, res) => {
+  try {
+    const {
+      q = "",
+      university = "",
+      fileType = "",
+      isExam = "",
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+
+    if (q.trim()) {
+      let results = await searchService.searchResources(q.trim(), null);
+
+      if (university) {
+        results = results.filter(r => (r.university || "").toLowerCase().includes(university.toLowerCase()));
+      }
+      if (fileType) {
+        results = results.filter(r => (r.fileType || "").toLowerCase() === fileType.toLowerCase());
+      }
+      if (isExam === "true") {
+        results = results.filter(r => r.isExam || r.fileType === "image" || Boolean(r.groupId));
+      }
+
+      const total = results.length;
+      const startIdx = (pageNum - 1) * limitNum;
+      const paginated = results.slice(startIdx, startIdx + limitNum);
+
+      return res.json({
+        success: true,
+        data: paginated,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      });
+    }
+
+    const filter = {
+      isAvailable: true,
+      $or: [{ groupId: null }, { groupIndex: 0 }, { groupIndex: { $exists: false } }]
+    };
+    if (university) {
+      filter.university = new RegExp(university, "i");
+    }
+    if (fileType) {
+      filter.fileType = fileType.toLowerCase();
+    }
+    if (isExam === "true") {
+      filter.isExam = true;
+    }
+
+    const [total, items] = await Promise.all([
+      TelegramResource.countDocuments(filter),
+      TelegramResource.find(filter)
+        .sort({ downloadCount: -1, indexedAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean()
+    ]);
+
+    res.json({
+      success: true,
+      data: items,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (err) {
+    console.error("[API SEARCH ERROR]", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/resources/:id ──────────────────────────────────────────────────
+router.get("/resources/:id", async (req, res) => {
+  try {
+    const resource = await TelegramResource.findById(req.params.id).lean();
+    if (!resource) {
+      return res.status(404).json({ success: false, error: "Resource not found" });
+    }
+
+    let groupItems = [];
+    if (resource.groupId) {
+      groupItems = await TelegramResource.find({
+        groupId: resource.groupId,
+        isAvailable: true
+      })
+        .sort({ groupIndex: 1 })
+        .lean();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...resource,
+        groupItems
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── GET /api/files/stream/:id & /download/:id ────────────────────────────────
+async function streamTelegramFile(req, res, isDownload = false) {
+  let resource;
+  try {
+    resource = await TelegramResource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).send("Resource not found");
+    }
+
+    const tg = await getClient();
+    if (!tg) {
+      // Fallback redirect to bot
+      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+    }
+
+    let message = null;
+    const archiveChatId = process.env.ARCHIVE_CHAT_ID ? parseInt(process.env.ARCHIVE_CHAT_ID) : null;
+
+    // 1. Try Archive message first if present
+    if (resource.archiveMessageId && archiveChatId) {
+      try {
+        const msgs = await tg.getMessages(archiveChatId, { ids: [resource.archiveMessageId] });
+        if (msgs && msgs[0] && (msgs[0].media || msgs[0].document || msgs[0].photo)) {
+          message = msgs[0];
+        }
+      } catch (archErr) {
+        console.warn(`[API] Archive fetch failed for ${resource._id}:`, archErr.message);
+      }
+    }
+
+    // 2. If not found in archive, try channel
+    if (!message && resource.channelUsername) {
+      try {
+        const peer = `@${resource.channelUsername}`;
+        const entity = await tg.getEntity(peer);
+        const msgs = await tg.getMessages(entity, { ids: [resource.messageId] });
+        if (msgs && msgs[0] && (msgs[0].media || msgs[0].document || msgs[0].photo)) {
+          message = msgs[0];
+        }
+      } catch (chanErr) {
+        console.warn(`[API] Channel fetch failed for ${resource._id}:`, chanErr.message);
+      }
+    }
+
+    // 3. Fallback: If Telegram media cannot be read via MTProto, redirect to bot delivery
+    if (!message || (!message.media && !message.document && !message.photo)) {
+      console.warn(`[API] Media not directly readable, redirecting to bot for ${resource._id}`);
+      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+    }
+
+    const doc = message.document || message.media?.document;
+    const isPhoto = Boolean(message.photo || (message.media && message.media.photo));
+
+    let mimeType = "application/octet-stream";
+    if (doc) {
+      mimeType = doc.mimeType || (resource.fileType === "pdf" ? "application/pdf" : "application/octet-stream");
+    } else if (isPhoto) {
+      mimeType = "image/jpeg";
+    }
+
+    const fileExtension = resource.fileType === "pdf" ? "pdf" : resource.fileType === "ppt" ? "pptx" : isPhoto ? "jpg" : "bin";
+    const fileName = resource.fileName || `studyhub_${resource._id}.${fileExtension}`;
+
+    // Download media buffer
+    const buffer = await tg.downloadMedia(message);
+    if (!buffer || buffer.length === 0) {
+      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+    }
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Accept-Ranges", "bytes");
+
+    if (isDownload) {
+      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
+    } else {
+      res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(fileName)}"`);
+    }
+
+    res.end(buffer);
+
+    // Asynchronously record download count
+    TelegramResource.findByIdAndUpdate(resource._id, { $inc: { downloadCount: 1 } }).catch(() => {});
+  } catch (err) {
+    console.error("[STREAM ERROR]", err.message);
+    if (!res.headersSent && resource) {
+      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+    }
+    if (!res.headersSent) {
+      res.status(500).send("Error streaming resource");
+    }
+  }
+}
+
+router.get("/files/stream/:id", (req, res) => streamTelegramFile(req, res, false));
+router.get("/files/download/:id", (req, res) => streamTelegramFile(req, res, true));
+
+module.exports = router;

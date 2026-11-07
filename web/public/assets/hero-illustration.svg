@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 470" fill="none">
+<defs>
+ <linearGradient id="book" x1="120" y1="260" x2="490" y2="390" gradientUnits="userSpaceOnUse"><stop stop-color="#16D6A0"/><stop offset="1" stop-color="#087A60"/></linearGradient>
+ <linearGradient id="paper" x1="280" y1="70" x2="480" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#DCE8F4"/></linearGradient>
+ <linearGradient id="glow" x1="120" y1="80" x2="530" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#00D89B" stop-opacity=".25"/><stop offset="1" stop-color="#00D89B" stop-opacity="0"/></linearGradient>
+ <filter id="shadow" x="30" y="30" width="570" height="430" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<ellipse cx="328" cy="382" rx="230" ry="50" fill="#00D89B" opacity=".16" filter="url(#shadow)"/>
+<circle cx="330" cy="220" r="205" fill="url(#glow)"/>
+<path d="M343 62c7-22 38-31 58-15l142 111c12 9 17 25 12 39l-58 186-204-44 50-277Z" fill="#0B5D4D" opacity=".55"/>
+<g transform="rotate(9 390 180)">
+ <rect x="254" y="52" width="235" height="282" rx="22" fill="url(#paper)"/>
+ <rect x="277" y="78" width="58" height="56" rx="12" fill="#F04444"/>
+ <text x="306" y="112" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">PDF</text>
+ <rect x="277" y="151" width="58" height="56" rx="12" fill="#F59B26"/>
+ <text x="306" y="185" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">PPT</text>
+ <rect x="277" y="224" width="58" height="56" rx="12" fill="#277CE8"/>
+ <text x="306" y="258" fill="white" font-family="Arial" font-size="17" font-weight="700" text-anchor="middle">DOC</text>
+ <rect x="352" y="86" width="110" height="12" rx="6" fill="#A9B9CC"/>
+ <rect x="352" y="111" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
+ <rect x="352" y="159" width="110" height="12" rx="6" fill="#A9B9CC"/>
+ <rect x="352" y="184" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
+ <rect x="352" y="232" width="110" height="12" rx="6" fill="#A9B9CC"/>
+ <rect x="352" y="257" width="92" height="9" rx="4.5" fill="#C4D0DE"/>
+</g>
+<g transform="rotate(-2 305 342)">
+ <path d="M90 296 340 256l188 70-255 55-183-85Z" fill="#063D34"/>
+ <path d="m90 296 183 85v29L90 326v-30Z" fill="#D5DDE5"/>
+ <path d="m273 381 255-55v29l-255 55v-29Z" fill="#AEBBC8"/>
+ <path d="m90 296 250-40 188 70-255 55-183-85Z" fill="url(#book)"/>
+ <path d="m176 303 164-26 93 34-166 29-91-37Z" fill="#0B8F70" opacity=".65"/>
+ <path d="m255 298 50-8 35 13-51 9-34-14Z" fill="#7FFFD1" opacity=".8"/>
+ <path d="m270 313 50-8 35 13-51 9-34-14Z" fill="#7FFFD1" opacity=".8"/>
+</g>
+<g transform="rotate(-4 270 405)">
+ <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="#0B6653"/>
+ <path d="m70 350 201 83v19L70 370v-20Z" fill="#C9D4DE"/>
+ <path d="m271 433 262-53v19l-262 53v-19Z" fill="#9EADBC"/>
+ <path d="m70 350 258-45 205 75-262 53-201-83Z" fill="url(#book)"/>
+</g>
+<path d="m176 88 15-32 13 31M125 139l-25-18M506 85l25-19" stroke="#1BE0AA" stroke-width="9" stroke-linecap="round"/>
+</svg>

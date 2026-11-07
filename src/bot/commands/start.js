@@ -16,8 +16,14 @@ async function startCommand(ctx, skipWizard = false) {
       ""
     ).trim();
 
-    if (payload.startsWith("get_")) {
-      const resourceId = payload.substring(4);
+    if (payload.startsWith("get_") || payload.startsWith("dl_")) {
+      const resourceId = payload.startsWith("get_") ? payload.substring(4) : payload.substring(3);
+      // Auto-detect if this resource belongs to an exam group album
+      const TelegramResource = require("../../db/models/TelegramResource");
+      const resItem = await TelegramResource.findById(resourceId).select("groupId").lean().catch(() => null);
+      if (resItem && resItem.groupId) {
+        return await fileDelivery.handleGroupDownload(ctx, resourceId);
+      }
       return await fileDelivery.handleDownload(ctx, resourceId);
     } else if (payload.startsWith("grp_")) {
       const resourceId = payload.substring(4);

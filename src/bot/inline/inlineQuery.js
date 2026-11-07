@@ -16,7 +16,7 @@ async function handleInlineQuery(ctx) {
     const botUsername =
       (ctx.botInfo && ctx.botInfo.username) ||
       process.env.BOT_USERNAME ||
-      "StudyHubBot";
+      "studyhub_resource_bot";
 
     // 1. Empty Query -> Show trending / popular topics as suggestion cards
     if (!query) {

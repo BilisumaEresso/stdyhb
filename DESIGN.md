@@ -98,7 +98,7 @@ The central entry point. Must deliver instantaneous value within 3 seconds of pa
    * Brand Logo: Minimalist open book icon interlocking with a telegram paper airplane + text `StudyHub`.
    * University Selector Dropdown (e.g., "ASTU", "AAU", "All Universities").
    * Mode Toggle (Dark / Light).
-   * "Telegram Bot" Quick-Connect button (Pill style with `@StudyHubBot` label).
+   * "Telegram Bot" Quick-Connect button (Pill style with `@studyhub_resource_bot` label).
 
 2. **The Hero Search Omnibar**:
    * Centered, prominent floating input bar (similar to Raycast / Linear / Perplexity).
