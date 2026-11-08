@@ -184,19 +184,86 @@ router.get("/resources/:id", async (req, res) => {
   }
 });
 
+// ─── GET /api/resources/:id/similar ──────────────────────────────────────────
+router.get("/resources/:id/similar", async (req, res) => {
+  try {
+    const resource = await TelegramResource.findById(req.params.id).lean();
+    if (!resource) {
+      return res.status(404).json({ success: false, error: "Resource not found" });
+    }
+
+    const orConditions = [];
+    if (resource.courseCode && resource.courseCode.trim()) {
+      orConditions.push({ courseCode: new RegExp(resource.courseCode.trim(), "i") });
+    }
+    if (resource.tags && resource.tags.length > 0) {
+      orConditions.push({ tags: { $in: resource.tags } });
+    }
+    if (resource.university && resource.university.trim()) {
+      orConditions.push({ university: new RegExp(resource.university.trim(), "i") });
+    }
+    if (resource.fileType) {
+      orConditions.push({ fileType: resource.fileType });
+    }
+
+    const query = {
+      _id: { $ne: resource._id },
+      isAvailable: true,
+      $or: orConditions.length > 0 ? orConditions : [{ isAvailable: true }]
+    };
+
+    if (resource.groupId) {
+      query.groupId = { $ne: resource.groupId };
+    }
+
+    const similar = await TelegramResource.find(query)
+      .sort({ downloadCount: -1, indexedAt: -1 })
+      .limit(6)
+      .lean();
+
+    const formatted = similar.map(r => ({
+      ...r,
+      title: r.cleanTitle || generateDisplayTitle(r)
+    }));
+
+    res.json({
+      success: true,
+      data: formatted
+    });
+  } catch (err) {
+    console.error("[SIMILAR ERROR]", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── GET /api/files/stream/:id & /download/:id ────────────────────────────────
 async function streamTelegramFile(req, res, isDownload = false) {
   let resource;
   try {
     resource = await TelegramResource.findById(req.params.id);
     if (!resource) {
-      return res.status(404).send("Resource not found");
+      return res.status(404).json({ success: false, error: "Resource not found" });
     }
+
+    const botFallbackUrl = `https://t.me/studyhub_resource_bot?start=get_${resource._id}`;
+    const wantsJson =
+      isDownload ||
+      req.headers["sec-fetch-dest"] === "empty" ||
+      (req.headers.accept && req.headers.accept.includes("application/json")) ||
+      req.query.format === "json";
 
     const tg = await getClient();
     if (!tg) {
-      // Fallback redirect to bot
-      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+      if (wantsJson) {
+        return res.status(503).json({
+          success: false,
+          error: "Telegram client unavailable. Please receive directly in Telegram.",
+          fallbackBotUrl: botFallbackUrl,
+          resourceId: resource._id,
+          fileName: resource.fileName || "Resource"
+        });
+      }
+      return res.redirect(botFallbackUrl);
     }
 
     let message = null;
@@ -228,10 +295,19 @@ async function streamTelegramFile(req, res, isDownload = false) {
       }
     }
 
-    // 3. Fallback: If Telegram media cannot be read via MTProto, redirect to bot delivery
+    // 3. Fallback: If Telegram media cannot be read via MTProto
     if (!message || (!message.media && !message.document && !message.photo)) {
-      console.warn(`[API] Media not directly readable, redirecting to bot for ${resource._id}`);
-      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
+      console.warn(`[API] Media not directly readable for ${resource._id}`);
+      if (wantsJson) {
+        return res.status(504).json({
+          success: false,
+          error: "Direct file stream unavailable. Please use Telegram Bot delivery for instant access.",
+          fallbackBotUrl: botFallbackUrl,
+          resourceId: resource._id,
+          fileName: resource.fileName || "Resource"
+        });
+      }
+      return res.redirect(botFallbackUrl);
     }
 
     const doc = message.document || message.media?.document;
@@ -245,35 +321,82 @@ async function streamTelegramFile(req, res, isDownload = false) {
     }
 
     const fileExtension = resource.fileType === "pdf" ? "pdf" : resource.fileType === "ppt" ? "pptx" : isPhoto ? "jpg" : "bin";
-    const fileName = resource.fileName || `studyhub_${resource._id}.${fileExtension}`;
-
-    // Download media buffer
-    const buffer = await tg.downloadMedia(message);
-    if (!buffer || buffer.length === 0) {
-      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
-    }
+    const rawFileName = resource.fileName || `studyhub_${resource._id}.${fileExtension}`;
+    const safeFileName = rawFileName.replace(/[^\w\.\-\s]/gi, "_");
 
     res.setHeader("Content-Type", mimeType);
-    res.setHeader("Content-Length", buffer.length);
     res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("X-Bot-Fallback-Url", botFallbackUrl);
 
     if (isDownload) {
-      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(safeFileName)}"`);
     } else {
-      res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(fileName)}"`);
+      res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(safeFileName)}"`);
     }
 
+    // If file is large (> 8MB), attempt streaming via iterDownload to avoid RAM buffer bloat
+    if (doc && resource.fileSize && resource.fileSize > 8 * 1024 * 1024) {
+      res.setHeader("Content-Length", resource.fileSize);
+      try {
+        let streamed = false;
+        for await (const chunk of tg.iterDownload({ file: message.media, requestSize: 512 * 1024 })) {
+          if (res.writableEnded || res.closed) break;
+          res.write(chunk);
+          streamed = true;
+        }
+        if (!res.writableEnded) {
+          res.end();
+        }
+        // Asynchronously record download count
+        TelegramResource.findByIdAndUpdate(resource._id, { $inc: { downloadCount: 1 } }).catch(() => {});
+        return;
+      } catch (iterErr) {
+        console.warn(`[STREAM] iterDownload chunk error for ${resource._id}:`, iterErr.message);
+        if (res.headersSent) {
+          return res.end();
+        }
+      }
+    }
+
+    // Standard download media buffer for smaller files or fallback
+    const buffer = await tg.downloadMedia(message);
+    if (!buffer || buffer.length === 0) {
+      if (wantsJson) {
+        return res.status(504).json({
+          success: false,
+          error: "Empty media buffer received from Telegram.",
+          fallbackBotUrl: botFallbackUrl,
+          resourceId: resource._id,
+          fileName: resource.fileName || "Resource"
+        });
+      }
+      return res.redirect(botFallbackUrl);
+    }
+
+    res.setHeader("Content-Length", buffer.length);
     res.end(buffer);
 
     // Asynchronously record download count
     TelegramResource.findByIdAndUpdate(resource._id, { $inc: { downloadCount: 1 } }).catch(() => {});
   } catch (err) {
     console.error("[STREAM ERROR]", err.message);
-    if (!res.headersSent && resource) {
-      return res.redirect(`https://t.me/studyhub_resource_bot?start=get_${resource._id}`);
-    }
+    const botUrl = resource ? `https://t.me/studyhub_resource_bot?start=get_${resource._id}` : "https://t.me/studyhub_resource_bot";
+    const wantsJson =
+      isDownload ||
+      req.headers["sec-fetch-dest"] === "empty" ||
+      (req.headers.accept && req.headers.accept.includes("application/json")) ||
+      req.query.format === "json";
+
     if (!res.headersSent) {
-      res.status(500).send("Error streaming resource");
+      if (wantsJson) {
+        return res.status(504).json({
+          success: false,
+          error: "Direct stream failed or timed out. Use Telegram Bot for guaranteed high-speed delivery.",
+          fallbackBotUrl: botUrl,
+          resourceId: resource?._id
+        });
+      }
+      return res.redirect(botUrl);
     }
   }
 }

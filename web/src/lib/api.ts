@@ -3,6 +3,8 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/+$/, "")
 export interface ResourceItem {
   _id: string;
   fileName: string;
+  cleanTitle?: string;
+  title?: string;
   caption?: string;
   fileType: "pdf" | "ppt" | "doc" | "image" | "other";
   fileSize: number;
@@ -18,6 +20,7 @@ export interface ResourceItem {
   university?: string;
   downloadCount: number;
   indexedAt: string;
+  groupItems?: ResourceItem[];
 }
 
 export interface SearchResponse {
@@ -75,6 +78,18 @@ export async function searchResources(params: {
   }
 }
 
+export async function fetchSimilarResources(id: string): Promise<ResourceItem[]> {
+  try {
+    const res = await fetch(`${API_BASE}/resources/${id}/similar`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.success && Array.isArray(json.data) ? json.data : [];
+  } catch (err) {
+    console.warn("Failed to fetch similar resources:", err);
+    return [];
+  }
+}
+
 export function getFileStreamUrl(id: string): string {
   return `${API_BASE}/files/stream/${id}`;
 }
@@ -90,4 +105,22 @@ export function getTelegramBotDeepLink(
 ): string {
   const prefix = isGroup ? "grp" : "get";
   return `https://t.me/${botUsername}?start=${prefix}_${resourceId}`;
+}
+
+export function getOfficeViewerUrl(streamUrl: string): string {
+  const fullUrl = streamUrl.startsWith("http")
+    ? streamUrl
+    : typeof window !== "undefined"
+    ? `${window.location.origin}${streamUrl}`
+    : streamUrl;
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
+}
+
+export function getGoogleDocsViewerUrl(streamUrl: string): string {
+  const fullUrl = streamUrl.startsWith("http")
+    ? streamUrl
+    : typeof window !== "undefined"
+    ? `${window.location.origin}${streamUrl}`
+    : streamUrl;
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`;
 }
