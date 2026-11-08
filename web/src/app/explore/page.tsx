@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import {
   ResourceItem,
@@ -30,6 +31,12 @@ import {
   BundleAlbumIcon,
   BundleDocIcon,
 } from "@/components/icons";
+import {
+  ResourceCardSkeleton,
+  ButtonLoadingState,
+  InlineSpinner,
+  useToast,
+} from "@/components/loading";
 
 const FILTER_CHIPS = [
   { label: "All", query: "", filter: "" },
@@ -42,9 +49,12 @@ const FILTER_CHIPS = [
   { label: "Operating Systems", query: "Operating Systems", filter: "" },
 ];
 
+type SearchStatus = "idle" | "searching" | "refreshing" | "success" | "empty" | "error";
+
 function ExploreContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const initialQ = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
@@ -55,15 +65,114 @@ function ExploreContent() {
   const [selectedChip, setSelectedChip] = useState(
     initialFilter === "exam" ? "Past Exams" : initialQ || "All"
   );
+
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [searchStatus, setSearchStatus] = useState<SearchStatus>("searching");
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // Concurrency & Stale Request Safeguards
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const searchRequestIdRef = useRef<number>(0);
+
+  const performFetch = useCallback(
+    async (q: string, type: string, isExamOnly: boolean, targetPage = 1, append = false) => {
+      // 1. Invalidate any in-flight requests
+      searchRequestIdRef.current += 1;
+      const currentRequestId = searchRequestIdRef.current;
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      // 2. Set Appropriate Loading State
+      if (append) {
+        setIsLoadingMore(true);
+      } else if (resources.length > 0) {
+        // Soft refresh: preserve existing cards while updating
+        setSearchStatus("refreshing");
+      } else {
+        // Initial / Empty search: full skeleton view
+        setSearchStatus("searching");
+      }
+
+      setErrorMessage("");
+
+      try {
+        const res = await searchResources(
+          {
+            q: q.trim() || undefined,
+            fileType: type === "all" ? undefined : type,
+            isExam: isExamOnly || undefined,
+            page: targetPage,
+            limit: 12,
+          },
+          controller.signal
+        );
+
+        // Guard against race conditions from older slow requests
+        if (searchRequestIdRef.current !== currentRequestId) {
+          return;
+        }
+
+        if (res && res.data) {
+          if (append) {
+            setResources((prev) => [...prev, ...res.data]);
+            setPage(targetPage);
+            setSearchStatus("success");
+          } else {
+            setResources(res.data);
+            setPage(1);
+            setTotalCount(res.pagination?.total || res.data.length);
+            setTotalPages(res.pagination?.totalPages || 1);
+
+            if (res.data.length === 0) {
+              setSearchStatus("empty");
+            } else {
+              setSearchStatus("success");
+            }
+          }
+        } else {
+          if (!append) {
+            setResources([]);
+            setTotalCount(0);
+            setSearchStatus("empty");
+          }
+        }
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          // Request was cancelled intentionally by a newer search
+          return;
+        }
+        console.error("Explore fetch error:", err);
+        if (!append) {
+          setSearchStatus("error");
+          setErrorMessage(
+            "We could not connect to the academic repository. Please verify your connection and try again."
+          );
+        } else {
+          showToast("Failed to load more resources. Please try again.", "error");
+        }
+      } finally {
+        if (searchRequestIdRef.current === currentRequestId) {
+          setIsLoadingMore(false);
+        }
+      }
+    },
+    [resources.length, showToast]
+  );
 
   // Synchronize on searchParams change
   useEffect(() => {
     const q = searchParams.get("q") || "";
     const type = searchParams.get("type") || "all";
     const filter = searchParams.get("filter") || "";
+
     setQuery(q);
     setFileType(type);
     if (filter === "exam") {
@@ -73,26 +182,13 @@ function ExploreContent() {
     } else {
       setSelectedChip("All");
     }
-    performFetch(q, type, filter === "exam");
-  }, [searchParams]);
 
-  const performFetch = async (q: string, type: string, isExamOnly: boolean) => {
-    setIsLoading(true);
-    const res = await searchResources({
-      q: q.trim() || undefined,
-      fileType: type === "all" ? undefined : type,
-      isExam: isExamOnly || undefined,
-    });
+    performFetch(q, type, filter === "exam", 1, false);
 
-    if (res?.data) {
-      setResources(res.data);
-      setTotalCount(res.pagination?.total || res.data.length);
-    } else {
-      setResources([]);
-      setTotalCount(0);
-    }
-    setIsLoading(false);
-  };
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [searchParams, performFetch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +217,19 @@ function ExploreContent() {
     router.replace(`/explore?${params.toString()}`);
   };
 
+  const handleLoadMore = () => {
+    if (isLoadingMore || page >= totalPages) return;
+    performFetch(query, fileType, selectedChip === "Past Exams", page + 1, true);
+  };
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes || bytes <= 0) return "";
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+
+  const isRefreshing = searchStatus === "refreshing";
+  const isSearching = searchStatus === "searching";
 
   return (
     <main>
@@ -156,10 +260,15 @@ function ExploreContent() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <button type="submit" className="btn btn-primary">
+            <ButtonLoadingState
+              type="submit"
+              variant="primary"
+              isLoading={isSearching}
+              loadingText="Searching..."
+            >
               <span>Search</span>
               <ArrowRight size={15} />
-            </button>
+            </ButtonLoadingState>
           </form>
 
           <select
@@ -195,9 +304,12 @@ function ExploreContent() {
       <section className="container section" style={{ paddingTop: 0 }}>
         <div className="section-head">
           <div>
-            <h2>Study Materials</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <h2>Study Materials</h2>
+              {isRefreshing && <InlineSpinner size="sm" />}
+            </div>
             <p>
-              {isLoading
+              {isSearching
                 ? "Searching academic repository..."
                 : query
                 ? `Showing results matching "${query}"`
@@ -207,200 +319,267 @@ function ExploreContent() {
             </p>
           </div>
           <span className="muted" style={{ fontSize: "14px", fontWeight: 600 }}>
-            {isLoading ? "Loading..." : `${totalCount.toLocaleString()} resources available`}
+            {isSearching ? (
+              "Loading..."
+            ) : (
+              `${totalCount.toLocaleString()} resources available`
+            )}
           </span>
         </div>
 
-        <div className="resource-grid">
-          {resources.map((item) => {
-            const isGroup = Boolean(item.groupId);
-            const groupSize = item.groupTotal || (item as any).groupSize || 1;
+        {/* ── Resource Grid & Progressive Cards ──────────────────────── */}
+        <div
+          className="resource-grid"
+          style={{
+            opacity: isRefreshing ? 0.78 : 1,
+            transition: "opacity 0.2s ease",
+          }}
+          aria-busy={isSearching || isRefreshing}
+        >
+          {/* Skeletons on initial search */}
+          {isSearching && <ResourceCardSkeleton count={6} />}
 
-            let typeClass = item.fileType || "pdf";
-            let typeBadge = (item.fileType || "PDF").toUpperCase();
-            let bundleBadge = "";
+          {/* Actual Resource Cards */}
+          {!isSearching &&
+            resources.map((item) => {
+              const isGroup = Boolean(item.groupId);
+              const groupSize = item.groupTotal || (item as any).groupSize || 1;
 
-            if (isGroup) {
-              if (item.fileType === "image") {
-                typeClass = "image";
-                typeBadge = "ALBUM";
-                bundleBadge = `${groupSize}-Page Photo Album`;
-              } else if (item.fileType === "pdf") {
-                typeClass = "pdf";
-                typeBadge = "BUNDLE";
-                bundleBadge = `${groupSize}-File PDF Bundle`;
-              } else if (item.fileType === "ppt") {
-                typeClass = "ppt";
-                typeBadge = "SLIDES";
-                bundleBadge = `${groupSize}-Slide PPT Pack`;
-              } else if (item.fileType === "doc") {
-                typeClass = "doc";
-                typeBadge = "PACKET";
-                bundleBadge = `${groupSize}-Doc Packet`;
-              } else {
-                typeClass = "doc";
-                typeBadge = "BUNDLE";
-                bundleBadge = `${groupSize}-Item Bundle`;
+              let typeClass = item.fileType || "pdf";
+              let typeBadge = (item.fileType || "PDF").toUpperCase();
+              let bundleBadge = "";
+
+              if (isGroup) {
+                if (item.fileType === "image") {
+                  typeClass = "image";
+                  typeBadge = "ALBUM";
+                  bundleBadge = `${groupSize}-Page Photo Album`;
+                } else if (item.fileType === "pdf") {
+                  typeClass = "pdf";
+                  typeBadge = "BUNDLE";
+                  bundleBadge = `${groupSize}-File PDF Bundle`;
+                } else if (item.fileType === "ppt") {
+                  typeClass = "ppt";
+                  typeBadge = "SLIDES";
+                  bundleBadge = `${groupSize}-Slide PPT Pack`;
+                } else if (item.fileType === "doc") {
+                  typeClass = "doc";
+                  typeBadge = "PACKET";
+                  bundleBadge = `${groupSize}-Doc Packet`;
+                } else {
+                  typeClass = "doc";
+                  typeBadge = "BUNDLE";
+                  bundleBadge = `${groupSize}-Item Bundle`;
+                }
               }
-            }
 
-            const sizeText = formatFileSize(item.fileSize);
-            const sourceName = item.channelUsername
-              ? `@${item.channelUsername}`
-              : item.university
-              ? `${item.university}`
-              : "University Channel";
+              const sizeText = formatFileSize(item.fileSize);
+              const sourceName = item.channelUsername
+                ? `@${item.channelUsername}`
+                : item.university
+                ? `${item.university}`
+                : "University Channel";
 
-            const displayTitle = (item as any).cleanTitle || (item as any).title || item.fileName || "Academic Resource";
+              const displayTitle =
+                (item as any).cleanTitle ||
+                (item as any).title ||
+                item.fileName ||
+                "Academic Resource";
 
-            return (
-              <article key={item._id} className="resource-card">
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <div className={`file-type ${typeClass}`} title={`${typeBadge} Resource`}>
-                    {typeClass === "ppt" ? (
-                      <FilePptIcon size={22} />
-                    ) : typeClass === "doc" ? (
-                      <FileDocIcon size={22} />
-                    ) : typeClass === "image" ? (
-                      <FileImageIcon size={22} />
-                    ) : (
-                      <FilePdfIcon size={22} />
+              return (
+                <article key={item._id} className="resource-card">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <div className={`file-type ${typeClass}`} title={`${typeBadge} Resource`}>
+                      {typeClass === "ppt" ? (
+                        <FilePptIcon size={22} />
+                      ) : typeClass === "doc" ? (
+                        <FileDocIcon size={22} />
+                      ) : typeClass === "image" ? (
+                        <FileImageIcon size={22} />
+                      ) : (
+                        <FilePdfIcon size={22} />
+                      )}
+                    </div>
+                    {bundleBadge && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: "8px",
+                          background: "var(--primary-soft)",
+                          color: "var(--primary)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        {item.fileType === "image" ? (
+                          <BundleAlbumIcon size={13} />
+                        ) : item.fileType === "ppt" ? (
+                          <BundleSlidesIcon size={13} />
+                        ) : item.fileType === "doc" ? (
+                          <BundleDocIcon size={13} />
+                        ) : (
+                          <BundlePdfIcon size={13} />
+                        )}
+                        <span>{bundleBadge}</span>
+                      </span>
+                    )}
+                    {item.isExam && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: "8px",
+                          background: "var(--gold-soft)",
+                          color: "var(--gold)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <GraduationCap size={12} />
+                        <span>Past Exam</span>
+                      </span>
                     )}
                   </div>
-                  {bundleBadge && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        padding: "3px 8px",
-                        borderRadius: "8px",
-                        background: "var(--primary-soft)",
-                        color: "var(--primary)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                      }}
-                    >
-                      {item.fileType === "image" ? (
-                        <BundleAlbumIcon size={13} />
-                      ) : item.fileType === "ppt" ? (
-                        <BundleSlidesIcon size={13} />
-                      ) : item.fileType === "doc" ? (
-                        <BundleDocIcon size={13} />
-                      ) : (
-                        <BundlePdfIcon size={13} />
-                      )}
-                      <span>{bundleBadge}</span>
-                    </span>
-                  )}
-                  {item.isExam && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        padding: "3px 8px",
-                        borderRadius: "8px",
-                        background: "var(--gold-soft)",
-                        color: "var(--gold)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <GraduationCap size={12} />
-                      <span>Past Exam</span>
-                    </span>
-                  )}
-                </div>
 
-                <h3>
-                  <Link href={`/resource/${item._id}`} style={{ color: "inherit" }}>
-                    {displayTitle}
-                  </Link>
-                </h3>
-
-                <div className="resource-meta">
-                  <span>{item.courseCode || item.university || "Academic"}</span>
-                  {sizeText && (
-                    <>
-                      <span>•</span>
-                      <span>{sizeText}</span>
-                    </>
-                  )}
-                  {item.downloadCount > 0 && (
-                    <>
-                      <span>•</span>
-                      <span>{item.downloadCount} downloads</span>
-                    </>
-                  )}
-                </div>
-
-                <div className="resource-bottom">
-                  <span className="source">{sourceName}</span>
-                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                    <Link className="resource-link" href={`/resource/${item._id}`}>
-                      <span>{isGroup ? "View Bundle" : "Details"}</span>
-                      <ArrowRight size={13} />
+                  <h3>
+                    <Link href={`/resource/${item._id}`} style={{ color: "inherit" }}>
+                      {displayTitle}
                     </Link>
-                    <a
-                      className="resource-link"
-                      style={{ color: "var(--primary)" }}
-                      href={getTelegramBotDeepLink(item._id, Boolean(item.groupId))}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={isGroup ? "Get complete bundle via Telegram" : "Deliver file via Telegram Bot"}
-                    >
-                      <Send size={13} />
-                      <span>Bot</span>
-                    </a>
+                  </h3>
+
+                  <div className="resource-meta">
+                    <span>{item.courseCode || item.university || "Academic"}</span>
+                    {sizeText && (
+                      <>
+                        <span>•</span>
+                        <span>{sizeText}</span>
+                      </>
+                    )}
+                    {item.downloadCount > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>{item.downloadCount} downloads</span>
+                      </>
+                    )}
                   </div>
-                </div>
-              </article>
-            );
-          })}
 
-          {/* Empty State with Mascot */}
-          {!isLoading && resources.length === 0 && (
-            <div id="empty-state" className="empty">
-              <img
-                src="/assets/mascot.png"
-                alt="StudyHub Mascot"
-                className="empty-mascot"
-              />
-              <h3>Nothing found yet.</h3>
-              <p style={{ marginTop: "6px", maxWidth: "420px", margin: "6px auto 18px", color: "var(--muted)" }}>
-                Try another course name, subject, or keyword. You can also explore popular subjects or clear your filters.
-              </p>
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => {
-                  setQuery("");
-                  setSelectedChip("All");
-                  setFileType("all");
-                  updateUrl("", "all", false);
-                }}
-              >
-                Clear Filters & Show All
-              </button>
-            </div>
-          )}
+                  <div className="resource-bottom">
+                    <span className="source">{sourceName}</span>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <Link className="resource-link" href={`/resource/${item._id}`}>
+                        <span>{isGroup ? "View Bundle" : "Details"}</span>
+                        <ArrowRight size={13} />
+                      </Link>
+                      <a
+                        className="resource-link"
+                        style={{ color: "var(--primary)" }}
+                        href={getTelegramBotDeepLink(item._id, Boolean(item.groupId))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => showToast("Opening Telegram Bot...", "telegram", 2500)}
+                        title={isGroup ? "Get complete bundle via Telegram" : "Deliver file via Telegram Bot"}
+                      >
+                        <Send size={13} />
+                        <span>Bot</span>
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
 
-          {/* Loading Skeletons */}
-          {isLoading &&
-            [1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="resource-card"
-                style={{
-                  opacity: 0.5,
-                  minHeight: "220px",
-                  background: "var(--surface-2)",
-                  animation: "pulse 1.5s infinite ease-in-out",
-                }}
-              />
-            ))}
+          {/* Skeletons appended during Load More */}
+          {isLoadingMore && <ResourceCardSkeleton count={3} />}
         </div>
+
+        {/* ── Empty State ───────────────────────────────────────────── */}
+        {searchStatus === "empty" && (
+          <div id="empty-state" className="empty">
+            <img
+              src="/assets/mascot.png"
+              alt="StudyHub Mascot"
+              className="empty-mascot"
+            />
+            <h3>Nothing found yet.</h3>
+            <p
+              style={{
+                marginTop: "6px",
+                maxWidth: "420px",
+                margin: "6px auto 18px",
+                color: "var(--muted)",
+              }}
+            >
+              Try another course name, subject, or keyword. You can also explore popular subjects or clear your filters.
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setQuery("");
+                setSelectedChip("All");
+                setFileType("all");
+                updateUrl("", "all", false);
+              }}
+            >
+              Clear Filters & Show All
+            </button>
+          </div>
+        )}
+
+        {/* ── Error & Retry State ───────────────────────────────────── */}
+        {searchStatus === "error" && (
+          <div className="empty" role="alert" aria-live="assertive">
+            <AlertCircle
+              size={40}
+              style={{ color: "var(--accent, #EF4444)", margin: "0 auto 12px" }}
+            />
+            <h3 style={{ fontSize: "19px" }}>Unable to Load Resources</h3>
+            <p
+              style={{
+                maxWidth: "420px",
+                margin: "6px auto 18px",
+                color: "var(--muted)",
+                fontSize: "14px",
+              }}
+            >
+              {errorMessage || "We ran into an issue retrieving study materials. Please try again."}
+            </p>
+            <ButtonLoadingState
+              variant="primary"
+              onClick={() => performFetch(query, fileType, selectedChip === "Past Exams", 1, false)}
+            >
+              <RefreshCw size={14} />
+              <span>Retry Search</span>
+            </ButtonLoadingState>
+          </div>
+        )}
+
+        {/* ── Load More Pagination Controls ─────────────────────────── */}
+        {searchStatus === "success" && page < totalPages && (
+          <div style={{ textAlign: "center", marginTop: "36px" }}>
+            <ButtonLoadingState
+              variant="outline"
+              isLoading={isLoadingMore}
+              loadingText="Loading more resources..."
+              onClick={handleLoadMore}
+              style={{
+                minWidth: "220px",
+                padding: "12px 28px",
+                borderRadius: "14px",
+                fontWeight: 700,
+                fontSize: "14px",
+              }}
+            >
+              <span>Load More Resources</span>
+              <ArrowRight size={15} />
+            </ButtonLoadingState>
+          </div>
+        )}
       </section>
     </main>
   );

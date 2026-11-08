@@ -54,13 +54,17 @@ export async function fetchStats(): Promise<StatsResponse | null> {
   }
 }
 
-export async function searchResources(params: {
-  q?: string;
-  university?: string;
-  fileType?: string;
-  isExam?: boolean;
-  page?: number;
-}): Promise<SearchResponse | null> {
+export async function searchResources(
+  params: {
+    q?: string;
+    university?: string;
+    fileType?: string;
+    isExam?: boolean;
+    page?: number;
+    limit?: number;
+  },
+  signal?: AbortSignal
+): Promise<SearchResponse | null> {
   try {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
@@ -68,11 +72,15 @@ export async function searchResources(params: {
     if (params.fileType) query.set("fileType", params.fileType);
     if (params.isExam) query.set("isExam", "true");
     if (params.page) query.set("page", params.page.toString());
+    if (params.limit) query.set("limit", params.limit.toString());
 
-    const res = await fetch(`${API_BASE}/search?${query.toString()}`);
+    const res = await fetch(`${API_BASE}/search?${query.toString()}`, { signal });
     if (!res.ok) return null;
     return await res.json();
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      throw err;
+    }
     console.warn("Search request failed:", err);
     return null;
   }

@@ -48,12 +48,20 @@ import {
   BundleAlbumIcon,
   BundleDocIcon,
 } from "@/components/icons";
+import {
+  StudyHubLoader,
+  DocumentPreviewSkeleton,
+  ButtonLoadingState,
+  InlineSpinner,
+  useToast,
+} from "@/components/loading";
 
 const API_BASE = "/api";
 
 function ResourceDetailContent() {
   const params = useParams();
   const resourceId = (params?.id as string) || "";
+  const { showToast } = useToast();
 
   // Core Data States
   const [resource, setResource] = useState<ResourceItem | null>(null);
@@ -313,10 +321,12 @@ function ResourceDetailContent() {
       window.URL.revokeObjectURL(blobUrl);
 
       setDownloadState({ status: "done", activeId: id });
+      showToast(`Downloaded ${fileName}`, "success");
       setTimeout(() => setDownloadState({ status: "idle" }), 3000);
     } catch (err: any) {
       console.error("Direct download failed:", err);
       setDownloadState({ status: "error", activeId: id });
+      showToast("Download stream timed out. Opening fallback options.", "error");
       setFallbackModal({
         open: true,
         title: "Download Connection Timed Out",
@@ -458,16 +468,7 @@ function ResourceDetailContent() {
           {/* ── Left Preview & Content Area ───────────────────────── */}
           <div className="preview-box">
             {isLoading ? (
-              <div style={{ padding: "60px 20px", textAlign: "center", width: "100%" }}>
-                <RefreshCw
-                  size={32}
-                  className="muted"
-                  style={{ animation: "spin 1s linear infinite", margin: "0 auto 16px" }}
-                />
-                <p className="muted" style={{ fontSize: "15px" }}>
-                  Fetching resource details and live stream...
-                </p>
-              </div>
+              <DocumentPreviewSkeleton height="560px" />
             ) : isPhotoAlbum ? (
               /* ── 1. Photo Album Gallery View ─────────────────────── */
               <div className="gallery-container">
@@ -514,12 +515,14 @@ function ResourceDetailContent() {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: "10px",
-                        color: "var(--muted)",
+                        justifyContent: "center",
+                        zIndex: 2,
                       }}
                     >
-                      <RefreshCw size={24} style={{ animation: "spin 1s linear infinite" }} />
-                      <span style={{ fontSize: "13px" }}>Loading page {activeGroupIndex + 1}...</span>
+                      <StudyHubLoader
+                        size="sm"
+                        message={`Loading page ${activeGroupIndex + 1}...`}
+                      />
                     </div>
                   )}
 
@@ -776,7 +779,7 @@ function ResourceDetailContent() {
                             title="Download this file"
                           >
                             {isDownloadingThis ? (
-                              <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} />
+                              <InlineSpinner size={13} color="white" />
                             ) : (
                               <Download size={13} />
                             )}
@@ -833,15 +836,18 @@ function ResourceDetailContent() {
                           Format: {currentItem.fileType?.toUpperCase()} · Size:{" "}
                           {formatFileSize(currentItem.fileSize)}
                         </p>
-                        <button
-                          type="button"
+                        <ButtonLoadingState
+                          variant="primary"
+                          isLoading={downloadState.status === "downloading" && downloadState.activeId === currentItem._id}
+                          isSuccess={downloadState.status === "done" && downloadState.activeId === currentItem._id}
+                          loadingText="Preparing..."
+                          successText="Ready!"
                           onClick={() => handleDirectDownload(currentItem)}
-                          className="btn btn-primary"
+                          icon={<Download size={15} />}
                           style={{ marginTop: "16px", padding: "8px 20px" }}
                         >
-                          <Download size={15} />
-                          <span>Download Item</span>
-                        </button>
+                          Download Item
+                        </ButtonLoadingState>
                       </div>
                     )}
                   </div>
@@ -1208,30 +1214,24 @@ function ResourceDetailContent() {
                 target="_blank"
                 rel="noreferrer"
                 style={{ padding: "12px 18px", fontSize: "14px" }}
+                onClick={() => showToast("Opening Telegram Bot...", "telegram", 2500)}
               >
                 <Send size={16} />
                 <span>{getTelegramButtonText()}</span>
               </a>
 
-              <button
-                type="button"
+              <ButtonLoadingState
+                variant="outline"
+                isLoading={downloadState.status === "downloading" && (!downloadState.activeId || downloadState.activeId === currentId)}
+                isSuccess={downloadState.status === "done" && (!downloadState.activeId || downloadState.activeId === currentId)}
+                loadingText="Preparing Stream..."
+                successText="Download Ready!"
                 onClick={() => handleDirectDownload()}
-                disabled={downloadState.status === "downloading"}
-                className="btn btn-outline"
+                icon={<Download size={15} />}
                 style={{ padding: "11px 18px", fontSize: "14px" }}
               >
-                {downloadState.status === "downloading" ? (
-                  <>
-                    <RefreshCw size={15} style={{ animation: "spin 1s linear infinite" }} />
-                    <span>Preparing Stream...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={15} />
-                    <span>{isDocBundle ? "Download Current File" : "Direct Download"}</span>
-                  </>
-                )}
-              </button>
+                {isDocBundle ? "Download Current File" : "Direct Download"}
+              </ButtonLoadingState>
 
               {/* Find Similar Button (Updated per user instruction) */}
               <button

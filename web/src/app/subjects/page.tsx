@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, X } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
+import { SubjectCardSkeleton } from "@/components/loading";
 import {
   SubjectCsIcon,
   SubjectSeIcon,
@@ -111,6 +112,13 @@ const ALL_SUBJECTS = [
 
 export default function SubjectsPage() {
   const [filterQuery, setFilterQuery] = useState("");
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  useEffect(() => {
+    // Quick, smooth initial layout settle
+    const timer = setTimeout(() => setIsInitialLoading(false), 120);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredSubjects = ALL_SUBJECTS.filter((s) => {
     const q = filterQuery.toLowerCase().trim();
@@ -147,57 +155,80 @@ export default function SubjectsPage() {
               placeholder="Filter subjects (e.g. Computing, Physics, Math)..."
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
+              aria-label="Filter subjects"
             />
+            {filterQuery && (
+              <button
+                type="button"
+                onClick={() => setFilterQuery("")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                aria-label="Clear filter"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
       </section>
 
       <section className="container section" style={{ paddingTop: "12px" }}>
         <div className="subject-grid">
-          {filteredSubjects.map((subj) => {
-            const Icon = subj.icon;
-            return (
-              <Link
-                key={subj.title}
-                className="subject-card"
-                href={`/explore?q=${encodeURIComponent(subj.query)}`}
-              >
-                <div className="subject-icon">
-                  <Icon size={24} />
-                </div>
-                <div>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: 700,
-                      color: "var(--primary)",
-                      marginBottom: "4px",
-                      display: "block",
-                    }}
-                  >
-                    {subj.category}
+          {isInitialLoading ? (
+            <SubjectCardSkeleton count={8} />
+          ) : (
+            filteredSubjects.map((subj) => {
+              const Icon = subj.icon;
+              return (
+                <Link
+                  key={subj.title}
+                  className="subject-card"
+                  href={`/explore?q=${encodeURIComponent(subj.query)}`}
+                >
+                  <div className="subject-icon">
+                    <Icon size={24} />
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        fontWeight: 700,
+                        color: "var(--primary)",
+                        marginBottom: "4px",
+                        display: "block",
+                      }}
+                    >
+                      {subj.category}
+                    </span>
+                    <h3>{subj.title}</h3>
+                    <small>{subj.desc}</small>
+                    <small
+                      style={{
+                        display: "block",
+                        marginTop: "8px",
+                        color: "var(--muted)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {subj.count}
+                    </small>
+                  </div>
+                  <span className="arrow">
+                    <ArrowRight size={18} />
                   </span>
-                  <h3>{subj.title}</h3>
-                  <small>{subj.desc}</small>
-                  <small
-                    style={{
-                      display: "block",
-                      marginTop: "8px",
-                      color: "var(--muted)",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {subj.count}
-                  </small>
-                </div>
-                <span className="arrow">
-                  <ArrowRight size={18} />
-                </span>
-              </Link>
-            );
-          })}
+                </Link>
+              );
+            })
+          )}
         </div>
 
         {filteredSubjects.length === 0 && (

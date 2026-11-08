@@ -65,16 +65,6 @@ export default function Navbar() {
           <Link className={isActive("/about") ? "active" : ""} href="/about">
             About
           </Link>
-          <a
-            className="nav-bot-link"
-            href={`https://t.me/${botUsername}`}
-            target="_blank"
-            rel="noreferrer"
-            title="Open StudyHub Bot on Telegram"
-          >
-            <Send size={13} />
-            <span>Open Bot</span>
-          </a>
         </nav>
 
         {/* Actions */}
