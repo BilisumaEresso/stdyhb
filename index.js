@@ -17,20 +17,30 @@ const SearchHistory = require("./src/db/models/SearchHistory");
 const { notifyAdmin } = require("./src/services/notify.service");
 
 async function bootstrap() {
-  // Connect to MongoDB
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 20000,
-      connectTimeoutMS: 8000,
-    });
-    console.log("✅ MongoDB connected");
-
-    mongoose.connection.on('error', (err) => console.error('[MongoDB error]', err));
-    mongoose.connection.on('disconnected', () => console.warn('[MongoDB] disconnected'));
-  } catch (err) {
-    console.error("❌ MongoDB error:", err);
+  // Connect to MongoDB with retry logic and resilient timeouts
+  let isConnected = false;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 30000,
+        connectTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        family: 4, // Force IPv4 to bypass IPv6 DNS resolution delays on Windows/ISPs
+      });
+      console.log("✅ MongoDB connected");
+      isConnected = true;
+      break;
+    } catch (err) {
+      console.error(`❌ MongoDB connection attempt ${attempt}/3 failed:`, err.message);
+      if (attempt < 3) {
+        console.log("   Retrying MongoDB in 3 seconds...");
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    }
   }
+
+  mongoose.connection.on('error', (err) => console.error('[MongoDB error]', err.message));
+  mongoose.connection.on('disconnected', () => console.warn('[MongoDB] disconnected'));
 
   // GramJS crash protection
   try {
@@ -129,30 +139,38 @@ async function bootstrap() {
     console.log(`🌐 Server running on port ${PORT}`);
   });
 
-  // Configure Telegram Chat Menu Button to open Web App
+  // Configure Telegram Chat Menu Button to open Web App (with retry)
   const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  bot.telegram
-    .setChatMenuButton({
-      menuButton: {
-        type: "web_app",
-        text: "🔍 Search Hub",
-        web_app: { url: webAppUrl },
-      },
-    })
-    .then(() => console.log(`✅ Chat Menu Button set to Web App: ${webAppUrl}`))
-    .catch((err) => console.warn(`⚠️ Failed to set Chat Menu Button: ${err.message}`));
+  const configureTelegramMenu = async (retries = 3, delay = 2000) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        await bot.telegram.setChatMenuButton({
+          menuButton: {
+            type: "web_app",
+            text: "🔍 Search Hub",
+            web_app: { url: webAppUrl },
+          },
+        });
+        console.log(`✅ Chat Menu Button set to Web App: ${webAppUrl}`);
 
-  // Register official Telegram command list menu
-  bot.telegram
-    .setMyCommands([
-      { command: "search", description: "Search past exams, lecture slides & notes" },
-      { command: "web", description: "Open StudyHub Web & Telegram Mini App" },
-      { command: "help", description: "Open Help Center & Search Guide" },
-      { command: "saves", description: "View your saved materials" },
-      { command: "profile", description: "Set or view your university profile" },
-    ])
-    .then(() => console.log("✅ Bot commands menu registered with Telegram"))
-    .catch((err) => console.warn(`⚠️ Failed to set commands: ${err.message}`));
+        await bot.telegram.setMyCommands([
+          { command: "search", description: "Search past exams, lecture slides & notes" },
+          { command: "web", description: "Open StudyHub Web & Telegram Mini App" },
+          { command: "help", description: "Open Help Center & Search Guide" },
+          { command: "saves", description: "View your saved materials" },
+          { command: "profile", description: "Set or view your university profile" },
+        ]);
+        console.log("✅ Bot commands menu registered with Telegram");
+        return;
+      } catch (err) {
+        console.warn(`⚠️ Telegram menu configuration attempt ${attempt}/${retries} failed:`, err.message);
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, delay * attempt));
+        }
+      }
+    }
+  };
+  configureTelegramMenu();
 
   // Keep Render free tier alive — ping self every 10 minutes
   if (process.env.NODE_ENV === "production") {
