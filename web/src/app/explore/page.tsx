@@ -77,6 +77,8 @@ function ExploreContent() {
   // Concurrency & Stale Request Safeguards
   const abortControllerRef = useRef<AbortController | null>(null);
   const searchRequestIdRef = useRef<number>(0);
+  const resourcesRef = useRef<ResourceItem[]>([]);
+  resourcesRef.current = resources;
 
   const performFetch = useCallback(
     async (q: string, type: string, isExamOnly: boolean, targetPage = 1, append = false) => {
@@ -93,7 +95,7 @@ function ExploreContent() {
       // 2. Set Appropriate Loading State
       if (append) {
         setIsLoadingMore(true);
-      } else if (resources.length > 0) {
+      } else if (resourcesRef.current.length > 0) {
         // Soft refresh: preserve existing cards while updating
         setSearchStatus("refreshing");
       } else {
@@ -122,8 +124,18 @@ function ExploreContent() {
 
         if (res && res.data) {
           if (append) {
-            setResources((prev) => [...prev, ...res.data]);
+            setResources((prev) => {
+              const existingIds = new Set(prev.map((item) => item._id));
+              const newItems = res.data.filter((item: ResourceItem) => !existingIds.has(item._id));
+              return [...prev, ...newItems];
+            });
             setPage(targetPage);
+            if (res.pagination?.totalPages) {
+              setTotalPages(res.pagination.totalPages);
+            }
+            if (res.pagination?.total) {
+              setTotalCount(res.pagination.total);
+            }
             setSearchStatus("success");
           } else {
             setResources(res.data);
@@ -164,7 +176,7 @@ function ExploreContent() {
         }
       }
     },
-    [resources.length, showToast]
+    [showToast]
   );
 
   // Synchronize on searchParams change
@@ -184,10 +196,6 @@ function ExploreContent() {
     }
 
     performFetch(q, type, filter === "exam", 1, false);
-
-    return () => {
-      abortControllerRef.current?.abort();
-    };
   }, [searchParams, performFetch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
