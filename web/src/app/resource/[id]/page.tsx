@@ -49,7 +49,6 @@ import {
   BundleDocIcon,
 } from "@/components/icons";
 import {
-  StudyHubLoader,
   DocumentPreviewSkeleton,
   ButtonLoadingState,
   InlineSpinner,
@@ -71,7 +70,6 @@ function ResourceDetailContent() {
 
   // Group / Album Navigation State
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
-  const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -156,9 +154,8 @@ function ResourceDetailContent() {
     };
   }, [resourceId]);
 
-  // Reset image loading states when active index changes
+  // Reset image error state when active index changes
   useEffect(() => {
-    setIsImageLoading(true);
     setImageError(false);
   }, [activeGroupIndex]);
 
@@ -508,24 +505,6 @@ function ResourceDetailContent() {
                   )}
 
                   {/* Active Image Canvas with key to prevent state sticking */}
-                  {isImageLoading && !imageError && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                      }}
-                    >
-                      <StudyHubLoader
-                        size="sm"
-                        message={`Loading page ${activeGroupIndex + 1}...`}
-                      />
-                    </div>
-                  )}
-
                   {imageError ? (
                     <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--muted)" }}>
                       <AlertCircle size={36} style={{ color: "var(--accent)", margin: "0 auto 12px" }} />
@@ -550,14 +529,7 @@ function ResourceDetailContent() {
                       src={getFileStreamUrl(currentId)}
                       alt={`Exam page ${activeGroupIndex + 1}`}
                       className="gallery-img"
-                      style={{
-                        opacity: isImageLoading ? 0.2 : 1,
-                      }}
-                      onLoad={() => setIsImageLoading(false)}
-                      onError={() => {
-                        setIsImageLoading(false);
-                        setImageError(true);
-                      }}
+                      onError={() => setImageError(true)}
                     />
                   )}
 

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Search, ArrowRight, X } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
-import { SubjectCardSkeleton } from "@/components/loading";
 import {
   SubjectCsIcon,
   SubjectSeIcon,
@@ -112,13 +111,6 @@ const ALL_SUBJECTS = [
 
 export default function SubjectsPage() {
   const [filterQuery, setFilterQuery] = useState("");
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  useEffect(() => {
-    // Quick, smooth initial layout settle
-    const timer = setTimeout(() => setIsInitialLoading(false), 120);
-    return () => clearTimeout(timer);
-  }, []);
 
   const filteredSubjects = ALL_SUBJECTS.filter((s) => {
     const q = filterQuery.toLowerCase().trim();
@@ -181,54 +173,50 @@ export default function SubjectsPage() {
 
       <section className="container section" style={{ paddingTop: "12px" }}>
         <div className="subject-grid">
-          {isInitialLoading ? (
-            <SubjectCardSkeleton count={8} />
-          ) : (
-            filteredSubjects.map((subj) => {
-              const Icon = subj.icon;
-              return (
-                <Link
-                  key={subj.title}
-                  className="subject-card"
-                  href={`/explore?q=${encodeURIComponent(subj.query)}`}
-                >
-                  <div className="subject-icon">
-                    <Icon size={24} />
-                  </div>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        fontWeight: 700,
-                        color: "var(--primary)",
-                        marginBottom: "4px",
-                        display: "block",
-                      }}
-                    >
-                      {subj.category}
-                    </span>
-                    <h3>{subj.title}</h3>
-                    <small>{subj.desc}</small>
-                    <small
-                      style={{
-                        display: "block",
-                        marginTop: "8px",
-                        color: "var(--muted)",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {subj.count}
-                    </small>
-                  </div>
-                  <span className="arrow">
-                    <ArrowRight size={18} />
+          {filteredSubjects.map((subj) => {
+            const Icon = subj.icon;
+            return (
+              <Link
+                key={subj.title}
+                className="subject-card"
+                href={`/explore?q=${encodeURIComponent(subj.query)}`}
+              >
+                <div className="subject-icon">
+                  <Icon size={24} />
+                </div>
+                <div>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      fontWeight: 700,
+                      color: "var(--primary)",
+                      marginBottom: "4px",
+                      display: "block",
+                    }}
+                  >
+                    {subj.category}
                   </span>
-                </Link>
-              );
-            })
-          )}
+                  <h3>{subj.title}</h3>
+                  <small>{subj.desc}</small>
+                  <small
+                    style={{
+                      display: "block",
+                      marginTop: "8px",
+                      color: "var(--muted)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {subj.count}
+                  </small>
+                </div>
+                <span className="arrow">
+                  <ArrowRight size={18} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
         {filteredSubjects.length === 0 && (

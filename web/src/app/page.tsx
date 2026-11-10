@@ -25,11 +25,6 @@ import {
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
 import {
-  ResourceCardSkeleton,
-  ImageSkeleton,
-  ButtonLoadingState,
-} from "@/components/loading";
-import {
   FilePdfIcon,
   FilePptIcon,
   FileDocIcon,
@@ -123,10 +118,7 @@ interface StatsData {
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<StatsData>({ totalResources: 79650, totalChannels: 28 });
-  const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [recentResources, setRecentResources] = useState<any[]>([]);
-  const [isRecentLoading, setIsRecentLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -141,8 +133,7 @@ export default function HomePage() {
           });
         }
       })
-      .catch(() => {})
-      .finally(() => setIsStatsLoading(false));
+      .catch(() => {});
 
     // Fetch a few featured/recent resources for preview
     fetch("/api/search?limit=3")
@@ -152,13 +143,11 @@ export default function HomePage() {
           setRecentResources(data.data.slice(0, 3));
         }
       })
-      .catch(() => {})
-      .finally(() => setIsRecentLoading(false));
+      .catch(() => {});
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSearching(true);
     if (searchTerm.trim()) {
       router.push(`/explore?q=${encodeURIComponent(searchTerm.trim())}`);
     } else {
@@ -209,15 +198,10 @@ export default function HomePage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <ButtonLoadingState
-                type="submit"
-                variant="primary"
-                isLoading={isSearching}
-                loadingText="Searching..."
-              >
+              <button type="submit" className="btn btn-primary">
                 <span>Search</span>
                 <ArrowRight size={15} />
-              </ButtonLoadingState>
+              </button>
             </form>
 
             {/* Popular Search Suggestions */}
@@ -237,10 +221,9 @@ export default function HomePage() {
           </div>
 
           <div className="hero-art">
-            <ImageSkeleton
+            <img
               src="/assets/hero-illustration.svg"
               alt="StudyHub academic learning stack and resources"
-              containerStyle={{ width: "100%", height: "auto" }}
             />
           </div>
         </div>
@@ -362,23 +345,21 @@ export default function HomePage() {
       </section>
 
       {/* ── Featured / Recent Resources ─────────────────────────────── */}
-      <section className="section container">
-        <div className="section-head">
-          <div>
-            <h2>Recently Indexed Materials</h2>
-            <p>Fresh exams, slides, and lecture notes added to the StudyHub repository.</p>
+      {recentResources.length > 0 && (
+        <section className="section container">
+          <div className="section-head">
+            <div>
+              <h2>Recently Indexed Materials</h2>
+              <p>Fresh exams, slides, and lecture notes added to the StudyHub repository.</p>
+            </div>
+            <Link className="btn btn-outline" href="/explore">
+              <span>View All</span>
+              <ArrowRight size={15} />
+            </Link>
           </div>
-          <Link className="btn btn-outline" href="/explore">
-            <span>View All</span>
-            <ArrowRight size={15} />
-          </Link>
-        </div>
 
-        <div className="resource-grid">
-          {isRecentLoading ? (
-            <ResourceCardSkeleton count={3} />
-          ) : (
-            recentResources.map((item) => {
+          <div className="resource-grid">
+            {recentResources.map((item) => {
               const displayTitle = item.cleanTitle || item.title || item.fileName || "Academic Resource";
               const isExam = item.isExam;
               const type = (item.fileType || "pdf").toLowerCase();
@@ -439,10 +420,10 @@ export default function HomePage() {
                   </div>
                 </article>
               );
-            })
-          )}
-        </div>
-      </section>
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Call to Action Banner ───────────────────────────────────── */}
       <section className="section container">

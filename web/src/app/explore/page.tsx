@@ -260,15 +260,10 @@ function ExploreContent() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <ButtonLoadingState
-              type="submit"
-              variant="primary"
-              isLoading={isSearching}
-              loadingText="Searching..."
-            >
+            <button type="submit" className="btn btn-primary">
               <span>Search</span>
               <ArrowRight size={15} />
-            </ButtonLoadingState>
+            </button>
           </form>
 
           <select
@@ -330,10 +325,6 @@ function ExploreContent() {
         {/* ── Resource Grid & Progressive Cards ──────────────────────── */}
         <div
           className="resource-grid"
-          style={{
-            opacity: isRefreshing ? 0.78 : 1,
-            transition: "opacity 0.2s ease",
-          }}
           aria-busy={isSearching || isRefreshing}
         >
           {/* Skeletons on initial search */}

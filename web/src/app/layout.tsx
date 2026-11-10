@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import TelegramProvider from "@/components/TelegramProvider";
-import { ToastProvider, PageProgressBar } from "@/components/loading";
+import { ToastProvider } from "@/components/loading";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://webstudyhub.vercel.app";
@@ -161,9 +161,6 @@ export default function RootLayout({
       <body>
         <TelegramProvider>
           <ToastProvider>
-            <Suspense fallback={null}>
-              <PageProgressBar />
-            </Suspense>
             <Suspense fallback={<header className="topbar" />}>
               <Navbar />
             </Suspense>
