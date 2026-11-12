@@ -445,7 +445,7 @@ function ResourceDetailContent() {
           <span>Back to Resources</span>
         </Link>
 
-        <h1 style={{ fontSize: "clamp(26px, 3.8vw, 40px)", marginTop: "16px" }}>
+        <h1 style={{ fontSize: "clamp(26px, 3.8vw, 40px)", marginTop: "16px", overflowWrap: "anywhere", wordBreak: "break-word" }}>
           {displayTitle}
         </h1>
 
@@ -579,16 +579,7 @@ function ResourceDetailContent() {
               /* ── 2. Multi-File Document Bundle View ───────────────── */
               <div style={{ width: "100%", textAlign: "left" }}>
                 {/* Bundle Header & Selection Actions */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "12px",
-                    marginBottom: "16px",
-                  }}
-                >
+                <div className="bundle-contents-header">
                   <div>
                     <h3 style={{ fontSize: "18px", marginBottom: "4px" }}>
                       Bundle Contents ({groupItems.length} files)
@@ -606,21 +597,20 @@ function ResourceDetailContent() {
                   </div>
 
                   {/* Batch Selection Controls */}
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div className="bundle-batch-controls">
                     <button
                       type="button"
                       onClick={toggleSelectAll}
                       className="btn btn-outline"
-                      style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "8px" }}
                     >
                       {selectedItemIds.length === groupItems.length ? (
                         <>
-                          <CheckSquare size={13} />
+                          <CheckSquare size={14} />
                           <span>Deselect All</span>
                         </>
                       ) : (
                         <>
-                          <Square size={13} />
+                          <Square size={14} />
                           <span>Select All</span>
                         </>
                       )}
@@ -631,9 +621,8 @@ function ResourceDetailContent() {
                         type="button"
                         onClick={handleDownloadSelected}
                         className="btn btn-primary"
-                        style={{ padding: "6px 14px", fontSize: "12px", borderRadius: "8px" }}
                       >
-                        <Download size={13} />
+                        <Download size={14} />
                         <span>Download Selected ({selectedItemIds.length})</span>
                       </button>
                     )}
@@ -641,7 +630,7 @@ function ResourceDetailContent() {
                 </div>
 
                 {/* Bundle Index List */}
-                <div style={{ display: "grid", gap: "10px", marginBottom: "22px" }}>
+                <div className="bundle-items-list">
                   {groupItems.map((item, idx) => {
                     const isSelected = activeGroupIndex === idx;
                     const isChecked = selectedItemIds.includes(item._id);
@@ -652,53 +641,22 @@ function ResourceDetailContent() {
                     return (
                       <div
                         key={item._id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 16px",
-                          borderRadius: "14px",
-                          border: isSelected ? "1.5px solid var(--primary)" : "1px solid var(--card-border)",
-                          background: isSelected ? "var(--primary-soft)" : "var(--surface)",
-                          boxShadow: "var(--shadow-card)",
-                          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                        }}
+                        className={`bundle-item-card ${isSelected ? "selected" : ""}`}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            minWidth: 0,
-                            flex: 1,
-                          }}
-                        >
+                        <div className="bundle-item-main">
                           {/* Checkbox for batch select */}
                           <button
                             type="button"
                             onClick={() => toggleSelectItem(item._id)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 0,
-                              color: isChecked ? "var(--primary)" : "var(--muted)",
-                              display: "flex",
-                              alignItems: "center",
-                            }}
+                            className={`bundle-item-check ${isChecked ? "checked" : ""}`}
                             title={isChecked ? "Deselect item" : "Select item"}
+                            aria-label={isChecked ? `Deselect ${item.fileName}` : `Select ${item.fileName}`}
                           >
                             {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                           </button>
 
                           <span
-                            className={`file-type ${item.fileType || "pdf"}`}
-                            style={{
-                              width: "36px",
-                              height: "36px",
-                              borderRadius: "8px",
-                              flexShrink: 0,
-                            }}
+                            className={`file-type ${item.fileType || "pdf"} bundle-item-icon`}
                           >
                             {item.fileType === "ppt" ? (
                               <FilePptIcon size={18} />
@@ -711,34 +669,27 @@ function ResourceDetailContent() {
                             )}
                           </span>
 
-                          <div style={{ minWidth: 0, flex: 1 }}>
+                          <div className="bundle-item-text">
                             <span
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: isSelected ? 700 : 500,
-                                color: isSelected ? "var(--primary)" : "var(--text)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                display: "block",
-                              }}
+                              className="bundle-item-title"
+                              title={item.fileName || `Item ${idx + 1}`}
                             >
                               {item.fileName || `Item ${idx + 1}`}
                             </span>
-                            <span className="muted" style={{ fontSize: "12px" }}>
+                            <span className="bundle-item-size">
                               {itemSize}
                             </span>
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", gap: "8px", flexShrink: 0, marginLeft: "12px" }}>
+                        <div className="bundle-item-actions">
                           <button
                             type="button"
                             onClick={() => setActiveGroupIndex(idx)}
-                            className="btn btn-outline"
-                            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "8px" }}
+                            className="btn btn-outline bundle-item-btn"
+                            aria-label={isSelected ? `Currently viewing ${item.fileName}` : `Preview ${item.fileName}`}
                           >
-                            <Eye size={12} />
+                            <Eye size={13} />
                             <span>{isSelected ? "Viewing" : "Preview"}</span>
                           </button>
 
@@ -746,14 +697,20 @@ function ResourceDetailContent() {
                             type="button"
                             onClick={() => handleDirectDownload(item)}
                             disabled={isDownloadingThis}
-                            className="btn btn-primary"
-                            style={{ padding: "6px 10px", fontSize: "12px", borderRadius: "8px" }}
-                            title="Download this file"
+                            className="btn btn-primary bundle-item-btn-download"
+                            title={`Download ${item.fileName || "this file"}`}
+                            aria-label={`Download ${item.fileName || "this file"}`}
                           >
                             {isDownloadingThis ? (
-                              <InlineSpinner size={13} color="white" />
+                              <>
+                                <InlineSpinner size={13} color="white" />
+                                <span>Preparing...</span>
+                              </>
                             ) : (
-                              <Download size={13} />
+                              <>
+                                <Download size={13} />
+                                <span>Download</span>
+                              </>
                             )}
                           </button>
                         </div>
@@ -803,7 +760,7 @@ function ResourceDetailContent() {
                         }}
                       >
                         <FileText size={48} className="muted" style={{ marginBottom: "16px" }} />
-                        <h4 style={{ fontSize: "18px" }}>{currentItem.fileName}</h4>
+                        <h4 style={{ fontSize: "18px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{currentItem.fileName}</h4>
                         <p className="muted" style={{ fontSize: "13px", marginTop: "4px" }}>
                           Format: {currentItem.fileType?.toUpperCase()} · Size:{" "}
                           {formatFileSize(currentItem.fileSize)}
@@ -886,7 +843,7 @@ function ResourceDetailContent() {
                     {resource?.fileType === "ppt" ? "POWERPOINT PRESENTATION" : "WORD DOCUMENT"}
                   </span>
 
-                  <h3 style={{ fontSize: "19px", marginBottom: "8px" }}>{displayTitle}</h3>
+                  <h3 style={{ fontSize: "19px", marginBottom: "8px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{displayTitle}</h3>
 
                   <p className="muted" style={{ fontSize: "13px", lineHeight: "1.5" }}>
                     {resource?.courseCode || "Academic Curriculum"} •{" "}
