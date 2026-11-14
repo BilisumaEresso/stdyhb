@@ -1,6 +1,8 @@
 const { Scenes, Markup } = require("telegraf");
 const User = require("../../db/models/User");
-const startCommand = require("../commands/start");const { getBot } = require("../botInstance");
+const startCommand = require("../commands/start");
+const { getBot } = require("../botInstance");
+const { getMainKeyboard } = require("../keyboards");
 const LABELS = require("../keyboardLabels");
 const RESERVED_TEXTS = Object.values(LABELS);
 
@@ -111,7 +113,10 @@ const onboardingWizard = new Scenes.WizardScene(
       await startCommand(ctx, true);
     } catch (error) {
       console.error("Error saving onboarding data:", error);
-      await ctx.reply("❌ There was an error saving your profile, but you can still use the bot!");
+      await ctx.reply(
+        "❌ There was an error saving your profile, but you can still use the bot!",
+        getMainKeyboard()
+      );
     }
 
     return ctx.scene.leave();

@@ -3,11 +3,22 @@ const LABELS = require("../keyboardLabels");
 const { Markup } = require("telegraf");
 const templates = require("../../telegram/templates");
 const fileDelivery = require("../../telegram/fileDelivery");
+const { getMainKeyboard } = require("../keyboards");
 
 async function startCommand(ctx, skipWizard = false) {
   try {
     const telegramUser = ctx.from;
     const user = await userService.getOrCreateUser(telegramUser);
+
+    // Answer callback query if invoked from inline button
+    if (ctx.answerCbQuery) {
+      await ctx.answerCbQuery().catch(() => {});
+    }
+
+    // Ensure the native [Menu] drawer button is active in private chat
+    if (ctx.chat && ctx.chat.type === "private" && typeof ctx.setChatMenuButton === "function") {
+      ctx.setChatMenuButton({ type: "commands" }).catch(() => {});
+    }
 
     // Check for deep-link payload (e.g. /start get_<id> from inline search)
     const payload = (
@@ -35,12 +46,7 @@ async function startCommand(ctx, skipWizard = false) {
       return ctx.scene.enter("onboarding");
     }
 
-    const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-    const keyboard = Markup.keyboard([
-      [Markup.button.webApp("🌐 Open Web App", webAppUrl), LABELS.SEARCH],
-      [LABELS.SAVES, LABELS.RECOMMEND],
-      [LABELS.PROFILE, LABELS.HELP],
-    ]).resize();
+    const keyboard = getMainKeyboard();
 
     // Decide which welcome message to send
     const messageText =

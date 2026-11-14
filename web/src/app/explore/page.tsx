@@ -16,6 +16,8 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Megaphone,
   X,
   Compass,
@@ -54,6 +56,13 @@ const FILTER_CHIPS = [
   { label: "Operating Systems", query: "Operating Systems", filter: "" },
 ];
 
+const COLLECTION_TAGLINES: Record<string, string> = {
+  "study-materials": "Notes, textbooks & outlines",
+  "ethiopian-fiction-reading": "Novels & cultural literature",
+  "past-exams-entrance-exit": "Midterm, final & exit exams",
+  "university-freshman-courses": "1st-year common curriculum",
+};
+
 type SearchStatus = "idle" | "searching" | "refreshing" | "success" | "empty" | "error";
 
 function ExploreContent() {
@@ -74,6 +83,7 @@ function ExploreContent() {
   );
   const [activeCollectionId, setActiveCollectionId] = useState<string>(initialCollection);
   const [activeCategoryId, setActiveCategoryId] = useState<string>(initialCategory);
+  const [showCollections, setShowCollections] = useState<boolean>(!initialQ && !initialCategory);
 
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -176,6 +186,13 @@ function ExploreContent() {
     setFileType(type);
     setActiveCollectionId(colParam);
     setActiveCategoryId(catParam);
+
+    // Dynamic visibility: when querying, auto-collapse collections to prioritize search results
+    if (q.trim() || catParam) {
+      setShowCollections(false);
+    } else {
+      setShowCollections(true);
+    }
 
     if (filter === "exam") {
       setSelectedChip("Past Exams");
@@ -356,81 +373,72 @@ function ExploreContent() {
         </div>
       </section>
 
-      {/* ── Four Official Taxonomy Collections ──────────────────────── */}
-      <section className="container" style={{ marginBottom: "32px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "12px",
-            marginBottom: "12px",
-          }}
-        >
-          <div>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--text)" }}>
-              Official Academic Collections
-            </h2>
-            <p style={{ fontSize: "13px", color: "var(--muted)", margin: "2px 0 0" }}>
-              Standardized discovery streams defined in the centralized Ethiopian Academic Taxonomy.
-            </p>
+      {/* ── Four Official Taxonomy Collections (Dynamic & Modern Pro) ── */}
+      <section className="container collections-section">
+        <div className="collections-header-bar">
+          <div className="collections-title-lockup">
+            <h2>Official Collections</h2>
+            <span className="collections-count-pill">4</span>
+            <button
+              type="button"
+              className="collections-toggle-btn"
+              onClick={() => setShowCollections((prev) => !prev)}
+              aria-expanded={showCollections}
+              title={showCollections ? "Collapse collections rail" : "Expand collections rail"}
+            >
+              <span>{showCollections ? "Hide" : "Show"}</span>
+              {showCollections ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
           </div>
-          <Link
-            href="/subjects"
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "var(--primary)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              textDecoration: "none",
-            }}
-          >
-            <span>Browse All 21 Categories by Education Group</span>
-            <ArrowRight size={14} />
+
+          <Link href="/subjects" className="collections-link-subtle">
+            <span>Browse All 21 Categories</span>
+            <ArrowRight size={13} />
           </Link>
         </div>
 
-        <div className="collections-grid">
-          {COLLECTIONS.map((col) => {
-            const isSelected = activeCollectionId === col.id;
-            return (
-              <div
-                key={col.id}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                className={`collection-card ${isSelected ? "active" : ""}`}
-                onClick={() => handleCollectionClick(col)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleCollectionClick(col);
-                  }
-                }}
-              >
-                <div className="collection-header">
-                  <div className="collection-icon">
-                    <TaxonomyIcon name={col.icon} size={22} />
+        {showCollections && (
+          <div className="collections-rail">
+            {COLLECTIONS.map((col) => {
+              const isSelected = activeCollectionId === col.id;
+              const tagline = COLLECTION_TAGLINES[col.id] || col.description;
+              return (
+                <div
+                  key={col.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  className={`collection-card-compact ${isSelected ? "active" : ""}`}
+                  onClick={() => handleCollectionClick(col)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleCollectionClick(col);
+                    }
+                  }}
+                  title={`${col.name}: ${col.description}`}
+                >
+                  <div className="collection-icon-compact">
+                    <TaxonomyIcon name={col.icon} size={18} />
                   </div>
-                  {col.amharicName && (
-                    <span className="amharic-badge">{col.amharicName}</span>
+
+                  <div className="collection-info-compact">
+                    <div className="collection-title-row">
+                      <h3 className="collection-title-compact">{col.name}</h3>
+                    </div>
+                    <p className="collection-tagline-compact">{tagline}</p>
+                  </div>
+
+                  {isSelected && (
+                    <div className="collection-check-indicator">
+                      <CheckCircle2 size={16} />
+                    </div>
                   )}
                 </div>
-
-                <h3>{col.name}</h3>
-                <p>{col.description}</p>
-
-                <div className="collection-footer">
-                  <span>{isSelected ? "Selected Collection" : "Browse Collection"}</span>
-                  {isSelected ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── Active Category / Collection Filter Banner ───────────────── */}
@@ -443,11 +451,6 @@ function ExploreContent() {
                 <strong style={{ color: "var(--text)" }}>
                   {activeCategory ? `Filtered by Category: ${activeCategory.name}` : `Browsing Collection: ${activeCollectionObj?.name}`}
                 </strong>
-                {activeCategory?.amharicName && (
-                  <span className="amharic-badge" style={{ marginLeft: "8px" }}>
-                    {activeCategory.amharicName}
-                  </span>
-                )}
               </div>
             </div>
             <button

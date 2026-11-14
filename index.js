@@ -139,38 +139,9 @@ async function bootstrap() {
     console.log(`🌐 Server running on port ${PORT}`);
   });
 
-  // Configure Telegram Chat Menu Button to open Web App (with retry)
-  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const configureTelegramMenu = async (retries = 3, delay = 2000) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        await bot.telegram.setChatMenuButton({
-          menuButton: {
-            type: "web_app",
-            text: "🔍 Search Hub",
-            web_app: { url: webAppUrl },
-          },
-        });
-        console.log(`✅ Chat Menu Button set to Web App: ${webAppUrl}`);
-
-        await bot.telegram.setMyCommands([
-          { command: "search", description: "Search past exams, lecture slides & notes" },
-          { command: "web", description: "Open StudyHub Web & Telegram Mini App" },
-          { command: "help", description: "Open Help Center & Search Guide" },
-          { command: "saves", description: "View your saved materials" },
-          { command: "profile", description: "Set or view your university profile" },
-        ]);
-        console.log("✅ Bot commands menu registered with Telegram");
-        return;
-      } catch (err) {
-        console.warn(`⚠️ Telegram menu configuration attempt ${attempt}/${retries} failed:`, err.message);
-        if (attempt < retries) {
-          await new Promise((r) => setTimeout(r, delay * attempt));
-        }
-      }
-    }
-  };
-  configureTelegramMenu();
+  // Configure Telegram Chat Menu Button to restore Commands Drawer and register commands
+  const { configureTelegramMenu } = require("./src/bot/menuConfig");
+  configureTelegramMenu(bot);
 
   // Keep Render free tier alive — ping self every 10 minutes
   if (process.env.NODE_ENV === "production") {

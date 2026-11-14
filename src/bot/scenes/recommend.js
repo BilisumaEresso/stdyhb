@@ -6,6 +6,7 @@ const { notifyAdmin } = require("../../services/notify.service");
 
 const { getBot } = require("../botInstance");
 const LABELS = require("../keyboardLabels");
+const { getMainKeyboard } = require("../keyboards");
 const RESERVED_TEXTS = Object.values(LABELS);
 
 function isEscapeText(ctx) {
@@ -132,10 +133,16 @@ const recommendWizard = new Scenes.WizardScene(
         recId: rec._id.toString()
       });
 
-      await ctx.reply(`✅ Thank you! Your recommendation for @${ctx.session.recUsername} has been submitted for review.`);
+      await ctx.reply(
+        `✅ Thank you! Your recommendation for @${ctx.session.recUsername} has been submitted for review.`,
+        getMainKeyboard()
+      );
     } catch (error) {
       console.error("Error saving channel recommendation:", error);
-      await ctx.reply("❌ There was an error submitting your recommendation. Please try again later.");
+      await ctx.reply(
+        "❌ There was an error submitting your recommendation. Please try again later.",
+        getMainKeyboard()
+      );
     }
 
     return ctx.scene.leave();
@@ -164,7 +171,7 @@ recommendWizard.action(/recuni_.*/, async (ctx, next) => {
 
 recommendWizard.action("cancel_rec", async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.reply("Cancelled. You can search or use the menu below.");
+  await ctx.reply("Cancelled. You can search or use the menu below.", getMainKeyboard());
   return ctx.scene.leave();
 });
 

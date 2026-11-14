@@ -115,6 +115,7 @@ bot.use(async (ctx, next) => {
 
 // Register public commands
 bot.start((ctx) => startCommand(ctx, false)); // Pass skipWizard=false by default
+bot.command(["menu", "mainmenu"], (ctx) => startCommand(ctx, true));
 bot.command("search", searchCommand);
 bot.command("profile", profileCommand);
 bot.command("trending", trendingCommand);

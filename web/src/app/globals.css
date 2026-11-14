@@ -3349,56 +3349,143 @@ h3 {
   }
 }
 
-/* ── 8. Centralized Taxonomy & Academic Navigation Styles ────────────────── */
-.collections-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-top: 16px;
+/* ── 8. Centralized Taxonomy & Academic Navigation Styles (Modern & Pro) ── */
+.collections-section {
+  margin-bottom: 24px;
+  transition: all 0.25s ease;
 }
 
-.collection-card {
-  padding: 20px;
-  border-radius: 18px;
-  border: 1px solid var(--card-border);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.24s ease,
-              box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              background 0.24s ease;
-  position: relative;
-  cursor: pointer;
-}
-
-.collection-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--card-border-hover);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.collection-card.active {
-  border-color: var(--primary);
-  background: var(--surface-hover);
-  box-shadow: 0 0 0 2px var(--primary-soft);
-}
-
-.collection-header {
+.collections-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.collections-title-lockup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collections-title-lockup h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.collections-count-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.collections-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.collection-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+.collections-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.collections-toggle-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--surface-hover);
+}
+
+.collections-link-subtle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.collections-link-subtle:hover {
+  opacity: 0.8;
+}
+
+/* Modern Compact Collections Rail / Grid */
+.collections-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible;
+}
+
+.collection-card-compact {
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  min-height: 58px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.collection-card-compact:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-hover);
+}
+
+.collection-card-compact.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 2px rgba(8, 120, 249, 0.2);
+}
+
+[data-theme="dark"] .collection-card-compact.active {
+  background: var(--surface-3);
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(18, 188, 235, 0.25);
+}
+
+.collection-icon-compact {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--primary-soft);
   color: var(--primary);
   display: grid;
@@ -3407,133 +3494,302 @@ h3 {
   transition: transform 0.2s ease;
 }
 
-.collection-card:hover .collection-icon {
-  transform: scale(1.05);
+.collection-card-compact:hover .collection-icon-compact {
+  transform: scale(1.06);
 }
 
-.amharic-badge {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--surface-hover);
+.collection-info-compact {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.collection-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.collection-title-compact {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+  min-width: 0;
+}
+
+.collection-badge-micro {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
   color: var(--muted);
   border: 1px solid var(--card-border);
   font-weight: 500;
-  letter-spacing: 0.2px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.collection-card h3 {
-  font-size: 16px;
+.collection-tagline-compact {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.collection-check-indicator {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Subjects Page: Polished & Compact Category Cards ────────────────── */
+.categories-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible;
+}
+
+.category-card-compact {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease;
+  min-height: 74px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.category-card-compact:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-hover);
+}
+
+.category-icon-compact {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.category-card-compact:hover .category-icon-compact {
+  transform: scale(1.06);
+}
+
+.category-icon-uni {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.category-icon-sec {
+  background: var(--album-soft);
+  color: var(--album-color);
+}
+
+.category-icon-pri {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+[data-theme="dark"] .category-icon-uni {
+  color: var(--cyan);
+}
+
+.category-info-compact {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.category-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.category-title-compact {
+  font-size: 14px;
   font-weight: 700;
   margin: 0;
   color: var(--text);
   letter-spacing: -0.01em;
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.collection-card p {
-  font-size: 13px;
+.category-subtitle-compact {
+  font-size: 11.5px;
   color: var(--muted);
-  line-height: 1.5;
-  margin: 0;
-  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  min-width: 0;
 }
 
-.collection-footer {
+.category-disciplines-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
   margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid var(--card-border);
-  font-size: 12px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+.category-discipline-chip {
+  font-size: 10.5px;
   font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-arrow-compact {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.category-card-compact:hover .category-arrow-compact {
+  transform: translateX(3px);
   color: var(--primary);
 }
 
-.taxonomy-group-header {
-  margin-top: 44px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 14px;
-  border-bottom: 1px solid var(--card-border);
-  padding-bottom: 14px;
-}
-
-.taxonomy-group-title {
+/* Modern Segmented Control for Education Groups */
+.segmented-control {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.taxonomy-group-title h2 {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.group-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 20px;
-  margin-bottom: 8px;
-}
-
-.group-tab-btn {
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--card-border);
   background: var(--surface);
-  color: var(--text);
+  border: 1px solid var(--card-border);
+  padding: 4px;
+  border-radius: 14px;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  box-shadow: var(--shadow-xs);
+  flex-wrap: wrap;
+}
+
+.segmented-btn {
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 1 1 auto;
+  justify-content: center;
 }
 
-.group-tab-btn:hover {
-  border-color: var(--card-border-hover);
+.segmented-btn:hover {
+  color: var(--text);
   background: var(--surface-hover);
 }
 
-.group-tab-btn.active {
+.segmented-btn.active {
   background: var(--primary);
   color: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px var(--primary-soft);
+  box-shadow: 0 2px 6px rgba(8, 120, 249, 0.25);
 }
 
-.discipline-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.discipline-tag {
+.segmented-count {
   font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-weight: 600;
-  letter-spacing: 0.1px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.segmented-btn:not(.active) .segmented-count {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* Compact Group Header */
+.group-header-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 28px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.group-header-compact h3 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .category-filter-banner {
-  padding: 12px 18px;
+  padding: 10px 14px;
   border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--primary);
@@ -3541,23 +3797,93 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  flex-wrap: wrap;
 }
 
+/* Responsive Breakpoints */
 @media (max-width: 1024px) {
-  .collections-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .categories-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .collections-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 }
 
 @media (max-width: 640px) {
-  .collections-grid {
-    grid-template-columns: 1fr;
-  }
-  .taxonomy-group-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .collections-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    width: 100%;
+    overflow-x: visible;
+  }
+  .collection-card-compact {
+    padding: 8px 10px;
+    min-height: 48px;
+    gap: 8px;
+    width: 100%;
+  }
+  .collection-icon-compact {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+  .collection-title-compact {
+    font-size: 12.5px;
+  }
+  .collection-tagline-compact {
+    font-size: 10.5px;
+  }
+
+  .categories-grid-compact {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .category-card-compact {
+    padding: 10px 12px;
+    min-height: 60px;
+    gap: 10px;
+    width: 100%;
+  }
+  .category-icon-compact {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .category-title-compact {
+    font-size: 13.5px;
+  }
+  .category-disciplines-row {
+    flex-wrap: wrap;
+  }
+  .segmented-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    overflow-x: visible;
+  }
+  .segmented-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .collections-rail {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .segmented-control {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
