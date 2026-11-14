@@ -115,11 +115,12 @@ export interface SuggestionItem {
 
 export async function fetchSearchSuggestions(
   query: string,
+  limit: number = 10,
   signal?: AbortSignal
 ): Promise<SuggestionItem[]> {
   try {
     const q = encodeURIComponent(query.trim());
-    const res = await fetch(`${API_BASE}/search/suggestions?q=${q}&limit=6`, { signal });
+    const res = await fetch(`${API_BASE}/search/suggestions?q=${q}&limit=${limit}`, { signal });
     if (!res.ok) return [];
     const json: SuggestionsResponse = await res.json();
     return json.success && Array.isArray(json.data) ? json.data : [];

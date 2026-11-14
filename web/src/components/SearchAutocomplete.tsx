@@ -47,8 +47,21 @@ export default function SearchAutocomplete({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxRef = useRef<HTMLUListElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Automatically scroll selected suggestion into view during keyboard navigation
+  useEffect(() => {
+    if (selectedIndex >= 0 && listboxRef.current) {
+      const activeItem = listboxRef.current.querySelector(
+        `#${id}-option-${selectedIndex}`
+      ) as HTMLElement | null;
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [selectedIndex, id]);
 
   // Load recent searches from localStorage on mount
   useEffect(() => {
@@ -118,7 +131,7 @@ export default function SearchAutocomplete({
           initialItems.push({ text: recent, type: "recent" });
         });
 
-        // 2. Add fallback top popular suggestions
+        // 2. Add fallback top popular suggestions (rich taxonomy entries)
         const popularDefaults: SuggestionItem[] = [
           { text: "DBMS Exam", type: "popular" },
           { text: "DSA Final Exam", type: "popular" },
@@ -126,11 +139,17 @@ export default function SearchAutocomplete({
           { text: "Calculus I Past Exam", type: "popular" },
           { text: "Operating Systems", type: "popular" },
           { text: "Software Engineering", type: "popular" },
+          { text: "General Physics Mid Exam", type: "popular" },
+          { text: "Object Oriented Programming (OOP)", type: "popular" },
+          { text: "Logic and Critical Thinking Exam", type: "popular" },
+          { text: "General Mathematics Natural Science", type: "popular" },
+          { text: "Emerging Technologies", type: "popular" },
+          { text: "Inclusiveness", type: "popular" },
         ];
 
         popularDefaults.forEach((pop) => {
           if (
-            initialItems.length < 6 &&
+            initialItems.length < 10 &&
             !initialItems.some((item) => item.text.toLowerCase() === pop.text.toLowerCase())
           ) {
             initialItems.push(pop);
@@ -148,7 +167,7 @@ export default function SearchAutocomplete({
         abortControllerRef.current = controller;
 
         try {
-          const apiSuggestions = await fetchSearchSuggestions(trimmed, controller.signal);
+          const apiSuggestions = await fetchSearchSuggestions(trimmed, 12, controller.signal);
 
           // Prepend any matching recent search if relevant
           const matchingRecent = recentSearches
@@ -157,10 +176,10 @@ export default function SearchAutocomplete({
                 r.toLowerCase().includes(trimmed.toLowerCase()) &&
                 !apiSuggestions.some((s) => s.text.toLowerCase() === r.toLowerCase())
             )
-            .slice(0, 2)
+            .slice(0, 3)
             .map((r): SuggestionItem => ({ text: r, type: "recent" }));
 
-          const combined = [...matchingRecent, ...apiSuggestions].slice(0, 6);
+          const combined = [...matchingRecent, ...apiSuggestions].slice(0, 10);
           setSuggestions(combined);
           setSelectedIndex(-1);
         } catch (err: any) {
@@ -309,7 +328,12 @@ export default function SearchAutocomplete({
   };
 
   return (
-    <div ref={containerRef} className={`search-autocomplete-wrapper ${className}`}>
+    <div
+      ref={containerRef}
+      className={`search-autocomplete-wrapper ${
+        isOpen && suggestions.length > 0 ? "is-open" : ""
+      } ${className}`}
+    >
       <form
         className="searchbar"
         onSubmit={handleSubmit}
@@ -370,6 +394,7 @@ export default function SearchAutocomplete({
       {/* Dropdown Suggestions List */}
       {isOpen && suggestions.length > 0 && (
         <ul
+          ref={listboxRef}
           id={`${id}-listbox`}
           className="autocomplete-dropdown"
           role="listbox"

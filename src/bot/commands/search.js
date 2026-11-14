@@ -163,11 +163,25 @@ async function performSearch(ctx, query) {
     } else if (hasTelegramResults) {
       await sendPaginatedResults(ctx, results, query, queryHash, 1, "all", user);
     } else {
-      // Use web results formatting
+      // Use web results formatting with high-conversion marketing buttons
       const resultsMessage = formatWebResults(results);
+      const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+      const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
+      const webSearchUrl = `${webAppUrl}/explore?q=${encodeURIComponent(query)}`;
+
+      const buttons = Markup.inlineKeyboard([
+        [Markup.button.callback("🔍 Search Again", "open_search_screen")],
+        [
+          Markup.button.url("🌐 Visit Web", webSearchUrl),
+          Markup.button.url("📢 Join Channel", channelUrl),
+        ],
+      ]);
+
       await ctx.reply(resultsMessage, {
         parse_mode: "HTML",
         disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
+        reply_markup: buttons.reply_markup,
       });
     }
 

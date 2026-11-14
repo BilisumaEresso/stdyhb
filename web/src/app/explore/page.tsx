@@ -17,25 +17,25 @@ import {
   ChevronLeft,
   ChevronRight,
   Megaphone,
+  X,
+  Compass,
+  CheckCircle2,
 } from "lucide-react";
 import {
   ResourceItem,
   searchResources,
   getTelegramBotDeepLink,
 } from "@/lib/api";
+import {
+  COLLECTIONS,
+  getCollection,
+  getSubjectCategory,
+  Collection,
+} from "@/lib/taxonomy";
 import BrandEmblem from "@/components/BrandEmblem";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
 import ResourceCard from "@/components/ResourceCard";
-import {
-  FilePdfIcon,
-  FilePptIcon,
-  FileDocIcon,
-  FileImageIcon,
-  BundlePdfIcon,
-  BundleSlidesIcon,
-  BundleAlbumIcon,
-  BundleDocIcon,
-} from "@/components/icons";
+import TaxonomyIcon from "@/components/TaxonomyIcon";
 import {
   ResourceCardSkeleton,
   ButtonLoadingState,
@@ -64,12 +64,16 @@ function ExploreContent() {
   const initialQ = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
   const initialFilter = searchParams.get("filter") || "";
+  const initialCollection = searchParams.get("collection") || "";
+  const initialCategory = searchParams.get("category") || "";
 
   const [query, setQuery] = useState(initialQ);
   const [fileType, setFileType] = useState(initialType);
   const [selectedChip, setSelectedChip] = useState(
     initialFilter === "exam" ? "Past Exams" : initialQ || "All"
   );
+  const [activeCollectionId, setActiveCollectionId] = useState<string>(initialCollection);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>(initialCategory);
 
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -87,7 +91,7 @@ function ExploreContent() {
 
   const performFetch = useCallback(
     async (q: string, type: string, isExamOnly: boolean, targetPage = 1) => {
-      // 1. Invalidate any in-flight requests
+      // 1. Invalidate in-flight requests
       searchRequestIdRef.current += 1;
       const currentRequestId = searchRequestIdRef.current;
 
@@ -99,10 +103,8 @@ function ExploreContent() {
 
       // 2. Set Appropriate Loading State
       if (resourcesRef.current.length > 0) {
-        // Soft refresh: preserve existing cards while updating
         setSearchStatus("refreshing");
       } else {
-        // Initial / Empty search: full skeleton view
         setSearchStatus("searching");
       }
 
@@ -149,7 +151,6 @@ function ExploreContent() {
         }
       } catch (err: any) {
         if (err.name === "AbortError") {
-          // Request was cancelled intentionally by a newer search
           return;
         }
         console.error("Explore fetch error:", err);
@@ -167,10 +168,15 @@ function ExploreContent() {
     const q = searchParams.get("q") || "";
     const type = searchParams.get("type") || "all";
     const filter = searchParams.get("filter") || "";
+    const colParam = searchParams.get("collection") || "";
+    const catParam = searchParams.get("category") || "";
     const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
 
     setQuery(q);
     setFileType(type);
+    setActiveCollectionId(colParam);
+    setActiveCategoryId(catParam);
+
     if (filter === "exam") {
       setSelectedChip("Past Exams");
     } else if (q) {
@@ -182,11 +188,20 @@ function ExploreContent() {
     performFetch(q, type, filter === "exam", pageParam);
   }, [searchParams, performFetch]);
 
-  const updateUrl = (q: string, type: string, isExam: boolean, newPage = 1) => {
+  const updateUrl = (
+    q: string,
+    type: string,
+    isExam: boolean,
+    newPage = 1,
+    colId?: string,
+    catId?: string
+  ) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (type && type !== "all") params.set("type", type);
     if (isExam) params.set("filter", "exam");
+    if (colId) params.set("collection", colId);
+    if (catId) params.set("category", catId);
     if (newPage > 1) params.set("page", newPage.toString());
 
     router.replace(`/explore?${params.toString()}`);
@@ -194,12 +209,12 @@ function ExploreContent() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUrl(query, fileType, selectedChip === "Past Exams", 1);
+    updateUrl(query, fileType, selectedChip === "Past Exams", 1, activeCollectionId, activeCategoryId);
   };
 
   const handleTypeChange = (newType: string) => {
     setFileType(newType);
-    updateUrl(query, newType, selectedChip === "Past Exams", 1);
+    updateUrl(query, newType, selectedChip === "Past Exams", 1, activeCollectionId, activeCategoryId);
   };
 
   const handleChipClick = (chip: { label: string; query: string; filter: string }) => {
@@ -207,12 +222,60 @@ function ExploreContent() {
     const isExam = chip.filter === "exam";
     const nextQuery = chip.label === "All" || chip.filter === "exam" ? "" : chip.query;
     setQuery(nextQuery);
-    updateUrl(nextQuery, fileType, isExam, 1);
+
+    let nextCol = activeCollectionId;
+    if (isExam) {
+      nextCol = "past-exams-entrance-exit";
+    } else if (chip.label === "All") {
+      nextCol = "";
+    }
+
+    updateUrl(nextQuery, fileType, isExam, 1, nextCol, undefined);
+  };
+
+  const handleCollectionClick = (col: Collection) => {
+    if (activeCollectionId === col.id) {
+      // Toggle off
+      setActiveCollectionId("");
+      setSelectedChip("All");
+      setQuery("");
+      updateUrl("", fileType, false, 1, undefined, undefined);
+      return;
+    }
+
+    setActiveCollectionId(col.id);
+    setActiveCategoryId("");
+
+    if (col.id === "past-exams-entrance-exit") {
+      setSelectedChip("Past Exams");
+      setQuery("");
+      updateUrl("", fileType, true, 1, col.id, undefined);
+    } else if (col.id === "university-freshman-courses") {
+      setSelectedChip("Freshman");
+      setQuery("Freshman");
+      updateUrl("Freshman", fileType, false, 1, col.id, undefined);
+    } else if (col.id === "ethiopian-fiction-reading") {
+      setSelectedChip("Fiction");
+      setQuery("Ethiopian Fiction");
+      updateUrl("Ethiopian Fiction", fileType, false, 1, col.id, undefined);
+    } else {
+      // study-materials
+      setSelectedChip("All");
+      setQuery("");
+      updateUrl("", fileType, false, 1, col.id, undefined);
+    }
+  };
+
+  const handleClearCategoryFilter = () => {
+    setActiveCategoryId("");
+    setQuery("");
+    setSelectedChip("All");
+    updateUrl("", fileType, false, 1, activeCollectionId, undefined);
   };
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages || newPage === page) return;
-    updateUrl(query, fileType, selectedChip === "Past Exams", newPage);
+    updateUrl(query, fileType, selectedChip === "Past Exams", newPage, activeCollectionId, activeCategoryId);
     performFetch(query, fileType, selectedChip === "Past Exams", newPage);
     gridSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -230,14 +293,10 @@ function ExploreContent() {
     return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", total];
   }
 
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes || bytes <= 0) return "";
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   const isRefreshing = searchStatus === "refreshing";
   const isSearching = searchStatus === "searching";
+  const activeCategory = activeCategoryId ? getSubjectCategory(activeCategoryId) : null;
+  const activeCollectionObj = activeCollectionId ? getCollection(activeCollectionId) : null;
 
   return (
     <main>
@@ -251,8 +310,8 @@ function ExploreContent() {
           Explore <span className="accent">Academic Resources</span>
         </h1>
         <p>
-          Find lecture notes, past examinations, presentations, and other learning materials collected
-          from Ethiopian university communities.
+          Discover verified lecture notes, past exams, textbooks, and learning materials collected
+          across Ethiopian university communities and secondary curricula.
         </p>
 
         {/* Toolbar */}
@@ -263,9 +322,9 @@ function ExploreContent() {
             onChange={setQuery}
             onSubmit={(term) => {
               setQuery(term);
-              updateUrl(term, fileType, selectedChip === "Past Exams");
+              updateUrl(term, fileType, selectedChip === "Past Exams", 1, activeCollectionId, activeCategoryId);
             }}
-            placeholder="Search by title, subject, course code, or topic (e.g. DBMS, Calculus)..."
+            placeholder="Search by title, subject, course code, or topic (e.g. DBMS, Calculus, Exit Exam)..."
           />
 
           <select
@@ -297,12 +356,125 @@ function ExploreContent() {
         </div>
       </section>
 
+      {/* ── Four Official Taxonomy Collections ──────────────────────── */}
+      <section className="container" style={{ marginBottom: "32px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+            marginBottom: "12px",
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--text)" }}>
+              Official Academic Collections
+            </h2>
+            <p style={{ fontSize: "13px", color: "var(--muted)", margin: "2px 0 0" }}>
+              Standardized discovery streams defined in the centralized Ethiopian Academic Taxonomy.
+            </p>
+          </div>
+          <Link
+            href="/subjects"
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "var(--primary)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              textDecoration: "none",
+            }}
+          >
+            <span>Browse All 21 Categories by Education Group</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        <div className="collections-grid">
+          {COLLECTIONS.map((col) => {
+            const isSelected = activeCollectionId === col.id;
+            return (
+              <div
+                key={col.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                className={`collection-card ${isSelected ? "active" : ""}`}
+                onClick={() => handleCollectionClick(col)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCollectionClick(col);
+                  }
+                }}
+              >
+                <div className="collection-header">
+                  <div className="collection-icon">
+                    <TaxonomyIcon name={col.icon} size={22} />
+                  </div>
+                  {col.amharicName && (
+                    <span className="amharic-badge">{col.amharicName}</span>
+                  )}
+                </div>
+
+                <h3>{col.name}</h3>
+                <p>{col.description}</p>
+
+                <div className="collection-footer">
+                  <span>{isSelected ? "Selected Collection" : "Browse Collection"}</span>
+                  {isSelected ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Active Category / Collection Filter Banner ───────────────── */}
+      {(activeCategory || activeCollectionObj) && (
+        <section className="container" style={{ marginBottom: "16px" }}>
+          <div className="category-filter-banner">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <Compass size={18} style={{ color: "var(--primary)" }} />
+              <div>
+                <strong style={{ color: "var(--text)" }}>
+                  {activeCategory ? `Filtered by Category: ${activeCategory.name}` : `Browsing Collection: ${activeCollectionObj?.name}`}
+                </strong>
+                {activeCategory?.amharicName && (
+                  <span className="amharic-badge" style={{ marginLeft: "8px" }}>
+                    {activeCategory.amharicName}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline"
+              style={{ fontSize: "12px", padding: "6px 12px" }}
+              onClick={handleClearCategoryFilter}
+            >
+              <X size={13} />
+              <span>Clear Filter</span>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* ── Resources Grid Section ─────────────────────────────────── */}
       <section ref={gridSectionRef} className="container section" style={{ paddingTop: 0 }}>
         <div className="section-head">
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h2>Study Materials</h2>
+              <h2>
+                {activeCategory
+                  ? activeCategory.name
+                  : activeCollectionObj
+                  ? activeCollectionObj.name
+                  : "Study Materials"}
+              </h2>
               {isRefreshing && <InlineSpinner size="sm" />}
             </div>
             <p>
@@ -312,7 +484,7 @@ function ExploreContent() {
                 ? `Showing page ${page} of ${totalPages} · ${totalCount.toLocaleString()} ranked results for "${query}"`
                 : selectedChip === "Past Exams"
                 ? `Showing page ${page} of ${totalPages} · Verified past examinations`
-                : `Showing page ${page} of ${totalPages} · ${totalCount.toLocaleString()} learning entities across universities`}
+                : `Showing page ${page} of ${totalPages} · ${totalCount.toLocaleString()} verified resources`}
             </p>
           </div>
           <span className="muted" style={{ fontSize: "14px", fontWeight: 600 }}>
@@ -362,7 +534,7 @@ function ExploreContent() {
                 color: "var(--muted)",
               }}
             >
-              Try another course name, subject, or keyword. You can also explore popular subjects or clear your filters.
+              Try another course name, subject, or keyword. You can also explore our official collections or clear your filters.
             </p>
             <button
               type="button"
@@ -371,6 +543,8 @@ function ExploreContent() {
                 setQuery("");
                 setSelectedChip("All");
                 setFileType("all");
+                setActiveCollectionId("");
+                setActiveCategoryId("");
                 updateUrl("", "all", false, 1);
               }}
             >

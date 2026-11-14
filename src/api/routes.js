@@ -66,8 +66,8 @@ router.get("/trending", async (req, res) => {
 // ─── GET /api/search/suggestions ───────────────────────────────────────────
 router.get("/search/suggestions", (req, res) => {
   try {
-    const { q = "", limit = 6 } = req.query;
-    const limitNum = Math.min(20, Math.max(1, parseInt(limit, 10) || 6));
+    const { q = "", limit = 10 } = req.query;
+    const limitNum = Math.min(20, Math.max(1, parseInt(limit, 10) || 10));
     const suggestions = suggestionService.getSuggestions(q, { limit: limitNum });
 
     res.json({

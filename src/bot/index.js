@@ -33,6 +33,19 @@ const LABELS = require("./keyboardLabels");
 const bot = new Telegraf(process.env.BOT_TOKEN);
 setBot(bot);
 
+// Global safeguard: Suppress automatic Telegram link previews across all messages
+// unless explicitly re-enabled, preventing disruptive overview cards.
+const originalCallApi = bot.telegram.callApi.bind(bot.telegram);
+bot.telegram.callApi = function (method, data, ...rest) {
+  if (method === "sendMessage" || method === "editMessageText") {
+    if (data && data.link_preview_options === undefined && data.disable_web_page_preview === undefined) {
+      data.link_preview_options = { is_disabled: true };
+      data.disable_web_page_preview = true;
+    }
+  }
+  return originalCallApi(method, data, ...rest);
+};
+
 // Apply session and scene middleware
 const stage = new Scenes.Stage([onboardingWizard, recommendWizard]);
 
