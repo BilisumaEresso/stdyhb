@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sun, Moon, Menu, X, Send } from "lucide-react";
+import { Sun, Moon, Menu, X, Send, Megaphone } from "lucide-react";
 import { useTelegram } from "./TelegramProvider";
 
 export default function Navbar() {
@@ -70,22 +70,23 @@ export default function Navbar() {
         {/* Actions */}
         <div className="navactions">
           {!isInsideTelegram && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div className="nav-community-group">
               <a
-                className="btn btn-ghost nav-channel-cta"
+                className="nav-channel-pill"
                 href="https://t.me/studyhub_et"
                 target="_blank"
                 rel="noreferrer"
-                title="Join Official Telegram Channel"
-                style={{ fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px" }}
+                title="Official Telegram Broadcast Channel (@studyhub_et)"
               >
-                <span>📢 Channel</span>
+                <Megaphone size={13} />
+                <span>Channel</span>
               </a>
               <a
                 className="btn btn-primary nav-bot-cta"
                 href={`https://t.me/${botUsername}`}
                 target="_blank"
                 rel="noreferrer"
+                title="Telegram Bot (@studyhub_resource_bot)"
               >
                 <Send size={14} />
                 <span>Open Bot</span>
@@ -155,29 +156,41 @@ export default function Navbar() {
           About
         </Link>
         {!isInsideTelegram && (
-          <>
-            <a
-              className="mobile-bot-card"
-              href={`https://t.me/${botUsername}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Send size={15} />
-              <span>Open Telegram Bot (@{botUsername})</span>
-            </a>
-            <a
-              className="mobile-bot-card"
-              href="https://t.me/studyhub_et"
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ marginTop: "8px", background: "var(--surface-hover)" }}
-            >
-              <Send size={15} />
-              <span>Official Channel (@studyhub_et)</span>
-            </a>
-          </>
+          <div className="mobile-ecosystem-section">
+            <span className="mobile-ecosystem-label">TELEGRAM COMMUNITY</span>
+            <div className="mobile-ecosystem-grid">
+              <a
+                className="mobile-ecosystem-card bot"
+                href={`https://t.me/${botUsername}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="mobile-ecosystem-icon bot">
+                  <Send size={16} />
+                </div>
+                <div className="mobile-ecosystem-text">
+                  <strong>Telegram Bot</strong>
+                  <small>Instant file delivery &amp; search</small>
+                </div>
+              </a>
+              <a
+                className="mobile-ecosystem-card channel"
+                href="https://t.me/studyhub_et"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="mobile-ecosystem-icon channel">
+                  <Megaphone size={16} />
+                </div>
+                <div className="mobile-ecosystem-text">
+                  <strong>Official Channel</strong>
+                  <small>Exam alerts &amp; announcements</small>
+                </div>
+              </a>
+            </div>
+          </div>
         )}
       </nav>
     </header>

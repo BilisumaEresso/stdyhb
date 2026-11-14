@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  Megaphone,
 } from "lucide-react";
 import {
   ResourceItem,
@@ -458,6 +459,70 @@ function ExploreContent() {
             </span>
           </nav>
         )}
+
+        {/* ── Community Banner ────────────────────────────────────────── */}
+        <div
+          style={{
+            marginTop: "48px",
+            padding: "20px 24px",
+            background: "var(--surface-hover)",
+            borderRadius: "16px",
+            border: "1px solid var(--card-border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "var(--primary-soft)",
+                color: "var(--primary)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Send size={18} />
+            </div>
+            <div>
+              <strong style={{ display: "block", fontSize: "14px", color: "var(--foreground)" }}>
+                Prefer searching on Telegram?
+              </strong>
+              <small style={{ color: "var(--muted)", fontSize: "12px" }}>
+                Send files to private chats or groups via @{process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot"} · Announcements on @studyhub_et
+              </small>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <a
+              className="btn btn-outline"
+              href="https://t.me/studyhub_et"
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: "13px", padding: "8px 14px" }}
+            >
+              <Megaphone size={14} />
+              <span>Channel</span>
+            </a>
+            <a
+              className="btn btn-primary"
+              href={`https://t.me/${process.env.NEXT_PUBLIC_BOT_USERNAME || "studyhub_resource_bot"}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: "13px", padding: "8px 14px" }}
+            >
+              <Send size={14} />
+              <span>Open Bot</span>
+            </a>
+          </div>
+        </div>
       </section>
     </main>
   );

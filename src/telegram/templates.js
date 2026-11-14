@@ -148,13 +148,7 @@ function renderListTemplate(
     });
   }
 
-  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
-  const channelUser = process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
-  const cleanWebHost = webAppUrl.replace(/^https?:\/\//, "");
-
   msg += `<code>─────────────────────</code>\n`;
-  msg += `🌐 <b>Web:</b> <a href="${webAppUrl}">${cleanWebHost}</a> · 📢 <b>Updates:</b> <a href="${channelUrl}">@${channelUser}</a>\n`;
   msg += `<i>Tap a number to get the file, or filter by category ⬇️</i>`;
   return msg;
 }
@@ -262,10 +256,7 @@ function renderDetailCard(resource, user = null) {
 
   if (resource.channelUsername) {
     const ch = escapeHTML(resource.channelUsername);
-    const postUrl = resource.messageId
-      ? `https://t.me/${resource.channelUsername}/${resource.messageId}`
-      : `https://t.me/${resource.channelUsername}`;
-    msg += `\n📡 <b>Source:</b> <a href="${postUrl}">@${ch}</a>`;
+    msg += `\n📡 <b>Source:</b> @${ch}`;
     if (resource.university) {
       msg += ` · <i>${escapeHTML(resource.university)}</i>`;
     }
@@ -276,12 +267,8 @@ function renderDetailCard(resource, user = null) {
   if (altSources.length > 0) {
     msg += `🔄 <b>Available from ${totalChannels} channels:</b>\n`;
     altSources.slice(0, 3).forEach((alt) => {
-      const altPost =
-        alt.messageId && alt.channelUsername
-          ? ` · <a href="https://t.me/${alt.channelUsername}/${alt.messageId}">post</a>`
-          : "";
       const altUni = alt.university ? ` [${escapeHTML(alt.university)}]` : "";
-      msg += `  • @${escapeHTML(alt.channelUsername || "channel")}${altUni}${altPost}\n`;
+      msg += `  • @${escapeHTML(alt.channelUsername || "channel")}${altUni}\n`;
     });
     if (altSources.length > 3) {
       msg += `  <i>+${altSources.length - 3} more channels</i>\n`;
@@ -303,13 +290,7 @@ function renderDetailCard(resource, user = null) {
     msg += `\n💡 <i>Tip: Set your university in /profile to highlight materials from your campus.</i>\n`;
   }
 
-  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
-  const channelUser = process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
-  const resourceWebUrl = resource._id ? `${webAppUrl}/resource/${resource._id}` : webAppUrl;
-
-  msg += `<code>─────────────────────</code>\n`;
-  msg += `🌐 <a href="${resourceWebUrl}">Open on Web</a> · 📢 <a href="${channelUrl}">@${channelUser}</a>`;
+  msg += `<code>─────────────────────</code>`;
   return msg;
 }
 
@@ -465,10 +446,6 @@ function renderExpiredSession() {
 // ─── welcome: new user ────────────────────────────────────────────────────────
 function welcomeNew(user) {
   const name = escapeHTML(user.firstName || "Student");
-  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
-  const channelUser = process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
-  const cleanWebHost = webAppUrl.replace(/^https?:\/\//, "");
 
   let msg = `🎓 <b>Welcome to StudyHub, ${name}!</b>\n\n`;
   msg += `Your personal academic search engine — built for Ethiopian university students.\n\n`;
@@ -484,9 +461,6 @@ function welcomeNew(user) {
   msg += `  <i>e.g. "dbms exam" · "networking notes" · "exit exam"</i>\n\n`;
   msg += `<blockquote expandable>💡 <b>Pro tip:</b> Add "exam", "notes", or "pdf" to narrow your results. The more specific, the better!</blockquote>\n`;
   msg += `<code>─────────────────────</code>\n`;
-  msg += `🌐 <b>Web App:</b> <a href="${webAppUrl}">${cleanWebHost}</a>\n`;
-  msg += `📢 <b>Official Channel:</b> <a href="${channelUrl}">@${channelUser}</a>\n`;
-  msg += `<code>─────────────────────</code>\n`;
   msg += `Start by typing anything below ⬇️`;
   return msg;
 }
@@ -494,10 +468,6 @@ function welcomeNew(user) {
 // ─── welcome: returning user ──────────────────────────────────────────────────
 function welcomeReturning(user) {
   const name = escapeHTML(user.firstName || "Student");
-  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
-  const channelUser = process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
-  const cleanWebHost = webAppUrl.replace(/^https?:\/\//, "");
 
   const greetings = [
     `👋 Welcome back, <b>${name}</b>!`,
@@ -506,11 +476,7 @@ function welcomeReturning(user) {
     `🔍 Back to it, <b>${name}</b>!`,
   ];
   const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-  return (
-    `${greeting}\n\n` +
-    `Type any course name or topic to search.\n\n` +
-    `🌐 <a href="${webAppUrl}">${cleanWebHost}</a> · 📢 <a href="${channelUrl}">@${channelUser}</a>`
-  );
+  return `${greeting}\n\nType any course name or topic to search.`;
 }
 
 // ─── search screen prompt ─────────────────────────────────────────────────────

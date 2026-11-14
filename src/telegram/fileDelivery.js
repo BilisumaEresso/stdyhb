@@ -453,13 +453,18 @@ async function sendPaginatedResults(
     keyboard.push(navButtons);
   }
 
-  // Actionable Search Again and Web View buttons
+  // Bottom actions: Search Again + High-conversion Web & Channel marketing buttons
   const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
-  const webSearchUrl = query ? `${webAppUrl}?q=${encodeURIComponent(query)}` : webAppUrl;
+  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
+  const webSearchUrl = query ? `${webAppUrl}/explore?q=${encodeURIComponent(query)}` : webAppUrl;
 
   keyboard.push([
     Markup.button.callback("🔍 Search Again", "open_search_screen"),
-    Markup.button.url("🌐 Open on Web", webSearchUrl),
+  ]);
+
+  keyboard.push([
+    Markup.button.url("🌐 Visit Web", webSearchUrl),
+    Markup.button.url("📢 Join Channel", channelUrl),
   ]);
 
   const buttons = Markup.inlineKeyboard(keyboard);
@@ -468,12 +473,16 @@ async function sendPaginatedResults(
     await ctx
       .editMessageText(messageText, {
         parse_mode: "HTML",
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
         reply_markup: buttons.reply_markup,
       })
       .catch(() => {});
   } else {
     await ctx.reply(messageText, {
       parse_mode: "HTML",
+      disable_web_page_preview: true,
+      link_preview_options: { is_disabled: true },
       reply_markup: buttons.reply_markup,
     });
   }
@@ -547,25 +556,23 @@ async function renderDetailCardHandler(
       Markup.button.callback(buttonText, `${actionPrefix}_${resource._id.toString()}`)
     ]);
 
-    // Row 2: Secondary Utilities (Save, Web View, Channel, Report)
+    // Row 2: Secondary Utilities (Save & Open on Web - clean 2-button balance)
     const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
     const resourceWebUrl = resource._id ? `${webAppUrl}/resource/${resource._id}` : webAppUrl;
 
-    const utilRow = [
+    buttons.push([
       Markup.button.callback("💾 Save", `save_${resource._id.toString()}`),
-      Markup.button.url("🌐 Web View", resourceWebUrl),
-    ];
-    const channelUrl = formatChannelUrl(null, resource.channelUsername, resource.messageId);
-    if (channelUrl) {
-      utilRow.push(Markup.button.url("🔗 Source", channelUrl));
-    }
-    utilRow.push(
+      Markup.button.url("🌐 View on Web", resourceWebUrl),
+    ]);
+
+    // Row 3: Navigation & Safety (Back & Report)
+    buttons.push([
+      Markup.button.callback("◀ Back to list", `back_${queryHash}_${page}_${activeFilter}`),
       Markup.button.callback(
         "⚠️ Report",
         `rep_${queryHash}_${page}_${resultIndex}_${activeFilter}`
-      )
-    );
-    buttons.push(utilRow);
+      ),
+    ]);
   } else {
     let title = resource.title || "GitHub Repository";
     cardText += `💻 <b>${templates.escapeHTML(title)}</b>\n📌 Source: GitHub\n`;
@@ -575,11 +582,17 @@ async function renderDetailCardHandler(
     }
     buttons.push([Markup.button.url("🔗 View on GitHub", resource.url)]);
     buttons.push([Markup.button.callback("💾 Save", `save_web_${resource.url}`)]);
+    buttons.push([Markup.button.callback("◀ Back to list", `back_${queryHash}_${page}_${activeFilter}`)]);
   }
 
-  buttons.push([Markup.button.callback("◀ Back to list", `back_${queryHash}_${page}_${activeFilter}`)]);
-
-  await ctx.editMessageText(cardText, { parse_mode: "HTML", reply_markup: Markup.inlineKeyboard(buttons).reply_markup }).catch(() => {});
+  await ctx
+    .editMessageText(cardText, {
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+      link_preview_options: { is_disabled: true },
+      reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
+    })
+    .catch(() => {});
 }
 
 async function sendPaginatedSaves(ctx, results, page = 1) {

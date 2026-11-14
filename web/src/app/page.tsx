@@ -22,6 +22,7 @@ import {
   Bot,
   FileText,
   ExternalLink,
+  Megaphone,
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
@@ -387,6 +388,16 @@ export default function HomePage() {
             >
               <Send size={15} />
               <span>Open Bot</span>
+            </a>
+            <a
+              className="btn"
+              href="https://t.me/studyhub_et"
+              target="_blank"
+              rel="noreferrer"
+              style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF", border: "1px solid rgba(255, 255, 255, 0.3)" }}
+            >
+              <Megaphone size={15} />
+              <span>Join Channel</span>
             </a>
           </div>
         </div>

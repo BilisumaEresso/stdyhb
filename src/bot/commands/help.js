@@ -56,8 +56,8 @@ function renderHelpHub(isAdmin = false) {
   text += `ℹ️ <b>About StudyHub</b> — System architecture, live repository stats & mission\n`;
   text += `👨‍💻 <b>About Developer</b> — Meet the creator, vision, tech stack & contact\n\n`;
 
-  text += `🌐 <b>Web App:</b> <a href="${webAppUrl}">${webAppUrl.replace(/^https?:\/\//, "")}</a>\n`;
-  text += `📢 <b>Official Channel:</b> <a href="${officialChannelUrl}">@${officialChannelUser}</a>\n\n`;
+  text += `🌐 <b>Web App:</b> ${webAppUrl.replace(/^https?:\/\//, "")}\n`;
+  text += `📢 <b>Official Channel:</b> @${officialChannelUser}\n\n`;
 
   text += `💡 <i>Pro Tip: You can search directly by typing any topic or course code (e.g. <code>CS301</code>, <code>General Physics</code>, <code>DBMS Final Exam</code>).</i>`;
 
@@ -72,8 +72,8 @@ function renderHelpHub(isAdmin = false) {
 
   const rows = [
     [
-      Markup.button.url("🌐 Visit Website", webAppUrl),
-      Markup.button.url("📢 Official Channel", officialChannelUrl),
+      Markup.button.url("🌐 Visit Web", webAppUrl),
+      Markup.button.url("📢 Join Channel", officialChannelUrl),
     ],
     [
       Markup.button.callback("🔍 Search Guide", "help_search"),
@@ -210,8 +210,8 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
   text += `• <b>Engine:</b> Fault-tolerant GramJS MTProto crawler with archive backup\n`;
   text += `• <b>Search:</b> Typo-tolerant lexical scoring with campus affinity weighting\n`;
   text += `• <b>Delivery:</b> Native Telegram Media Group album grouping & multi-channel failover\n`;
-  text += `• <b>Web Platform:</b> <a href="${webAppUrl}">${webAppUrl.replace(/^https?:\/\//, "")}</a>\n`;
-  text += `• <b>Official Channel:</b> <a href="${officialChannelUrl}">@${officialChannelUser}</a>\n\n`;
+  text += `• <b>Web Platform:</b> ${webAppUrl.replace(/^https?:\/\//, "")}\n`;
+  text += `• <b>Official Channel:</b> @${officialChannelUser}\n\n`;
 
   text += `📊 <b>Live Repository Metrics:</b>\n`;
   text += `• 📚 Indexed Study Resources: <b>${stats.totalResources.toLocaleString()}</b>\n`;
@@ -230,8 +230,8 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
 
   const rows = [
     [
-      Markup.button.url("🌐 Visit Website", webAppUrl),
-      Markup.button.url("📢 Official Channel", officialChannelUrl),
+      Markup.button.url("🌐 Visit Web", webAppUrl),
+      Markup.button.url("📢 Join Channel", officialChannelUrl),
     ],
     [
       Markup.button.callback("👨‍💻 About Developer", "about_developer"),
@@ -325,12 +325,16 @@ async function helpCommand(ctx) {
       await ctx
         .editMessageText(view.text, {
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: { is_disabled: true },
           ...view.keyboard,
         })
         .catch(async () => {
           if (ctx.reply) {
             await ctx.reply(view.text, {
               parse_mode: "HTML",
+              disable_web_page_preview: true,
+              link_preview_options: { is_disabled: true },
               ...view.keyboard,
             });
           }
@@ -341,6 +345,8 @@ async function helpCommand(ctx) {
     } else {
       await ctx.reply(view.text, {
         parse_mode: "HTML",
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
         ...view.keyboard,
       });
     }
@@ -366,12 +372,16 @@ async function aboutCommand(ctx) {
       await ctx
         .editMessageText(view.text, {
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: { is_disabled: true },
           ...view.keyboard,
         })
         .catch(async () => {
           if (ctx.reply) {
             await ctx.reply(view.text, {
               parse_mode: "HTML",
+              disable_web_page_preview: true,
+              link_preview_options: { is_disabled: true },
               ...view.keyboard,
             });
           }
@@ -382,6 +392,8 @@ async function aboutCommand(ctx) {
     } else {
       await ctx.reply(view.text, {
         parse_mode: "HTML",
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
         ...view.keyboard,
       });
     }
@@ -406,12 +418,16 @@ async function developerCommand(ctx) {
       await ctx
         .editMessageText(view.text, {
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: { is_disabled: true },
           ...view.keyboard,
         })
         .catch(async () => {
           if (ctx.reply) {
             await ctx.reply(view.text, {
               parse_mode: "HTML",
+              disable_web_page_preview: true,
+              link_preview_options: { is_disabled: true },
               ...view.keyboard,
             });
           }
@@ -422,6 +438,8 @@ async function developerCommand(ctx) {
     } else {
       await ctx.reply(view.text, {
         parse_mode: "HTML",
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
         ...view.keyboard,
       });
     }
@@ -448,11 +466,15 @@ function registerHelpHandlers(bot) {
       await ctx
         .editMessageText(view.text, {
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: { is_disabled: true },
           ...view.keyboard,
         })
         .catch(async () => {
           await ctx.reply(view.text, {
             parse_mode: "HTML",
+            disable_web_page_preview: true,
+            link_preview_options: { is_disabled: true },
             ...view.keyboard,
           });
         });
@@ -470,11 +492,15 @@ function registerHelpHandlers(bot) {
       await ctx
         .editMessageText(view.text, {
           parse_mode: "HTML",
+          disable_web_page_preview: true,
+          link_preview_options: { is_disabled: true },
           ...view.keyboard,
         })
         .catch(async () => {
           await ctx.reply(view.text, {
             parse_mode: "HTML",
+            disable_web_page_preview: true,
+            link_preview_options: { is_disabled: true },
             ...view.keyboard,
           });
         });

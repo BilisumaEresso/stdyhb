@@ -38,10 +38,10 @@ async function runTests() {
   assert.strictEqual(studentHasAdminBtn, false, "Student view must NOT have Admin Panel button");
 
   // Check web & channel buttons
-  const hasWebBtn = adminButtons.some(b => b.text && b.text.includes("Visit Website") && b.url.includes("webstudyhub.vercel.app"));
-  const hasChannelBtn = adminButtons.some(b => b.text && b.text.includes("Official Channel") && b.url.includes("t.me/studyhub_et"));
-  assert.strictEqual(hasWebBtn, true, "About view must have Visit Website button");
-  assert.strictEqual(hasChannelBtn, true, "About view must have Official Channel button");
+  const hasWebBtn = adminButtons.some(b => b.text && (b.text.includes("Visit Web") || b.text.includes("Visit Website")) && b.url.includes("webstudyhub.vercel.app"));
+  const hasChannelBtn = adminButtons.some(b => b.text && (b.text.includes("Join Channel") || b.text.includes("Official Channel")) && b.url.includes("t.me/studyhub_et"));
+  assert.strictEqual(hasWebBtn, true, "About view must have Visit Web button");
+  assert.strictEqual(hasChannelBtn, true, "About view must have Join Channel button");
 
   // Check version in text
   assert.ok(aboutAdmin.text.includes("v2.1.0"), "About view must show v2.1.0");
@@ -59,8 +59,9 @@ async function runTests() {
     channelUsername: "freshman_materials"
   }]);
 
-  assert.ok(listMsg.includes("webstudyhub.vercel.app"), "Search result list must include website link");
-  assert.ok(listMsg.includes("@studyhub_et"), "Search result list must include @studyhub_et channel link");
+  assert.ok(listMsg.includes("Calculus Final Exam"), "Search result list must show resource title");
+  // Ensure message does NOT contain raw HTML links that trigger Telegram automatic preview cards
+  assert.strictEqual(listMsg.includes('<a href="https://webstudyhub.vercel.app">'), false, "Search list must not contain preview-triggering link tags");
   console.log("✅ Search list template passed!");
 
   // 5. Detail Card Template Check
@@ -73,18 +74,18 @@ async function runTests() {
     channelUsername: "freshman_materials"
   });
 
-  assert.ok(detailMsg.includes("webstudyhub.vercel.app/resource/67890abcdef"), "Detail card must link to resource on web");
-  assert.ok(detailMsg.includes("@studyhub_et"), "Detail card must link to @studyhub_et");
+  assert.ok(detailMsg.includes("@freshman_materials"), "Detail card must display channel handle");
+  assert.strictEqual(detailMsg.includes('<a href="https://t.me/freshman_materials'), false, "Detail card must avoid raw t.me links that trigger previews");
   console.log("✅ Detail card template passed!");
 
   // 6. Welcome Messages Check
   const welcomeNewMsg = templates.welcomeNew({ firstName: "Abebe" });
-  assert.ok(welcomeNewMsg.includes("webstudyhub.vercel.app"), "Welcome new must include website link");
-  assert.ok(welcomeNewMsg.includes("@studyhub_et"), "Welcome new must include channel link");
+  assert.ok(welcomeNewMsg.includes("Abebe"), "Welcome new must include user name");
+  assert.strictEqual(welcomeNewMsg.includes('<a href="https://webstudyhub.vercel.app">'), false, "Welcome new must avoid preview-generating link tags");
 
   const welcomeReturningMsg = templates.welcomeReturning({ firstName: "Abebe" });
-  assert.ok(welcomeReturningMsg.includes("webstudyhub.vercel.app"), "Welcome returning must include website link");
-  assert.ok(welcomeReturningMsg.includes("@studyhub_et"), "Welcome returning must include channel link");
+  assert.ok(welcomeReturningMsg.includes("Abebe"), "Welcome returning must include user name");
+  assert.strictEqual(welcomeReturningMsg.includes('<a href="https://webstudyhub.vercel.app">'), false, "Welcome returning must avoid preview-generating link tags");
   console.log("✅ Welcome messages passed!");
 
   console.log("\n🎉 ALL INTEGRATION TESTS PASSED CLEANLY!");

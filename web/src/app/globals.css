@@ -326,6 +326,129 @@ button {
   gap: 12px;
 }
 
+.nav-community-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-channel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-channel-pill:hover {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--card-border-hover);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .nav-channel-pill {
+  background: var(--surface-card);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+[data-theme="dark"] .nav-channel-pill:hover {
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  border-color: var(--card-border-hover);
+}
+
+/* Mobile Ecosystem Cards in Drawer */
+.mobile-ecosystem-section {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-ecosystem-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.mobile-ecosystem-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-ecosystem-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease;
+}
+
+.mobile-ecosystem-card.bot {
+  background: var(--primary-soft);
+}
+
+.mobile-ecosystem-card.channel {
+  background: var(--surface-hover);
+}
+
+.mobile-ecosystem-card:hover {
+  transform: translateY(-1px);
+}
+
+.mobile-ecosystem-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-ecosystem-icon.bot {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+.mobile-ecosystem-icon.channel {
+  background: #0EA5E9;
+  color: #FFFFFF;
+}
+
+.mobile-ecosystem-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mobile-ecosystem-text strong {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.mobile-ecosystem-text small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
   border: 0;
@@ -1851,6 +1974,9 @@ h3 {
   }
   .mobile-menu {
     display: inline-grid;
+  }
+  .nav-channel-pill {
+    display: none !important;
   }
   .navactions .nav-bot-cta {
     padding: 8px 13px;

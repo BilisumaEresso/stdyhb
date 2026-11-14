@@ -2,16 +2,24 @@
  * StudyHub Search Suggestion & Autocomplete Engine
  *
  * Provides ultra-fast, in-memory search suggestions and autocomplete
- * powered by Ethiopian university subject aliases, curated academic courses,
- * and high-frequency search patterns.
+ * powered by the centralized Ethiopian Academic Taxonomy (collections,
+ * 21 primary categories, freshman streams & courses, and academic aliases),
+ * canonical university disciplines, and curated popular search patterns.
  *
- * Latency: < 2ms (In-memory index, zero database queries per keystroke).
+ * Latency: < 1ms (In-memory index, zero database queries per keystroke).
  */
 
+const {
+  COLLECTIONS,
+  SUBJECT_CATEGORIES,
+  FRESHMAN_STREAMS,
+  FRESHMAN_COURSES,
+  ALIASES: TAXONOMY_ALIASES
+} = require("../config/taxonomy");
 const { SUBJECT_ALIASES } = require("../config/subjectAliases");
 
 /**
- * Curated high-frequency academic queries & subjects in Ethiopian universities
+ * Curated high-frequency academic queries & search patterns in Ethiopian universities
  */
 const CURATED_POPULAR_QUERIES = [
   { text: "Computer Science", type: "popular", category: "subject", subjectKey: "cs" },
@@ -40,7 +48,8 @@ const CURATED_POPULAR_QUERIES = [
 ];
 
 /**
- * Subject display name mappings
+ * Specialized university discipline names not directly represented as primary category names.
+ * Sourced to preserve rich university-level course suggestions.
  */
 const CANONICAL_SUBJECT_NAMES = {
   cs: "Computer Science",
@@ -97,27 +106,6 @@ const CANONICAL_SUBJECT_NAMES = {
   compiler: "Compiler Design",
   embedded: "Embedded Systems",
   iot: "Internet of Things (IoT)",
-  phys: "General Physics",
-  chem: "General Chemistry",
-  bio: "General Biology",
-  logic: "Logic and Critical Thinking",
-  psych: "General Psychology",
-  crit: "Critical Thinking",
-  geo: "Geography of Ethiopia & the Horn",
-  hist: "History of Ethiopia & the Horn",
-  civics: "Moral & Civic Education",
-  econ: "Economics",
-  anthro: "Social Anthropology",
-  comm: "Communicative English Skills",
-  basicEng: "Basic Writing Skills",
-  inclus: "Inclusiveness",
-  emtech: "Emerging Technologies",
-  pe: "Physical Education",
-  entre: "Entrepreneurship & Small Business",
-  mgmt: "Principles of Management",
-  mkt: "Marketing Management",
-  acct: "Financial Accounting",
-  costAcct: "Cost & Management Accounting",
   finMgmt: "Financial Management",
   stats: "Probability & Statistics",
   linAlg: "Linear Algebra",
@@ -128,26 +116,6 @@ const CANONICAL_SUBJECT_NAMES = {
 };
 
 /**
- * Capitalizes words cleanly for suggestion text
- */
-function toTitleCase(str = "") {
-  return str
-    .split(/\s+/)
-    .map(word => {
-      if (!word) return "";
-      const lower = word.toLowerCase();
-      if (["dbms", "dsa", "os", "cn", "se", "coa", "oop", "ai", "ml", "iot", "nlp", "hci", "dld", "rcc", "cad", "cs"].includes(lower)) {
-        return lower.toUpperCase();
-      }
-      if (lower === "and" || lower === "of" || lower === "the" || lower === "in" || lower === "for") {
-        return lower;
-      }
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(" ");
-}
-
-/**
  * Normalizes query string for indexing and matching
  */
 function normalizeText(text = "") {
@@ -155,13 +123,14 @@ function normalizeText(text = "") {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ")
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /**
- * In-memory index of searchable items
+ * In-memory index of searchable academic items
  */
 class SuggestionEngine {
   constructor() {
@@ -171,7 +140,7 @@ class SuggestionEngine {
   }
 
   /**
-   * Pre-compiles the in-memory autocomplete index
+   * Pre-compiles the in-memory autocomplete index powered by the centralized taxonomy
    */
   buildIndex() {
     const items = [];
@@ -194,42 +163,151 @@ class SuggestionEngine {
       });
     };
 
-    // 1. Add canonical subject names (Highest authority)
-    for (const [subjectKey, canonicalName] of Object.entries(CANONICAL_SUBJECT_NAMES)) {
-      const subjectDef = SUBJECT_ALIASES[subjectKey] || {};
+    // 1. Centralized Taxonomy: 4 Official Collections (Highest Authority)
+    for (const col of COLLECTIONS) {
+      const colKeywords = [
+        ...(col.aliases || []),
+        ...(col.documentTypes || []),
+        ...(col.languages || [])
+      ].map(k => normalizeText(k)).filter(Boolean);
+
       addItem({
-        text: canonicalName,
+        text: col.name,
         type: "subject",
-        subjectKey,
-        keywords: (subjectDef.keywords || []).map(k => normalizeText(k)),
+        subjectKey: col.id,
+        keywords: colKeywords,
         baseScore: 100
       });
     }
 
-    // 2. Add curated high-frequency popular queries
-    for (const pop of CURATED_POPULAR_QUERIES) {
+    // 2. Centralized Taxonomy: 21 Primary Subject Categories
+    for (const cat of SUBJECT_CATEGORIES) {
+      const catAliases = Object.values(TAXONOMY_ALIASES).filter(a => a.targetId === cat.id);
+      const extraKw = [];
+      for (const a of catAliases) {
+        if (a.aliases) extraKw.push(...a.aliases);
+        if (a.keywords) extraKw.push(...a.keywords);
+        if (a.canonicalExpansion) extraKw.push(a.canonicalExpansion);
+      }
+
+      const catKeywords = [
+        ...(cat.keywords || []),
+        ...(cat.disciplines || []),
+        ...(cat.departments || []),
+        ...(cat.aliases || []),
+        ...extraKw
+      ].map(k => normalizeText(k)).filter(Boolean);
+
       addItem({
-        text: pop.text,
-        type: "popular",
-        subjectKey: pop.subjectKey,
+        text: cat.name,
+        type: "subject",
+        subjectKey: cat.id,
+        keywords: catKeywords,
+        baseScore: 100
+      });
+    }
+
+    // 3. Centralized Taxonomy: Freshman Streams
+    for (const stream of FRESHMAN_STREAMS) {
+      addItem({
+        text: stream.name,
+        type: "course",
+        subjectKey: stream.id,
+        keywords: [normalizeText(stream.name), normalizeText(stream.id)],
+        baseScore: 95
+      });
+    }
+
+    // 4. Centralized Taxonomy: 18 University Freshman Courses
+    for (const course of FRESHMAN_COURSES) {
+      const courseAliases = Object.values(TAXONOMY_ALIASES).filter(a => a.targetId === course.id);
+      const extraKw = [];
+      for (const a of courseAliases) {
+        if (a.aliases) extraKw.push(...a.aliases);
+        if (a.keywords) extraKw.push(...a.keywords);
+        if (a.canonicalExpansion) extraKw.push(a.canonicalExpansion);
+      }
+
+      const courseKeywords = [
+        ...(course.keywords || []),
+        ...(course.aliases || []),
+        ...(course.exampleCourseCodes || []),
+        course.canonicalExpansion,
+        ...extraKw
+      ].map(k => normalizeText(k)).filter(Boolean);
+
+      addItem({
+        text: course.name,
+        type: "course",
+        subjectKey: course.id,
+        keywords: courseKeywords,
+        baseScore: 95
+      });
+    }
+
+    // 5. Core legacy acronyms for ultra-fast exact keystroke completion (DBMS, DSA, OOP, etc.)
+    const CORE_ACRONYMS = [
+      { text: "DBMS", subjectKey: "dbms", keywords: ["database", "sql"] },
+      { text: "DSA", subjectKey: "dsa", keywords: ["data structures", "algorithms"] },
+      { text: "OOP", subjectKey: "cpp", keywords: ["object oriented programming"] },
+      { text: "OS", subjectKey: "os", keywords: ["operating systems"] },
+      { text: "CN", subjectKey: "cn", keywords: ["computer networks"] },
+      { text: "SE", subjectKey: "se", keywords: ["software engineering"] },
+      { text: "COA", subjectKey: "coa", keywords: ["computer organization", "computer architecture"] },
+      { text: "AI", subjectKey: "ai", keywords: ["artificial intelligence"] },
+      { text: "DLD", subjectKey: "dld", keywords: ["digital logic design"] }
+    ];
+    for (const acr of CORE_ACRONYMS) {
+      addItem({
+        text: acr.text,
+        type: "subject",
+        subjectKey: acr.subjectKey,
+        keywords: acr.keywords.map(k => normalizeText(k)),
+        baseScore: 105
+      });
+    }
+
+    // 6. Specialized University Course Disciplines from CANONICAL_SUBJECT_NAMES
+    for (const [subjectKey, canonicalName] of Object.entries(CANONICAL_SUBJECT_NAMES)) {
+      const subjectDef = SUBJECT_ALIASES[subjectKey] || {};
+      const kw = [
+        ...(subjectDef.keywords || []),
+        ...(subjectDef.aliases || [])
+      ].map(k => normalizeText(k)).filter(Boolean);
+
+      addItem({
+        text: canonicalName,
+        type: "subject",
+        subjectKey,
+        keywords: kw,
         baseScore: 90
       });
     }
 
-    // 3. Add aliases from SUBJECT_ALIASES as courses/subjects
-    for (const [subjectKey, data] of Object.entries(SUBJECT_ALIASES)) {
-      if (!Array.isArray(data.aliases)) continue;
-      for (const alias of data.aliases) {
-        if (!alias || alias.length < 2) continue;
-        const formatted = toTitleCase(alias);
-        addItem({
-          text: formatted,
-          type: "course",
-          subjectKey,
-          keywords: (data.keywords || []).map(k => normalizeText(k)),
-          baseScore: 70
-        });
-      }
+    // 7. Canonical Disciplines from TAXONOMY_ALIASES
+    for (const [key, aliasDef] of Object.entries(TAXONOMY_ALIASES)) {
+      const kw = [
+        ...(aliasDef.aliases || []),
+        ...(aliasDef.keywords || [])
+      ].map(k => normalizeText(k)).filter(Boolean);
+
+      addItem({
+        text: aliasDef.name,
+        type: "subject",
+        subjectKey: aliasDef.targetId || key,
+        keywords: kw,
+        baseScore: 90
+      });
+    }
+
+    // 8. Curated High-Frequency Popular Academic Search Queries
+    for (const pop of CURATED_POPULAR_QUERIES) {
+      addItem({
+        text: pop.text,
+        type: pop.type || "popular",
+        subjectKey: pop.subjectKey,
+        baseScore: 90
+      });
     }
 
     this.index = items;
@@ -255,7 +333,7 @@ class SuggestionEngine {
       const results = [];
       const seen = new Set();
 
-      // Recent searches first
+      // Recent searches first (up to 3)
       for (const recent of recentSearches) {
         if (!recent || typeof recent !== "string") continue;
         const trimmed = recent.trim();
@@ -269,16 +347,20 @@ class SuggestionEngine {
         if (results.length >= 3) break;
       }
 
-      // Backfill with top popular academic searches
+      // Backfill with top canonical popular academic searches
       const popularFallbacks = [
         "DBMS Exam",
         "DSA Final Exam",
+        "Computing & Information Sciences",
+        "Mathematics for Natural Sciences",
         "Computer Networks",
-        "Calculus I Past Exam",
         "Operating Systems",
         "Software Engineering",
         "General Physics Mid Exam",
-        "Logic and Critical Thinking"
+        "Logic and Critical Thinking",
+        "Past Exams, Entrance & Exit",
+        "Communicative English Language Skills",
+        "Ethiopian Fiction & Reading"
       ];
 
       for (const pop of popularFallbacks) {
@@ -388,33 +470,37 @@ class SuggestionEngine {
           }
         }
         if (inOrder) orderBonus = 50;
-        return score + 600 + orderBonus;
+        return score + 650 + orderBonus;
       }
     }
 
     // 5. Word-start match (e.g. "Interaction" in "Human Computer Interaction")
     const wordStartIndex = itemWords.findIndex(w => w.startsWith(queryNorm));
     if (wordStartIndex >= 0) {
-      // If it's the first word, that was already caught by prefix match.
-      // Subsequent word match gets 500 minus index penalty:
       return score + 500 - (wordStartIndex * 20);
     }
 
-    // 6. Substring match
-    if (itemNorm.includes(queryNorm)) {
-      return score + 300;
-    }
-
-    // 7. Keywords match (e.g. "sql" matches DBMS)
+    // 6. Keywords & Aliases match (e.g. "math nat" or "sql" or "geography of ethiopia")
     if (item.keywords && item.keywords.length > 0) {
       for (const kw of item.keywords) {
         if (kw === queryNorm) {
-          return score + 250;
+          return score + 750;
         }
         if (kw.startsWith(queryNorm)) {
-          return score + 180;
+          return score + 600;
+        }
+        if (queryWords.length > 1 && queryWords.every(qw => kw.includes(qw))) {
+          return score + 550;
+        }
+        if (queryWords.length === 1 && kw.includes(queryNorm)) {
+          return score + 250;
         }
       }
+    }
+
+    // 7. Substring match
+    if (itemNorm.includes(queryNorm)) {
+      return score + 300;
     }
 
     return 0;
