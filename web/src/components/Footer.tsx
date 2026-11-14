@@ -55,6 +55,15 @@ export default function Footer() {
                 <span>Telegram Bot</span>
                 <ExternalLink size={12} />
               </a>
+              <a
+                href="https://t.me/studyhub_et"
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                <span>Official Channel (@studyhub_et)</span>
+                <ExternalLink size={12} />
+              </a>
               <Link href="/explore">Search Hub</Link>
             </div>
           </div>

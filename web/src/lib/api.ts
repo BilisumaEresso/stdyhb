@@ -151,6 +151,11 @@ export function getFileDownloadUrl(id: string): string {
   return `${API_BASE}/files/download/${id}`;
 }
 
+export const OFFICIAL_CHANNEL_URL =
+  process.env.NEXT_PUBLIC_OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
+export const OFFICIAL_CHANNEL_USERNAME =
+  process.env.NEXT_PUBLIC_OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
+
 export function getTelegramBotDeepLink(
   resourceId: string,
   isGroup = false,

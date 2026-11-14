@@ -40,8 +40,13 @@ function getAdminLogs(count = 20) {
  * Helper to synchronously check if a user is an admin
  */
 const isAdminUser = (userId) => {
-  const adminIds = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(",") : [];
-  return adminIds.includes(userId?.toString());
+  if (!userId) return false;
+  const rawIds = process.env.ADMIN_ID || process.env.ADMIN_IDS || "";
+  const adminIds = rawIds
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return adminIds.includes(userId.toString());
 };
 
 /**
@@ -840,7 +845,7 @@ function renderIndexerDiagnosticsView(diag, pendingUnindexedCount = 0) {
 }
 
 /**
- * Send the admin panel
+ * Send or edit the admin panel
  */
 const adminPanelCommand = async (ctx) => {
   try {
@@ -849,13 +854,32 @@ const adminPanelCommand = async (ctx) => {
     const pendingReports = await ResourceReport.countDocuments({ status: "pending" });
     const keyboard = renderAdminPanelKeyboard(pendingReports, pendingRecs);
 
-    await ctx.reply(message, {
-      parse_mode: "HTML",
-      ...keyboard,
-    });
+    if (ctx.callbackQuery) {
+      await ctx
+        .editMessageText(message, {
+          parse_mode: "HTML",
+          ...keyboard,
+        })
+        .catch(async () => {
+          await ctx.reply(message, {
+            parse_mode: "HTML",
+            ...keyboard,
+          });
+        });
+      await ctx.answerCbQuery().catch(() => {});
+    } else {
+      await ctx.reply(message, {
+        parse_mode: "HTML",
+        ...keyboard,
+      });
+    }
   } catch (error) {
     console.error("[ADM-PANEL] Error sending panel:", error);
-    await ctx.reply("❌ Error showing admin panel.");
+    if (ctx.callbackQuery) {
+      await ctx.answerCbQuery("❌ Error showing admin panel", { show_alert: true }).catch(() => {});
+    } else {
+      await ctx.reply("❌ Error showing admin panel.").catch(() => {});
+    }
   }
 };
 
@@ -2088,7 +2112,7 @@ const registerAdminPanelHandlers = (bot) => {
   };
 
   bot.action("adm_refresh", requireAdmin((ctx) => handleReturnToPanel(ctx, "✅ Updated")));
-  bot.action("adm_panel_main", requireAdmin((ctx) => handleReturnToPanel(ctx)));
+  bot.action(["adm_panel_main", "admin_panel"], requireAdmin((ctx) => handleReturnToPanel(ctx)));
 
   // ❓ HELP
   bot.action(

@@ -820,20 +820,20 @@ class SearchService {
     const orderedOutput = []; // Preserves search ranking order
 
     for (const r of results) {
-      // 1. Check exact physical file signature (fileName + fileSize > 0)
-      let key = null;
-      const fn = (r.fileName || "").trim().toLowerCase();
-      const fs = Number(r.fileSize) || 0;
+      if (r.groupId) {
+        // Standalone deduplication passes album members through untouched
+        orderedOutput.push({ type: "passthrough", item: r });
+        continue;
+      }
 
-      if (fn && fs > 0) {
-        key = `file::${fn}::${fs}`;
-      } else if (typeof r.fileUniqueId === "string" && r.fileUniqueId.trim().length > 0) {
+      let key = null;
+      if (typeof r.fileUniqueId === "string" && r.fileUniqueId.trim().length > 0) {
         key = `fuid::${r.fileUniqueId.trim()}`;
-      } else if (r.groupId) {
-        // For image albums / media groups: collapse if same channel and matching title/caption
-        const normTitle = (r.cleanTitle || r.title || "").trim().toLowerCase();
-        if (normTitle && normTitle.length > 5 && r.channelUsername) {
-          key = `album::${r.channelUsername.toLowerCase()}::${normTitle}`;
+      } else {
+        const fn = (r.fileName || "").trim().toLowerCase();
+        const fs = Number(r.fileSize) || 0;
+        if (fn && fs > 0) {
+          key = `file::${fn}::${fs}`;
         }
       }
 
@@ -1138,6 +1138,21 @@ class SearchService {
                .replace(/\b(ExamClass|Freshman\s*Master\s*Class)\b/gi, "")
                .replace(/\s+/g, " ")
                .trim();
+          } else if (!r.groupId && !isBook && r.channelUsername && r.messageId) {
+             // Fallback un-grouped clustering for consecutive search results from same channel
+             const titleLower = (r.cleanTitle || r.title || "").toLowerCase().trim();
+             const existingGroup = collapsed.find(c =>
+               !c.groupId &&
+               c.channelUsername &&
+               c.channelUsername.toLowerCase() === chLower &&
+               Math.abs((c.messageId || 0) - (r.messageId || 0)) <= 3 &&
+               (c.cleanTitle || c.title || "").toLowerCase().trim() === titleLower
+             );
+             if (existingGroup) {
+               existingGroup._isGrouped = true;
+               existingGroup.groupSize = (existingGroup.groupSize || 1) + 1;
+               continue;
+             }
           }
           collapsed.push(r);
         }

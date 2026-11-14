@@ -70,15 +70,27 @@ export default function Navbar() {
         {/* Actions */}
         <div className="navactions">
           {!isInsideTelegram && (
-            <a
-              className="btn btn-primary nav-bot-cta"
-              href={`https://t.me/${botUsername}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Send size={14} />
-              <span>Open Bot</span>
-            </a>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <a
+                className="btn btn-ghost nav-channel-cta"
+                href="https://t.me/studyhub_et"
+                target="_blank"
+                rel="noreferrer"
+                title="Join Official Telegram Channel"
+                style={{ fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 12px" }}
+              >
+                <span>📢 Channel</span>
+              </a>
+              <a
+                className="btn btn-primary nav-bot-cta"
+                href={`https://t.me/${botUsername}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Send size={14} />
+                <span>Open Bot</span>
+              </a>
+            </div>
           )}
 
           {/* Theme Toggle Button */}
@@ -143,16 +155,29 @@ export default function Navbar() {
           About
         </Link>
         {!isInsideTelegram && (
-          <a
-            className="mobile-bot-card"
-            href={`https://t.me/${botUsername}`}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Send size={15} />
-            <span>Open Telegram Bot (@{botUsername})</span>
-          </a>
+          <>
+            <a
+              className="mobile-bot-card"
+              href={`https://t.me/${botUsername}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Send size={15} />
+              <span>Open Telegram Bot (@{botUsername})</span>
+            </a>
+            <a
+              className="mobile-bot-card"
+              href="https://t.me/studyhub_et"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ marginTop: "8px", background: "var(--surface-hover)" }}
+            >
+              <Send size={15} />
+              <span>Official Channel (@studyhub_et)</span>
+            </a>
+          </>
         )}
       </nav>
     </header>

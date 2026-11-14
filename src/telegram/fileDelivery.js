@@ -453,9 +453,13 @@ async function sendPaginatedResults(
     keyboard.push(navButtons);
   }
 
-  // Actionable Search Again button
+  // Actionable Search Again and Web View buttons
+  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  const webSearchUrl = query ? `${webAppUrl}?q=${encodeURIComponent(query)}` : webAppUrl;
+
   keyboard.push([
     Markup.button.callback("🔍 Search Again", "open_search_screen"),
+    Markup.button.url("🌐 Open on Web", webSearchUrl),
   ]);
 
   const buttons = Markup.inlineKeyboard(keyboard);
@@ -543,13 +547,17 @@ async function renderDetailCardHandler(
       Markup.button.callback(buttonText, `${actionPrefix}_${resource._id.toString()}`)
     ]);
 
-    // Row 2: Secondary Utilities (Save, Source Channel, Report)
+    // Row 2: Secondary Utilities (Save, Web View, Channel, Report)
+    const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+    const resourceWebUrl = resource._id ? `${webAppUrl}/resource/${resource._id}` : webAppUrl;
+
     const utilRow = [
-      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`)
+      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`),
+      Markup.button.url("🌐 Web View", resourceWebUrl),
     ];
     const channelUrl = formatChannelUrl(null, resource.channelUsername, resource.messageId);
     if (channelUrl) {
-      utilRow.push(Markup.button.url("🔗 Channel", channelUrl));
+      utilRow.push(Markup.button.url("🔗 Source", channelUrl));
     }
     utilRow.push(
       Markup.button.callback(
@@ -836,6 +844,51 @@ async function handleDownload(ctx, resourceId) {
           deliveryError = null;
         } catch (archiveErr) {
           console.warn('[ARCHIVE FALLBACK FAIL]', archiveErr.message);
+        }
+      }
+
+      // 4. Fallback to alternative sources if primary and archive both failed
+      if ((!forwardedMessages || forwardedMessages.length === 0) && tg) {
+        try {
+          const altQuery = [];
+          if (resource.fileName && resource.fileSize > 0) {
+            altQuery.push({ fileName: resource.fileName, fileSize: resource.fileSize });
+          }
+          if (resource.fileUniqueId) {
+            altQuery.push({ fileUniqueId: resource.fileUniqueId });
+          }
+
+          if (altQuery.length > 0) {
+            const alts = await TelegramResource.find({
+              $or: altQuery,
+              _id: { $ne: resource._id },
+              channelUsername: { $ne: resource.channelUsername },
+              isAvailable: true
+            }).select("channelUsername messageId archiveMessageId").limit(5).lean();
+
+            for (const alt of alts) {
+              if (alt.channelUsername && alt.messageId) {
+                try {
+                  console.log(`[DELIVERY] Trying alternative source @${alt.channelUsername}/${alt.messageId}...`);
+                  forwardedMessages = normalizeForwarded(
+                    await tg.forwardMessages(relayGroupId, {
+                      messages: [alt.messageId],
+                      fromPeer: `@${alt.channelUsername}`
+                    })
+                  );
+                  if (forwardedMessages && forwardedMessages.length > 0 && forwardedMessages[0].id) {
+                    deliveryError = null;
+                    console.log(`[DELIVERY] Successfully delivered via alt source @${alt.channelUsername}!`);
+                    break;
+                  }
+                } catch (altErr) {
+                  console.warn(`[DELIVERY] Alt source @${alt.channelUsername} forward failed:`, altErr.message);
+                }
+              }
+            }
+          }
+        } catch (findAltErr) {
+          console.warn('[DELIVERY] Alternative sources lookup failed:', findAltErr.message);
         }
       }
 

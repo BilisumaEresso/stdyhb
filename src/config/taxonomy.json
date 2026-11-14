@@ -1,0 +1,2801 @@
+{
+  "$schema": "./taxonomy.schema.json",
+  "version": "1.0.0",
+  "lastUpdated": "2026-11-14",
+  "title": "StudyHub Centralized Ethiopian Academic Taxonomy",
+  "description": "Official centralized Ethiopian academic curriculum taxonomy for StudyHub, organizing study materials, past examinations, Ethiopian literature, and higher education courses across KG-Grade 12 and Ethiopian universities.",
+  "meta": {
+    "totalCollections": 4,
+    "totalEducationGroups": 3,
+    "totalPrimaryCategories": 21,
+    "totalFreshmanStreams": 2,
+    "totalFreshmanCourses": 18
+  },
+  "collections": [
+    {
+      "id": "study-materials",
+      "name": "Study Materials",
+      "amharicName": "የማስተማሪያ ቁሳቁሶች",
+      "description": "Textbooks, university modules, lecture notes, lecture slide presentations, worksheets, handouts, study guides, and comprehensive revision notes across all academic levels.",
+      "aliases": [
+        "study-materials",
+        "study materials",
+        "textbooks",
+        "textbook",
+        "modules",
+        "module",
+        "lecture-notes",
+        "lecture notes",
+        "handouts",
+        "notes",
+        "slides",
+        "ppts",
+        "ppt",
+        "course modules",
+        "lecture slides",
+        "study guides"
+      ],
+      "documentTypes": [
+        "textbook",
+        "module",
+        "lecture_notes",
+        "slide",
+        "handout",
+        "worksheet",
+        "guide"
+      ],
+      "icon": "BookOpen",
+      "displayOrder": 1,
+      "legacyAliases": [
+        "textbooks"
+      ]
+    },
+    {
+      "id": "ethiopian-fiction-reading",
+      "name": "Ethiopian Fiction & Reading",
+      "amharicName": "የኢትዮጵያ ልቦለድና ንባብ",
+      "description": "Novels, children's books, folktales, poetry, and literature written in Ethiopian languages (Amharic, Afaan Oromo, Tigrinya, Somali, Afar) and English.",
+      "aliases": [
+        "ethiopian-fiction-reading",
+        "fiction",
+        "reading",
+        "novels",
+        "novel",
+        "literature",
+        "amharic-books",
+        "amharic books",
+        "poetry",
+        "stories",
+        "ethiopian literature",
+        "tariq",
+        "afaan oromo books",
+        "tigrinya books"
+      ],
+      "languages": [
+        "am",
+        "om",
+        "ti",
+        "so",
+        "aa",
+        "en"
+      ],
+      "documentTypes": [
+        "novel",
+        "story",
+        "poem",
+        "literature",
+        "reading_book"
+      ],
+      "icon": "BookHeart",
+      "displayOrder": 2,
+      "legacyAliases": [
+        "fiction",
+        "reading"
+      ]
+    },
+    {
+      "id": "past-exams-entrance-exit",
+      "name": "Past Exams, Entrance & Exit",
+      "amharicName": "ያለፉ ፈተናዎች፣ መግቢያና መውጫ",
+      "description": "School ministry examinations (Grade 8, Grade 12), regional exams, university midterms, final examinations, national exit exams, model papers, and solved past papers.",
+      "aliases": [
+        "past-exams-entrance-exit",
+        "past-exams",
+        "exams",
+        "exam",
+        "midterms",
+        "midterm",
+        "finals",
+        "final",
+        "exit-exams",
+        "exit exam",
+        "exit exams",
+        "entrance-exams",
+        "entrance exam",
+        "model-exams",
+        "model exam",
+        "mid exam",
+        "final exam",
+        "past exam",
+        "solved exam",
+        "past papers",
+        "quizzes"
+      ],
+      "documentTypes": [
+        "midterm",
+        "final",
+        "exit_exam",
+        "entrance_exam",
+        "model_exam",
+        "past_paper",
+        "quiz"
+      ],
+      "icon": "FileCheck2",
+      "displayOrder": 3,
+      "legacyAliases": [
+        "exams",
+        "past-exams"
+      ]
+    },
+    {
+      "id": "university-freshman-courses",
+      "name": "University Freshman Courses",
+      "amharicName": "የመጀመሪያ ዓመት የዩኒቨርሲቲ ኮርሶች",
+      "description": "National standardized freshman curriculum common modules, lecture notes, presentations, and examinations for Natural Science and Social Science streams across Ethiopian universities.",
+      "aliases": [
+        "university-freshman-courses",
+        "freshman",
+        "freshman-courses",
+        "freshman-modules",
+        "freshman courses",
+        "freshman exams",
+        "first year",
+        "freshman common courses",
+        "freshman natural",
+        "freshman social"
+      ],
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "documentTypes": [
+        "module",
+        "lecture_notes",
+        "slide",
+        "exam",
+        "assignment"
+      ],
+      "icon": "GraduationCap",
+      "displayOrder": 4,
+      "legacyAliases": [
+        "freshman"
+      ]
+    }
+  ],
+  "educationGroups": [
+    {
+      "id": "kg8",
+      "name": "KG to Grade 8",
+      "amharicName": "ከመዋዕለ ሕፃናት እስከ 8ኛ ክፍል",
+      "description": "Kindergarten, primary education (Grades 1–6), and middle school education (Grades 7–8) under the Ethiopian General Education curriculum.",
+      "gradeIds": [
+        "kg",
+        "grades-1-4",
+        "grades-5-6",
+        "grades-7-8"
+      ],
+      "categoryIds": [
+        "kg8-languages-literacy",
+        "kg8-mathematics",
+        "kg8-general-science",
+        "kg8-social-studies-geography",
+        "kg8-history-civics",
+        "kg8-ict-technology",
+        "kg8-arts-health-pe"
+      ],
+      "displayOrder": 1
+    },
+    {
+      "id": "secondary",
+      "name": "Secondary Education",
+      "amharicName": "ሁለተኛ ደረጃ ትምህርት",
+      "description": "General secondary education (Grades 9–10) and preparatory secondary education (Grades 11–12), preparing students for national university entrance examinations.",
+      "gradeIds": [
+        "grade-9",
+        "grades-10-12"
+      ],
+      "categoryIds": [
+        "secondary-languages",
+        "secondary-mathematics",
+        "secondary-physics",
+        "secondary-chemistry",
+        "secondary-biology",
+        "secondary-social-sciences",
+        "secondary-applied-technology"
+      ],
+      "displayOrder": 2
+    },
+    {
+      "id": "university",
+      "name": "University",
+      "amharicName": "ከፍተኛ ትምህርት / ዩኒቨርሲቲ",
+      "description": "Higher education, freshman common courses, undergraduate degree programs, and postgraduate studies across Ethiopian public and private universities.",
+      "gradeIds": [
+        "university-freshman",
+        "undergraduate",
+        "postgraduate"
+      ],
+      "categoryIds": [
+        "university-computing",
+        "university-engineering",
+        "university-natural-sciences",
+        "university-health-sciences",
+        "university-agriculture",
+        "university-business",
+        "university-humanities"
+      ],
+      "displayOrder": 3
+    }
+  ],
+  "educationGrades": [
+    {
+      "id": "kg",
+      "name": "KG / Kindergarten",
+      "amharicName": "መዋዕለ ሕፃናት",
+      "groupId": "kg8",
+      "levels": [
+        "KG 1",
+        "KG 2",
+        "KG 3"
+      ]
+    },
+    {
+      "id": "grades-1-4",
+      "name": "Grades 1–4 (Lower Primary)",
+      "amharicName": "ከ1ኛ - 4ኛ ክፍል",
+      "groupId": "kg8",
+      "levels": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "grades-5-6",
+      "name": "Grades 5–6 (Middle Primary)",
+      "amharicName": "ከ5ኛ - 6ኛ ክፍል",
+      "groupId": "kg8",
+      "levels": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "grades-7-8",
+      "name": "Grades 7–8 (Upper Primary / Middle School)",
+      "amharicName": "ከ7ኛ - 8ኛ ክፍል (መካከለኛ ደረጃ)",
+      "groupId": "kg8",
+      "levels": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "grade-9",
+      "name": "Grade 9 (Secondary First Year)",
+      "amharicName": "9ኛ ክፍል",
+      "groupId": "secondary",
+      "levels": [
+        9
+      ],
+      "note": "Grade 9 belongs to Secondary Education. It is represented via grade metadata, NOT as an independent 22nd primary category."
+    },
+    {
+      "id": "grades-10-12",
+      "name": "Grades 10–12 (Secondary & Preparatory)",
+      "amharicName": "ከ10ኛ - 12ኛ ክፍል (የመሰናዶ ትምህርት)",
+      "groupId": "secondary",
+      "levels": [
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": "university-freshman",
+      "name": "University Freshman",
+      "amharicName": "የመጀመሪያ ዓመት ዩኒቨርሲቲ",
+      "groupId": "university",
+      "year": 1
+    },
+    {
+      "id": "undergraduate",
+      "name": "Undergraduate (Years 2+)",
+      "amharicName": "ቅድመ-ምረቃ (ከ2ኛ ዓመት በላይ)",
+      "groupId": "university",
+      "year": [
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "postgraduate",
+      "name": "Postgraduate (Masters & PhD)",
+      "amharicName": "ድህረ-ምረቃ (ማስተርስ እና ዶክትሬት)",
+      "groupId": "university"
+    }
+  ],
+  "subjectCategories": [
+    {
+      "id": "kg8-languages-literacy",
+      "name": "Languages & Literacy",
+      "amharicName": "ቋንቋዎችና ማንበብና መጻፍ",
+      "groupId": "kg8",
+      "icon": "Languages",
+      "description": "Amharic, English, Afaan Oromo, Tigrinya, Somali, Mother Tongue languages, reading and basic writing for primary and middle school.",
+      "disciplines": [
+        "Amharic",
+        "English",
+        "Afaan Oromo",
+        "Tigrinya",
+        "Somali",
+        "Mother Tongue Languages"
+      ],
+      "aliases": [
+        "primary languages",
+        "kg8 languages",
+        "amharic grade 1-8",
+        "english grade 1-8",
+        "mother tongue"
+      ],
+      "keywords": [
+        "alphabet",
+        "phonics",
+        "reading",
+        "grammar",
+        "spelling",
+        "story",
+        "vocabulary",
+        "listening",
+        "handwriting"
+      ],
+      "displayOrder": 1
+    },
+    {
+      "id": "kg8-mathematics",
+      "name": "Mathematics",
+      "amharicName": "ሂሳብ (ከ1-8)",
+      "groupId": "kg8",
+      "icon": "Calculator",
+      "description": "Primary and middle school mathematics, arithmetic, number sense, fractions, basic geometry, algebra, and word problems.",
+      "disciplines": [
+        "Arithmetic",
+        "Primary Mathematics",
+        "Middle School Mathematics",
+        "Basic Geometry",
+        "Pre-Algebra"
+      ],
+      "aliases": [
+        "primary math",
+        "grade 1 math",
+        "grade 7 math",
+        "grade 8 math",
+        "arithmetic",
+        "middle school math"
+      ],
+      "keywords": [
+        "addition",
+        "subtraction",
+        "multiplication",
+        "division",
+        "fractions",
+        "decimals",
+        "percentages",
+        "shapes",
+        "equations",
+        "ratios"
+      ],
+      "displayOrder": 2
+    },
+    {
+      "id": "kg8-general-science",
+      "name": "General & Environmental Science",
+      "amharicName": "አጠቃላይና የአካባቢ ሳይንስ",
+      "groupId": "kg8",
+      "icon": "FlaskConical",
+      "description": "Integrated science, environmental science, primary biology, chemistry, and physics foundations for Grades 1–8.",
+      "disciplines": [
+        "Integrated Science",
+        "Environmental Science",
+        "General Science"
+      ],
+      "aliases": [
+        "primary science",
+        "environmental science",
+        "integrated science",
+        "grade 7 general science",
+        "grade 8 general science"
+      ],
+      "keywords": [
+        "plants",
+        "animals",
+        "human body",
+        "water",
+        "air",
+        "energy",
+        "matter",
+        "living things",
+        "environment",
+        "simple machines"
+      ],
+      "displayOrder": 3
+    },
+    {
+      "id": "kg8-social-studies-geography",
+      "name": "Social Studies & Geography",
+      "amharicName": "ህብረተሰብ ጥናትና ጂኦግራፊ",
+      "groupId": "kg8",
+      "icon": "Compass",
+      "description": "Primary social studies, Ethiopian geography, local communities, regional landscapes, and natural resources.",
+      "disciplines": [
+        "Social Studies",
+        "Community Studies",
+        "Ethiopian Geography",
+        "Basic Geography"
+      ],
+      "aliases": [
+        "primary social studies",
+        "grade 7 social studies",
+        "grade 8 social studies",
+        "primary geography"
+      ],
+      "keywords": [
+        "community",
+        "maps",
+        "regions",
+        "mountains",
+        "rivers",
+        "climate",
+        "settlement",
+        "resources",
+        "lakes"
+      ],
+      "displayOrder": 4
+    },
+    {
+      "id": "kg8-history-civics",
+      "name": "History, Civics & Moral Education",
+      "amharicName": "ታሪክ፣ የዜግነትና የሥነ-ምግባር ትምህርት",
+      "groupId": "kg8",
+      "icon": "Landmark",
+      "description": "Citizenship education, Ethiopian history, African history, national symbols, ethics, moral education, and social heritage.",
+      "disciplines": [
+        "Citizenship Education",
+        "Civics",
+        "Moral Education",
+        "Basic Ethiopian History"
+      ],
+      "aliases": [
+        "primary civics",
+        "primary history",
+        "citizenship grade 7",
+        "citizenship grade 8",
+        "moral education"
+      ],
+      "keywords": [
+        "constitution",
+        "democracy",
+        "rights",
+        "duties",
+        "culture",
+        "heritage",
+        "patriotism",
+        "ethics",
+        "equality"
+      ],
+      "displayOrder": 5
+    },
+    {
+      "id": "kg8-ict-technology",
+      "name": "ICT & Basic Technology",
+      "amharicName": "ኢንፎርሜሽን ቴክኖሎጂና መሠረታዊ ቴክኖሎጂ",
+      "groupId": "kg8",
+      "icon": "Laptop",
+      "description": "Computer fundamentals, digital literacy, office applications, internet fundamentals, keyboarding, and introductory technology.",
+      "disciplines": [
+        "Information Technology",
+        "Digital Literacy",
+        "Computer Basics",
+        "Pre-vocational Studies",
+        "Career & Technical Education"
+      ],
+      "aliases": [
+        "primary ict",
+        "primary computer",
+        "career and technical",
+        "cte",
+        "pre-vocational"
+      ],
+      "keywords": [
+        "computer",
+        "keyboard",
+        "mouse",
+        "typing",
+        "hardware",
+        "software",
+        "internet safety",
+        "draw",
+        "word processing"
+      ],
+      "displayOrder": 6
+    },
+    {
+      "id": "kg8-arts-health-pe",
+      "name": "Arts, Music, Health & Physical Education",
+      "amharicName": "ስነ-ጥበባት፣ ሙዚቃ፣ ጤናና የሰውነት ማጎልመሻ",
+      "groupId": "kg8",
+      "icon": "Palette",
+      "description": "Drawing, painting, music, arts and crafts, drama, health education, physical education, and sports.",
+      "disciplines": [
+        "Visual Arts",
+        "Performing Arts",
+        "Music",
+        "Physical Education (PHE)",
+        "Health Education"
+      ],
+      "aliases": [
+        "primary arts",
+        "primary pe",
+        "health education",
+        "physical education",
+        "music grade 1-8"
+      ],
+      "keywords": [
+        "drawing",
+        "painting",
+        "crafts",
+        "singing",
+        "sports",
+        "fitness",
+        "athletics",
+        "hygiene",
+        "nutrition",
+        "exercise"
+      ],
+      "displayOrder": 7
+    },
+    {
+      "id": "secondary-languages",
+      "name": "English & Ethiopian Languages",
+      "amharicName": "እንግሊዝኛና የኢትዮጵያ ቋንቋዎች (ሁለተኛ ደረጃ)",
+      "groupId": "secondary",
+      "icon": "BookMarked",
+      "description": "Secondary English grammar, communicative English, writing, comprehension, Amharic, Afaan Oromo, Tigrinya, and other Ethiopian languages.",
+      "disciplines": [
+        "Secondary English",
+        "Secondary Amharic",
+        "Afaan Oromo",
+        "Tigrinya",
+        "Somali",
+        "Literature"
+      ],
+      "aliases": [
+        "grade 9 english",
+        "grade 10 english",
+        "grade 11 english",
+        "grade 12 english",
+        "grade 9-12 amharic",
+        "secondary english"
+      ],
+      "keywords": [
+        "grammar",
+        "reading comprehension",
+        "vocabulary",
+        "composition",
+        "essay",
+        "poetry",
+        "prose",
+        "dialogue",
+        "summary"
+      ],
+      "displayOrder": 8
+    },
+    {
+      "id": "secondary-mathematics",
+      "name": "Mathematics",
+      "amharicName": "ሂሳብ (ከ9-12)",
+      "groupId": "secondary",
+      "icon": "Divide",
+      "description": "Grades 9–12 algebra, Euclidean and coordinate geometry, trigonometry, vectors, matrices, statistics, and preparatory calculus.",
+      "disciplines": [
+        "Secondary Mathematics",
+        "Grade 9-10 Math",
+        "Preparatory Math (Grade 11-12)",
+        "Algebra",
+        "Geometry",
+        "Trigonometry"
+      ],
+      "aliases": [
+        "grade 9 math",
+        "grade 10 math",
+        "grade 11 math",
+        "grade 12 math",
+        "secondary math",
+        "preparatory mathematics"
+      ],
+      "keywords": [
+        "quadratics",
+        "functions",
+        "polynomials",
+        "trigonometry",
+        "logarithms",
+        "vectors",
+        "matrices",
+        "limits",
+        "derivatives",
+        "sequences"
+      ],
+      "displayOrder": 9
+    },
+    {
+      "id": "secondary-physics",
+      "name": "Physics",
+      "amharicName": "ፊዚክስ (ከ9-12)",
+      "groupId": "secondary",
+      "icon": "Atom",
+      "description": "Mechanics, thermodynamics, wave motion, electromagnetism, electronics, nuclear physics, and laboratory experiments for Grades 9–12.",
+      "disciplines": [
+        "Secondary Physics",
+        "Grade 9 Physics",
+        "Grade 10 Physics",
+        "Grade 11 Physics",
+        "Grade 12 Physics"
+      ],
+      "aliases": [
+        "grade 9 physics",
+        "grade 10 physics",
+        "grade 11 physics",
+        "grade 12 physics",
+        "secondary physics"
+      ],
+      "keywords": [
+        "kinematics",
+        "dynamics",
+        "work",
+        "energy",
+        "momentum",
+        "heat",
+        "electrostatics",
+        "current",
+        "magnetism",
+        "optics",
+        "quantum"
+      ],
+      "displayOrder": 10
+    },
+    {
+      "id": "secondary-chemistry",
+      "name": "Chemistry",
+      "amharicName": "ኬሚስትሪ (ከ9-12)",
+      "groupId": "secondary",
+      "icon": "Beaker",
+      "description": "Atomic structure, chemical bonding, chemical reactions, periodic table, states of matter, organic chemistry, and industrial chemistry.",
+      "disciplines": [
+        "Secondary Chemistry",
+        "Grade 9 Chemistry",
+        "Grade 10 Chemistry",
+        "Grade 11 Chemistry",
+        "Grade 12 Chemistry"
+      ],
+      "aliases": [
+        "grade 9 chemistry",
+        "grade 10 chemistry",
+        "grade 11 chemistry",
+        "grade 12 chemistry",
+        "secondary chemistry"
+      ],
+      "keywords": [
+        "atoms",
+        "molecules",
+        "stoichiometry",
+        "gas laws",
+        "solutions",
+        "acids",
+        "bases",
+        "equilibrium",
+        "redox",
+        "hydrocarbons"
+      ],
+      "displayOrder": 11
+    },
+    {
+      "id": "secondary-biology",
+      "name": "Biology & Life Sciences",
+      "amharicName": "ባዮሎጂና የህይወት ሳይንስ (ከ9-12)",
+      "groupId": "secondary",
+      "icon": "Dna",
+      "description": "Cell biology, biochemical processes, human biology, genetics, ecology, botany, zoology, and microbiology for Grades 9–12.",
+      "disciplines": [
+        "Secondary Biology",
+        "Grade 9 Biology",
+        "Grade 10 Biology",
+        "Grade 11 Biology",
+        "Grade 12 Biology"
+      ],
+      "aliases": [
+        "grade 9 biology",
+        "grade 10 biology",
+        "grade 11 biology",
+        "grade 12 biology",
+        "secondary biology"
+      ],
+      "keywords": [
+        "cell",
+        "respiration",
+        "photosynthesis",
+        "enzymes",
+        "circulatory",
+        "nervous",
+        "reproduction",
+        "genetics",
+        "dna",
+        "ecology"
+      ],
+      "displayOrder": 12
+    },
+    {
+      "id": "secondary-social-sciences",
+      "name": "Social Sciences",
+      "amharicName": "ማህበራዊ ሳይንስ (ሁለተኛ ደረጃ)",
+      "groupId": "secondary",
+      "icon": "Globe",
+      "description": "Ethiopian and world history, physical and human geography, secondary economics, and citizenship education for Grades 9–12.",
+      "disciplines": [
+        "Secondary Geography",
+        "Secondary History",
+        "Secondary Economics",
+        "Secondary Citizenship"
+      ],
+      "aliases": [
+        "grade 9 geography",
+        "grade 10 geography",
+        "grade 11-12 history",
+        "grade 11-12 economics",
+        "secondary citizenship"
+      ],
+      "keywords": [
+        "landforms",
+        "climate",
+        "population",
+        "trade",
+        "ancient history",
+        "modern ethiopian history",
+        "scarcity",
+        "constitution",
+        "governance"
+      ],
+      "displayOrder": 13
+    },
+    {
+      "id": "secondary-applied-technology",
+      "name": "Applied Science & Technology",
+      "amharicName": "የተግባር ሳይንስና ቴክኖሎጂ (ሁለተኛ ደረጃ)",
+      "groupId": "secondary",
+      "icon": "Cpu",
+      "description": "Information technology, basic programming, agricultural science, technical drawing, practical science, and vocational education.",
+      "disciplines": [
+        "Information Technology (IT)",
+        "Computer Studies",
+        "Technical Drawing",
+        "General Business"
+      ],
+      "aliases": [
+        "grade 9 it",
+        "grade 10 it",
+        "grade 11 it",
+        "grade 12 it",
+        "secondary it",
+        "technical drawing"
+      ],
+      "keywords": [
+        "programming",
+        "algorithms",
+        "hardware",
+        "software",
+        "networking",
+        "databases",
+        "multimedia",
+        "drafting",
+        "cad",
+        "business"
+      ],
+      "displayOrder": 14
+    },
+    {
+      "id": "university-computing",
+      "name": "Computing & Information Sciences",
+      "amharicName": "ኮምፒውተርና ኢንፎርሜሽን ሳይንስ",
+      "groupId": "university",
+      "icon": "Code",
+      "description": "Computer Science, Software Engineering, Information Technology, Information Systems, Data Science, Artificial Intelligence, Cybersecurity, Database Systems, Networks, and DSA.",
+      "departments": [
+        "Computer Science",
+        "Software Engineering",
+        "Information Technology",
+        "Information Systems",
+        "Artificial Intelligence",
+        "Data Science",
+        "Cybersecurity"
+      ],
+      "aliases": [
+        "computing",
+        "computer science",
+        "software engineering",
+        "it",
+        "cs",
+        "se",
+        "is",
+        "infosec",
+        "ai",
+        "dsa",
+        "dbms",
+        "os",
+        "cn"
+      ],
+      "keywords": [
+        "algorithms",
+        "data structures",
+        "operating systems",
+        "networking",
+        "database",
+        "software engineering",
+        "compiler",
+        "ai",
+        "machine learning",
+        "cybersecurity"
+      ],
+      "displayOrder": 15
+    },
+    {
+      "id": "university-engineering",
+      "name": "Engineering & Built Environment",
+      "amharicName": "ምህንድስናና የሕንፃ ጥበብ / ግንባታ",
+      "groupId": "university",
+      "icon": "Wrench",
+      "description": "Civil, Electrical, Mechanical, Chemical, and Industrial Engineering, Architecture, Construction Technology, Structural Engineering, Water Resources, Surveying, and Mechatronics.",
+      "departments": [
+        "Civil Engineering",
+        "Electrical & Computer Engineering",
+        "Mechanical Engineering",
+        "Chemical Engineering",
+        "Biomedical Engineering",
+        "Architecture",
+        "Construction Engineering Management"
+      ],
+      "aliases": [
+        "engineering",
+        "civil engineering",
+        "electrical engineering",
+        "mechanical engineering",
+        "chemical engineering",
+        "biomedical engineering",
+        "architecture",
+        "construction management"
+      ],
+      "keywords": [
+        "statics",
+        "dynamics",
+        "mechanics of materials",
+        "thermodynamics",
+        "fluid mechanics",
+        "circuits",
+        "power systems",
+        "concrete",
+        "structural analysis",
+        "autocad"
+      ],
+      "displayOrder": 16
+    },
+    {
+      "id": "university-natural-sciences",
+      "name": "Natural & Computational Sciences",
+      "amharicName": "የተፈጥሮና ኮምፒውቴሽናል ሳይንስ",
+      "groupId": "university",
+      "icon": "Atom",
+      "description": "Mathematics, Physics, Chemistry, Biology, Statistics, Geology, Biotechnology, and Material Science.",
+      "departments": [
+        "Mathematics",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "Statistics",
+        "Geology",
+        "Biotechnology"
+      ],
+      "aliases": [
+        "natural sciences",
+        "computational sciences",
+        "math",
+        "physics",
+        "chemistry",
+        "biology",
+        "statistics",
+        "geology",
+        "biotech"
+      ],
+      "keywords": [
+        "calculus",
+        "linear algebra",
+        "differential equations",
+        "probability",
+        "statistics",
+        "mechanics",
+        "electromagnetism",
+        "organic chemistry",
+        "biochemistry",
+        "genetics"
+      ],
+      "displayOrder": 17
+    },
+    {
+      "id": "university-health-sciences",
+      "name": "Health & Medical Sciences",
+      "amharicName": "የጤናና ህክምና ሳይንስ",
+      "groupId": "university",
+      "icon": "Activity",
+      "description": "Medicine, Nursing, Pharmacy, Public Health, Medical Laboratory Sciences, Dentistry, Midwifery, and Anesthesia.",
+      "departments": [
+        "Medicine",
+        "Nursing",
+        "Pharmacy",
+        "Public Health",
+        "Medical Laboratory Science",
+        "Midwifery",
+        "Dentistry",
+        "Anesthesia"
+      ],
+      "aliases": [
+        "health sciences",
+        "medical sciences",
+        "medicine",
+        "nursing",
+        "pharmacy",
+        "public health",
+        "med lab",
+        "midwifery"
+      ],
+      "keywords": [
+        "anatomy",
+        "physiology",
+        "pathology",
+        "pharmacology",
+        "microbiology",
+        "epidemiology",
+        "biostatistics",
+        "internal medicine",
+        "surgery",
+        "pediatrics"
+      ],
+      "displayOrder": 18
+    },
+    {
+      "id": "university-agriculture",
+      "name": "Agriculture, Veterinary & Natural Resources",
+      "amharicName": "ግብርና፣ የእንስሳት ህክምናና የተፈጥሮ ሀብት",
+      "groupId": "university",
+      "icon": "Sprout",
+      "description": "Plant Science, Animal Science, Veterinary Medicine, Horticulture, Agribusiness, Agricultural Economics, Forestry, Soil Science, and Natural Resource Management.",
+      "departments": [
+        "Plant Science",
+        "Animal Science",
+        "Horticulture",
+        "Agribusiness",
+        "Forestry",
+        "Soil Science",
+        "Natural Resource Management"
+      ],
+      "aliases": [
+        "agriculture",
+        "plant science",
+        "animal science",
+        "horticulture",
+        "forestry",
+        "agribusiness",
+        "soil science"
+      ],
+      "keywords": [
+        "crops",
+        "livestock",
+        "soil fertility",
+        "pest management",
+        "irrigation",
+        "agronomy",
+        "pasture",
+        "conservation",
+        "forestry",
+        "genetics"
+      ],
+      "displayOrder": 19
+    },
+    {
+      "id": "university-business",
+      "name": "Business & Economics",
+      "amharicName": "ቢዝነስና ኢኮኖሚክስ",
+      "groupId": "university",
+      "icon": "TrendingUp",
+      "description": "Accounting & Finance, Economics, Management, Marketing Management, Banking & Finance, and Logistics & Supply Chain Management.",
+      "departments": [
+        "Accounting & Finance",
+        "Economics",
+        "Management",
+        "Marketing Management",
+        "Banking & Finance",
+        "Logistics & Supply Chain"
+      ],
+      "aliases": [
+        "business",
+        "economics",
+        "accounting",
+        "finance",
+        "management",
+        "marketing",
+        "logistics",
+        "banking",
+        "supply chain"
+      ],
+      "keywords": [
+        "financial accounting",
+        "cost accounting",
+        "microeconomics",
+        "macroeconomics",
+        "corporate finance",
+        "principles of management",
+        "marketing",
+        "econometrics",
+        "auditing"
+      ],
+      "displayOrder": 20
+    },
+    {
+      "id": "university-humanities",
+      "name": "Social Sciences, Humanities, Law & Education",
+      "amharicName": "ማህበራዊ ሳይንስ፣ ሂውማኒቲስ፣ ህግና ትምህርት",
+      "groupId": "university",
+      "icon": "Scale",
+      "description": "Psychology, Sociology, Anthropology, Political Science, International Relations, History, Journalism, Communication, Law, English, Amharic, and Education.",
+      "departments": [
+        "Law",
+        "Sociology",
+        "Psychology",
+        "Political Science",
+        "Journalism & Communication",
+        "Philosophy",
+        "Social Anthropology"
+      ],
+      "aliases": [
+        "humanities",
+        "social sciences",
+        "law",
+        "sociology",
+        "psychology",
+        "political science",
+        "philosophy",
+        "anthropology",
+        "journalism"
+      ],
+      "keywords": [
+        "constitutional law",
+        "criminal law",
+        "civil law",
+        "social theory",
+        "general psychology",
+        "international relations",
+        "logic",
+        "critical thinking",
+        "media",
+        "governance"
+      ],
+      "displayOrder": 21
+    }
+  ],
+  "freshmanStreams": [
+    {
+      "id": "natural-science",
+      "name": "Natural Science Stream",
+      "amharicName": "የተፈጥሮ ሳይንስ ዘርፍ",
+      "description": "Standardized Ethiopian university freshman curriculum for students heading into Engineering, Technology, Computing, Health Sciences, Agriculture, and Natural Sciences.",
+      "courseIds": [
+        "freshman-math-natural",
+        "freshman-physics",
+        "freshman-biology",
+        "freshman-chemistry",
+        "freshman-psychology",
+        "freshman-logic",
+        "freshman-english",
+        "freshman-geography",
+        "freshman-history",
+        "freshman-anthropology",
+        "freshman-emerging-tech",
+        "freshman-civics",
+        "freshman-fitness"
+      ]
+    },
+    {
+      "id": "social-science",
+      "name": "Social Science Stream",
+      "amharicName": "የማህበራዊ ሳይንስ ዘርፍ",
+      "description": "Standardized Ethiopian university freshman curriculum for students heading into Business, Economics, Law, Humanities, Social Sciences, and Language Studies.",
+      "courseIds": [
+        "freshman-math-social",
+        "freshman-economics",
+        "freshman-psychology",
+        "freshman-logic",
+        "freshman-english",
+        "freshman-geography",
+        "freshman-anthropology",
+        "freshman-entrepreneurship",
+        "freshman-global-trends",
+        "freshman-emerging-tech",
+        "freshman-inclusiveness",
+        "freshman-civics",
+        "freshman-fitness"
+      ]
+    }
+  ],
+  "freshmanCourses": [
+    {
+      "id": "freshman-math-natural",
+      "name": "Mathematics for Natural Sciences",
+      "code": "Math 1011",
+      "streams": [
+        "natural-science"
+      ],
+      "categoryRef": "university-natural-sciences",
+      "aliases": [
+        "math for natural sciences",
+        "general mathematics",
+        "math 1011",
+        "math nat",
+        "natural science math",
+        "freshman mathematics",
+        "freshman math"
+      ],
+      "canonicalExpansion": "mathematics for natural sciences",
+      "keywords": [
+        "calculus",
+        "limit",
+        "derivative",
+        "integral",
+        "matrix",
+        "vector",
+        "function",
+        "complex number",
+        "differential equation"
+      ],
+      "description": "Calculus, vectors, matrices, complex numbers, and mathematical analysis for natural science and engineering students.",
+      "exampleCourseCodes": [
+        "Math 1011",
+        "Math 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Math 1011",
+          "Math 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-physics",
+      "name": "General Physics",
+      "code": "Phys 1011",
+      "streams": [
+        "natural-science"
+      ],
+      "categoryRef": "university-natural-sciences",
+      "aliases": [
+        "general physics",
+        "physics i",
+        "phys 1011",
+        "freshman physics",
+        "physics 1"
+      ],
+      "canonicalExpansion": "general physics",
+      "keywords": [
+        "mechanics",
+        "motion",
+        "force",
+        "energy",
+        "momentum",
+        "fluid mechanics",
+        "oscillations",
+        "thermodynamics",
+        "optics",
+        "electromagnetism"
+      ],
+      "description": "Foundational physics covering kinematics, classical dynamics, work and energy, oscillations, thermodynamics, and wave phenomena.",
+      "exampleCourseCodes": [
+        "Phys 1011",
+        "Phys 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Phys 1011",
+          "Phys 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-biology",
+      "name": "General Biology",
+      "code": "Biol 1011",
+      "streams": [
+        "natural-science"
+      ],
+      "categoryRef": "university-natural-sciences",
+      "aliases": [
+        "general biology",
+        "biology i",
+        "biol 1011",
+        "freshman biology",
+        "intro to biology"
+      ],
+      "canonicalExpansion": "general biology",
+      "keywords": [
+        "cell structure",
+        "macromolecules",
+        "metabolism",
+        "genetics",
+        "photosynthesis",
+        "cellular respiration",
+        "dna",
+        "plant physiology",
+        "animal physiology"
+      ],
+      "description": "Cellular biology, macromolecular biochemistry, genetics, evolution, biodiversity, and fundamental physiological processes.",
+      "exampleCourseCodes": [
+        "Biol 1011",
+        "Biol 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Biol 1011",
+          "Biol 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-chemistry",
+      "name": "General Chemistry",
+      "code": "Chem 1011",
+      "streams": [
+        "natural-science"
+      ],
+      "categoryRef": "university-natural-sciences",
+      "aliases": [
+        "general chemistry",
+        "chemistry i",
+        "chem 1011",
+        "freshman chemistry",
+        "chemistry 1"
+      ],
+      "canonicalExpansion": "general chemistry",
+      "keywords": [
+        "atomic structure",
+        "chemical bonding",
+        "stoichiometry",
+        "gases",
+        "chemical equilibrium",
+        "acid base",
+        "thermochemistry",
+        "redox",
+        "electrochemistry"
+      ],
+      "description": "Atomic theory, chemical bonding, chemical thermodynamics, equilibrium systems, acids and bases, and electrochemistry.",
+      "exampleCourseCodes": [
+        "Chem 1011",
+        "Chem 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Chem 1011",
+          "Chem 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-math-social",
+      "name": "Mathematics for Social Sciences",
+      "code": "Math 1012",
+      "streams": [
+        "social-science"
+      ],
+      "categoryRef": "university-natural-sciences",
+      "aliases": [
+        "mathematics for social sciences",
+        "math for social science",
+        "math 1012",
+        "math soc",
+        "social science math"
+      ],
+      "canonicalExpansion": "mathematics for social sciences",
+      "keywords": [
+        "linear equations",
+        "matrices",
+        "linear programming",
+        "simplex method",
+        "financial math",
+        "interest",
+        "derivatives",
+        "probability",
+        "statistics"
+      ],
+      "description": "Matrix algebra, linear programming, financial mathematics, basic differential calculus, and probability for business and social sciences.",
+      "exampleCourseCodes": [
+        "Math 1012",
+        "Math 102"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Math 1012",
+          "Math 102"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-economics",
+      "name": "Economics",
+      "code": "Econ 1011",
+      "streams": [
+        "social-science"
+      ],
+      "categoryRef": "university-business",
+      "aliases": [
+        "economics",
+        "intro to economics",
+        "econ 1011",
+        "freshman economics",
+        "principles of economics"
+      ],
+      "canonicalExpansion": "economics",
+      "keywords": [
+        "scarcity",
+        "opportunity cost",
+        "demand",
+        "supply",
+        "elasticity",
+        "consumer theory",
+        "production cost",
+        "market structures",
+        "national income",
+        "gdp"
+      ],
+      "description": "Microeconomic principles of scarcity, demand, supply, and consumer choice, combined with macroeconomic aggregates and national policies.",
+      "exampleCourseCodes": [
+        "Econ 1011",
+        "Econ 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Econ 1011",
+          "Econ 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-psychology",
+      "name": "General Psychology",
+      "code": "Psyc 1011",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "general psychology",
+        "intro to psychology",
+        "psyc 1011",
+        "freshman psychology",
+        "psychology"
+      ],
+      "canonicalExpansion": "general psychology",
+      "keywords": [
+        "human behavior",
+        "sensation",
+        "perception",
+        "learning",
+        "conditioning",
+        "memory",
+        "motivation",
+        "emotion",
+        "personality",
+        "psychological disorders"
+      ],
+      "description": "Foundations of psychological science, human development, sensory systems, learning principles, memory, and cognitive processes.",
+      "exampleCourseCodes": [
+        "Psyc 1011",
+        "Psyc 101"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Psyc 1011",
+          "Psyc 101"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-logic",
+      "name": "Logic and Critical Thinking",
+      "code": "Phil 1011",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "logic and critical thinking",
+        "logic",
+        "critical thinking",
+        "phil 1011",
+        "freshman logic"
+      ],
+      "canonicalExpansion": "logic and critical thinking",
+      "keywords": [
+        "arguments",
+        "premises",
+        "conclusions",
+        "deductive reasoning",
+        "inductive reasoning",
+        "informal fallacies",
+        "categorical syllogisms",
+        "propositional logic"
+      ],
+      "description": "Structure of arguments, identification of formal and informal fallacies, deductive syllogisms, and systematic critical thinking methods.",
+      "exampleCourseCodes": [
+        "Phil 1011",
+        "Logi 1011"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Phil 1011",
+          "Logi 1011"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-english",
+      "name": "Communicative English Language Skills",
+      "code": "EnLa 1011 / 1012",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "communicative english",
+        "communicative english language skills",
+        "communicative english i & ii",
+        "enla 1011",
+        "enla 1012",
+        "flen 1011",
+        "flen 1012",
+        "freshman english"
+      ],
+      "canonicalExpansion": "communicative english",
+      "keywords": [
+        "reading strategies",
+        "skimming",
+        "scanning",
+        "paragraph writing",
+        "essay writing",
+        "grammar",
+        "vocabulary",
+        "listening skills",
+        "public speaking"
+      ],
+      "description": "Academic communicative skills, expository and argumentative writing, critical reading strategies, note-taking, and professional presentations.",
+      "exampleCourseCodes": [
+        "FLEn 1011",
+        "EnLa 1011",
+        "FLEn 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "FLEn 1011",
+          "EnLa 1011",
+          "FLEn 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-geography",
+      "name": "Geography of Ethiopia and the Horn",
+      "code": "Geog 1011",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "geography of ethiopia and the horn",
+        "ethiopian geography",
+        "geog 1011",
+        "geography of ethiopia",
+        "freshman geography"
+      ],
+      "canonicalExpansion": "geography of ethiopia and the horn",
+      "keywords": [
+        "geology",
+        "physiography",
+        "rift valley",
+        "drainage basins",
+        "climate zones",
+        "soils",
+        "natural vegetation",
+        "demography",
+        "economic activities"
+      ],
+      "description": "Geological evolution, physical topography, drainage systems, climate regimes, soils, demographic dynamics, and resource utilization in Ethiopia.",
+      "exampleCourseCodes": [
+        "Geog 1011"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Geog 1011"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-history",
+      "name": "History of Ethiopia and the Horn",
+      "code": "Hist 1011",
+      "streams": [
+        "natural-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "history of ethiopia and the horn",
+        "ethiopian history",
+        "hist 1011",
+        "history of ethiopia",
+        "freshman history"
+      ],
+      "canonicalExpansion": "history of ethiopia and the horn",
+      "keywords": [
+        "ancient civilizations",
+        "state formation",
+        "religious history",
+        "medieval period",
+        "gondar period",
+        "modern ethiopian state",
+        "anti-colonial struggles",
+        "adwa"
+      ],
+      "description": "Civilizational history, cultural interactions, socio-political dynamics, modern state formation, and historic struggles of Ethiopia and the Horn.",
+      "exampleCourseCodes": [
+        "Hist 1011"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Hist 1011"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-anthropology",
+      "name": "Social Anthropology",
+      "code": "Anth 1012",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "social anthropology",
+        "cultural anthropology",
+        "anth 1012",
+        "freshman anthropology",
+        "anthropology"
+      ],
+      "canonicalExpansion": "social anthropology",
+      "keywords": [
+        "culture",
+        "ethnography",
+        "kinship",
+        "descent",
+        "marriage",
+        "identity",
+        "multiculturalism",
+        "indigenous knowledge",
+        "customary dispute resolution"
+      ],
+      "description": "Cultural anthropology concepts, kinship systems, marriage, ethnicity, identity formation, indigenous knowledge, and Ethiopian multiculturalism.",
+      "exampleCourseCodes": [
+        "Anth 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Anth 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-emerging-tech",
+      "name": "Introduction to Emerging Technologies",
+      "code": "EmTe 1012",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-computing",
+      "aliases": [
+        "introduction to emerging technologies",
+        "emerging technologies",
+        "emtech",
+        "emte 1012",
+        "emerging tech",
+        "freshman emerging tech"
+      ],
+      "canonicalExpansion": "emerging technologies",
+      "keywords": [
+        "artificial intelligence",
+        "internet of things",
+        "iot",
+        "data science",
+        "big data",
+        "blockchain",
+        "cloud computing",
+        "augmented reality",
+        "cybersecurity"
+      ],
+      "description": "Introduction to fourth industrial revolution technologies: artificial intelligence, big data analytics, IoT, blockchain, and cloud paradigms.",
+      "exampleCourseCodes": [
+        "EmTe 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "EmTe 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-civics",
+      "name": "Moral and Civic Education",
+      "code": "McVe 1012",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "moral and civic education",
+        "civics and ethics",
+        "mcve 1012",
+        "freshman civics",
+        "moral education"
+      ],
+      "canonicalExpansion": "moral and civic education",
+      "keywords": [
+        "ethics",
+        "moral philosophy",
+        "citizenship",
+        "democracy",
+        "constitutionalism",
+        "human rights",
+        "rule of law",
+        "peace building"
+      ],
+      "description": "Moral philosophy, civic responsibilities, constitutional democratic governance, human rights standards, and peace-building frameworks in Ethiopia.",
+      "exampleCourseCodes": [
+        "MCVE 1012",
+        "CvEd 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "MCVE 1012",
+          "CvEd 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-fitness",
+      "name": "Physical Fitness",
+      "code": "SpSc 1011",
+      "streams": [
+        "natural-science",
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "physical fitness",
+        "pfit 1011",
+        "spsc 1011",
+        "freshman fitness",
+        "physical education"
+      ],
+      "canonicalExpansion": "physical fitness",
+      "keywords": [
+        "health-related fitness",
+        "cardiorespiratory endurance",
+        "muscular strength",
+        "flexibility",
+        "body composition",
+        "nutrition",
+        "wellness"
+      ],
+      "description": "Physical conditioning principles, exercise physiology, wellness lifestyles, nutrition, and lifelong health-related physical fitness.",
+      "exampleCourseCodes": [
+        "SpSc 1011",
+        "PHE 1011"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "SpSc 1011",
+          "PHE 1011"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-entrepreneurship",
+      "name": "Entrepreneurship",
+      "code": "Mgmt 1012",
+      "streams": [
+        "social-science"
+      ],
+      "categoryRef": "university-business",
+      "aliases": [
+        "entrepreneurship",
+        "mgmt 1012",
+        "freshman entrepreneurship",
+        "venture creation"
+      ],
+      "canonicalExpansion": "entrepreneurship",
+      "keywords": [
+        "entrepreneurial mindset",
+        "business opportunity",
+        "business plan",
+        "feasibility study",
+        "marketing plan",
+        "financial planning",
+        "startup",
+        "innovation"
+      ],
+      "description": "Venture creation processes, business opportunity identification, business plan writing, product innovation, and small business leadership.",
+      "exampleCourseCodes": [
+        "Mgmt 1012",
+        "Entr 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "Mgmt 1012",
+          "Entr 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-global-trends",
+      "name": "Global Trends",
+      "code": "GlTr 1012",
+      "streams": [
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "global trends",
+        "gltr 1012",
+        "international relations",
+        "global affairs",
+        "freshman global trends"
+      ],
+      "canonicalExpansion": "global trends",
+      "keywords": [
+        "world politics",
+        "international relations",
+        "globalization",
+        "foreign policy",
+        "diplomacy",
+        "international organizations",
+        "global political economy"
+      ],
+      "description": "Contemporary international dynamics, global governance, regional security, global political economy, and foreign policy interactions.",
+      "exampleCourseCodes": [
+        "GlTr 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "GlTr 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    },
+    {
+      "id": "freshman-inclusiveness",
+      "name": "Inclusiveness",
+      "code": "SnIe 1012",
+      "streams": [
+        "social-science"
+      ],
+      "categoryRef": "university-humanities",
+      "aliases": [
+        "inclusiveness",
+        "snie 1012",
+        "special needs education",
+        "inclusion",
+        "freshman inclusiveness"
+      ],
+      "canonicalExpansion": "inclusiveness",
+      "keywords": [
+        "special needs",
+        "impairment",
+        "disability",
+        "vulnerabilities",
+        "inclusive education",
+        "accessibility",
+        "universal design",
+        "reasonable accommodation"
+      ],
+      "description": "Inclusive society frameworks, special needs education, disability rights, barrier removal, universal design, and institutional accessibility.",
+      "exampleCourseCodes": [
+        "SNIE 1012"
+      ],
+      "universityMetadata": {
+        "exampleCourseCodes": [
+          "SNIE 1012"
+        ],
+        "note": "Course codes and semester placements vary across universities (e.g. AAU, ASTU, JU). Not universally standardized."
+      }
+    }
+  ],
+  "aliases": {
+    "dbms": {
+      "key": "dbms",
+      "name": "Database Management Systems",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "database",
+      "aliases": [
+        "database",
+        "database systems",
+        "dbms",
+        "database management system"
+      ],
+      "keywords": [
+        "sql",
+        "relation",
+        "normalization",
+        "entity",
+        "primary key",
+        "foreign key",
+        "transaction",
+        "join",
+        "index",
+        "er diagram"
+      ]
+    },
+    "dsa": {
+      "key": "dsa",
+      "name": "Data Structures and Algorithms",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "data structures",
+      "aliases": [
+        "data structures",
+        "data structure and algorithm",
+        "algorithms",
+        "data structures and algorithms",
+        "dsa"
+      ],
+      "keywords": [
+        "array",
+        "linked list",
+        "stack",
+        "queue",
+        "tree",
+        "graph",
+        "sorting",
+        "searching",
+        "recursion",
+        "dynamic programming"
+      ]
+    },
+    "os": {
+      "key": "os",
+      "name": "Operating Systems",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "operating systems",
+      "aliases": [
+        "operating system",
+        "operating systems",
+        "os"
+      ],
+      "keywords": [
+        "process",
+        "thread",
+        "scheduling",
+        "deadlock",
+        "memory management",
+        "virtual memory",
+        "paging",
+        "file system",
+        "interrupt",
+        "synchronization"
+      ]
+    },
+    "cn": {
+      "key": "cn",
+      "name": "Computer Networks",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "computer networks",
+      "aliases": [
+        "computer network",
+        "computer networks",
+        "networking",
+        "cn"
+      ],
+      "keywords": [
+        "osi",
+        "tcp/ip",
+        "routing",
+        "switching",
+        "ip address",
+        "subnetting",
+        "protocol",
+        "lan",
+        "wan",
+        "dns"
+      ]
+    },
+    "se": {
+      "key": "se",
+      "name": "Software Engineering",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "software engineering",
+      "aliases": [
+        "software engineering",
+        "software development",
+        "se"
+      ],
+      "keywords": [
+        "sdlc",
+        "requirements",
+        "design",
+        "testing",
+        "maintenance",
+        "uml",
+        "agile",
+        "scrum",
+        "case study",
+        "version control"
+      ]
+    },
+    "coa": {
+      "key": "coa",
+      "name": "Computer Organization & Architecture",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "computer architecture",
+      "aliases": [
+        "computer organization",
+        "computer architecture",
+        "architecture and organization",
+        "coa"
+      ],
+      "keywords": [
+        "cpu",
+        "memory hierarchy",
+        "instruction set",
+        "pipeline",
+        "cache",
+        "register",
+        "control unit",
+        "alu",
+        "bus",
+        "assembly"
+      ]
+    },
+    "ai": {
+      "key": "ai",
+      "name": "Artificial Intelligence",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "artificial intelligence",
+      "aliases": [
+        "artificial intelligence",
+        "ai",
+        "intelligent systems"
+      ],
+      "keywords": [
+        "search",
+        "heuristic",
+        "expert system",
+        "agent",
+        "knowledge representation",
+        "reasoning",
+        "planning",
+        "inference",
+        "machine learning",
+        "decision"
+      ]
+    },
+    "ml": {
+      "key": "ml",
+      "name": "Machine Learning",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "machine learning",
+      "aliases": [
+        "machine learning",
+        "ml",
+        "data mining basics"
+      ],
+      "keywords": [
+        "classification",
+        "regression",
+        "clustering",
+        "feature",
+        "training",
+        "testing",
+        "overfitting",
+        "model",
+        "neural network",
+        "prediction"
+      ]
+    },
+    "cs": {
+      "key": "cs",
+      "name": "Computer Science",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "computer science",
+      "aliases": [
+        "computer science",
+        "cs",
+        "computing"
+      ],
+      "keywords": [
+        "algorithms",
+        "programming",
+        "software",
+        "systems",
+        "theory",
+        "computation",
+        "data structures",
+        "discrete math"
+      ]
+    },
+    "it": {
+      "key": "it",
+      "name": "Information Technology",
+      "targetType": "category",
+      "targetId": "university-computing",
+      "canonicalExpansion": "information technology",
+      "aliases": [
+        "information technology",
+        "it",
+        "infotech"
+      ],
+      "keywords": [
+        "hardware",
+        "software",
+        "network administration",
+        "system administration",
+        "security",
+        "database",
+        "web"
+      ]
+    },
+    "mathNat": {
+      "key": "mathNat",
+      "name": "Mathematics for Natural Sciences",
+      "targetType": "course",
+      "targetId": "freshman-math-natural",
+      "canonicalExpansion": "mathematics for natural sciences",
+      "aliases": [
+        "general mathematics",
+        "general math",
+        "mathematics for natural sciences",
+        "math for natural sciences",
+        "mathematics for natural science",
+        "math for natural science",
+        "freshman mathematics",
+        "math 1011"
+      ],
+      "keywords": [
+        "calculus",
+        "limit",
+        "derivative",
+        "integral",
+        "matrix",
+        "vector",
+        "function",
+        "complex number",
+        "differential"
+      ]
+    },
+    "genphys": {
+      "key": "genphys",
+      "name": "General Physics",
+      "targetType": "course",
+      "targetId": "freshman-physics",
+      "canonicalExpansion": "general physics",
+      "aliases": [
+        "general physics",
+        "physics i",
+        "physics 1",
+        "phys 1011",
+        "freshman physics"
+      ],
+      "keywords": [
+        "motion",
+        "force",
+        "energy",
+        "momentum",
+        "gravity",
+        "electricity",
+        "magnetism",
+        "wave",
+        "optics",
+        "thermo"
+      ]
+    },
+    "genchem": {
+      "key": "genchem",
+      "name": "General Chemistry",
+      "targetType": "course",
+      "targetId": "freshman-chemistry",
+      "canonicalExpansion": "general chemistry",
+      "aliases": [
+        "general chemistry",
+        "chemistry i",
+        "chemistry 1",
+        "chem 1011",
+        "freshman chemistry"
+      ],
+      "keywords": [
+        "atom",
+        "bond",
+        "mole",
+        "stoichiometry",
+        "gas",
+        "solution",
+        "acid",
+        "base",
+        "equilibrium",
+        "redox"
+      ]
+    },
+    "biol": {
+      "key": "biol",
+      "name": "General Biology",
+      "targetType": "course",
+      "targetId": "freshman-biology",
+      "canonicalExpansion": "general biology",
+      "aliases": [
+        "biology",
+        "general biology",
+        "intro to biology",
+        "biol 1011",
+        "freshman biology"
+      ],
+      "keywords": [
+        "cell",
+        "genetics",
+        "evolution",
+        "ecology",
+        "classification",
+        "metabolism",
+        "membrane",
+        "photosynthesis",
+        "respiration",
+        "tissue"
+      ]
+    },
+    "math1": {
+      "key": "math1",
+      "name": "Calculus & Engineering Mathematics",
+      "targetType": "category",
+      "targetId": "university-engineering",
+      "canonicalExpansion": "calculus",
+      "aliases": [
+        "engineering mathematics",
+        "calculus",
+        "math i",
+        "math 1"
+      ],
+      "keywords": [
+        "limits",
+        "derivative",
+        "integral",
+        "matrix",
+        "vector",
+        "series",
+        "differential equation",
+        "trigonometry",
+        "function",
+        "complex number"
+      ]
+    },
+    "civics": {
+      "key": "civics",
+      "name": "Moral and Civic Education",
+      "targetType": "course",
+      "targetId": "freshman-civics",
+      "canonicalExpansion": "civics",
+      "aliases": [
+        "civics",
+        "citizenship",
+        "ethics and civics",
+        "moral and civic education",
+        "mcve 1012"
+      ],
+      "keywords": [
+        "constitution",
+        "rights",
+        "duties",
+        "citizen",
+        "democracy",
+        "law",
+        "ethics",
+        "state",
+        "governance",
+        "responsibility"
+      ]
+    },
+    "logic": {
+      "key": "logic",
+      "name": "Logic and Critical Thinking",
+      "targetType": "course",
+      "targetId": "freshman-logic",
+      "canonicalExpansion": "logic and critical thinking",
+      "aliases": [
+        "logic and critical thinking",
+        "logic",
+        "critical thinking",
+        "phil 1011",
+        "freshman logic"
+      ],
+      "keywords": [
+        "arguments",
+        "fallacies",
+        "syllogisms",
+        "deductive",
+        "inductive",
+        "premises",
+        "reasoning",
+        "truth"
+      ]
+    },
+    "emtech": {
+      "key": "emtech",
+      "name": "Introduction to Emerging Technologies",
+      "targetType": "course",
+      "targetId": "freshman-emerging-tech",
+      "canonicalExpansion": "emerging technologies",
+      "aliases": [
+        "introduction to emerging technologies",
+        "emerging technologies",
+        "emtech",
+        "emte 1012",
+        "emerging tech"
+      ],
+      "keywords": [
+        "artificial intelligence",
+        "iot",
+        "blockchain",
+        "data science",
+        "cloud",
+        "ar",
+        "vr",
+        "fourth industrial revolution"
+      ]
+    },
+    "inclusion": {
+      "key": "inclusion",
+      "name": "Inclusiveness",
+      "targetType": "course",
+      "targetId": "freshman-inclusiveness",
+      "canonicalExpansion": "inclusiveness",
+      "aliases": [
+        "inclusiveness",
+        "inclusion",
+        "snie 1012",
+        "special needs education"
+      ],
+      "keywords": [
+        "special needs",
+        "disability",
+        "accessibility",
+        "universal design",
+        "reasonable accommodation",
+        "vulnerabilities"
+      ]
+    },
+    "global": {
+      "key": "global",
+      "name": "Global Trends",
+      "targetType": "course",
+      "targetId": "freshman-global-trends",
+      "canonicalExpansion": "global trends",
+      "aliases": [
+        "global trends",
+        "gltr 1012",
+        "international relations",
+        "global affairs"
+      ],
+      "keywords": [
+        "world order",
+        "globalization",
+        "foreign policy",
+        "diplomacy",
+        "international organizations",
+        "security"
+      ]
+    },
+    "anthropology": {
+      "key": "anthropology",
+      "name": "Social Anthropology",
+      "targetType": "course",
+      "targetId": "freshman-anthropology",
+      "canonicalExpansion": "anthropology",
+      "aliases": [
+        "anthropology",
+        "cultural anthropology",
+        "social anthropology",
+        "anth 1012"
+      ],
+      "keywords": [
+        "culture",
+        "kinship",
+        "ritual",
+        "belief",
+        "society",
+        "identity",
+        "tradition",
+        "ethnicity",
+        "fieldwork",
+        "social"
+      ]
+    },
+    "psych101": {
+      "key": "psych101",
+      "name": "General Psychology",
+      "targetType": "course",
+      "targetId": "freshman-psychology",
+      "canonicalExpansion": "general psychology",
+      "aliases": [
+        "psychology",
+        "intro to psychology",
+        "general psychology",
+        "psyc 1011"
+      ],
+      "keywords": [
+        "behavior",
+        "personality",
+        "memory",
+        "learning",
+        "motivation",
+        "emotion",
+        "perception",
+        "development",
+        "therapy",
+        "mental"
+      ]
+    },
+    "econ1": {
+      "key": "econ1",
+      "name": "Economics",
+      "targetType": "course",
+      "targetId": "freshman-economics",
+      "canonicalExpansion": "economics",
+      "aliases": [
+        "economics",
+        "intro to economics",
+        "microeconomics",
+        "econ 1011"
+      ],
+      "keywords": [
+        "demand",
+        "supply",
+        "elasticity",
+        "utility",
+        "market",
+        "consumer",
+        "production",
+        "cost",
+        "equilibrium",
+        "price"
+      ]
+    },
+    "entrepreneurship": {
+      "key": "entrepreneurship",
+      "name": "Entrepreneurship",
+      "targetType": "course",
+      "targetId": "freshman-entrepreneurship",
+      "canonicalExpansion": "entrepreneurship",
+      "aliases": [
+        "entrepreneurship",
+        "venture creation",
+        "small business",
+        "mgmt 1012"
+      ],
+      "keywords": [
+        "startup",
+        "opportunity",
+        "innovation",
+        "business plan",
+        "risk",
+        "funding",
+        "market",
+        "customer",
+        "scaling",
+        "pitch"
+      ]
+    },
+    "english": {
+      "key": "english",
+      "name": "Communicative English I & II",
+      "targetType": "course",
+      "targetId": "freshman-english",
+      "canonicalExpansion": "communicative english",
+      "aliases": [
+        "english",
+        "english language",
+        "communication english",
+        "communicative english",
+        "enla 1011"
+      ],
+      "keywords": [
+        "grammar",
+        "essay",
+        "reading",
+        "writing",
+        "speaking",
+        "listening",
+        "vocabulary",
+        "summary",
+        "presentation",
+        "report"
+      ]
+    },
+    "geography": {
+      "key": "geography",
+      "name": "Geography of Ethiopia and the Horn",
+      "targetType": "course",
+      "targetId": "freshman-geography",
+      "canonicalExpansion": "geography of ethiopia and the horn",
+      "aliases": [
+        "geography",
+        "geography of ethiopia",
+        "ethiopian geography",
+        "geog 1011"
+      ],
+      "keywords": [
+        "geology",
+        "drainage",
+        "climate",
+        "rift valley",
+        "mountains",
+        "soils",
+        "population",
+        "demography"
+      ]
+    },
+    "history": {
+      "key": "history",
+      "name": "History of Ethiopia and the Horn",
+      "targetType": "course",
+      "targetId": "freshman-history",
+      "canonicalExpansion": "history of ethiopia and the horn",
+      "aliases": [
+        "history",
+        "ethiopian history",
+        "history of ethiopia",
+        "hist 1011"
+      ],
+      "keywords": [
+        "ancient civilizations",
+        "state formation",
+        "medieval",
+        "gondar",
+        "adwa",
+        "patriotism",
+        "anti-colonial"
+      ]
+    },
+    "fitness": {
+      "key": "fitness",
+      "name": "Physical Fitness",
+      "targetType": "course",
+      "targetId": "freshman-fitness",
+      "canonicalExpansion": "physical fitness",
+      "aliases": [
+        "physical fitness",
+        "fitness",
+        "pfit 1011",
+        "spsc 1011"
+      ],
+      "keywords": [
+        "endurance",
+        "strength",
+        "flexibility",
+        "health",
+        "exercise",
+        "nutrition",
+        "wellness"
+      ]
+    },
+    "law101": {
+      "key": "law101",
+      "name": "Law",
+      "targetType": "category",
+      "targetId": "university-humanities",
+      "canonicalExpansion": "law",
+      "aliases": [
+        "law",
+        "introduction to law",
+        "legal studies"
+      ],
+      "keywords": [
+        "constitution",
+        "contract",
+        "tort",
+        "criminal",
+        "rights",
+        "evidence",
+        "precedent",
+        "jurisdiction",
+        "liability",
+        "justice"
+      ]
+    },
+    "acc101": {
+      "key": "acc101",
+      "name": "Accounting",
+      "targetType": "category",
+      "targetId": "university-business",
+      "canonicalExpansion": "accounting",
+      "aliases": [
+        "accounting",
+        "principles of accounting",
+        "financial accounting"
+      ],
+      "keywords": [
+        "debit",
+        "credit",
+        "journal",
+        "ledger",
+        "trial balance",
+        "income statement",
+        "balance sheet",
+        "cash flow",
+        "asset",
+        "liability"
+      ]
+    },
+    "finance": {
+      "key": "finance",
+      "name": "Finance",
+      "targetType": "category",
+      "targetId": "university-business",
+      "canonicalExpansion": "finance",
+      "aliases": [
+        "corporate finance",
+        "financial management",
+        "finance"
+      ],
+      "keywords": [
+        "capital",
+        "investment",
+        "risk",
+        "return",
+        "dividend",
+        "valuation",
+        "working capital",
+        "leverage",
+        "budget",
+        "cost of capital"
+      ]
+    },
+    "mgmt": {
+      "key": "mgmt",
+      "name": "Management",
+      "targetType": "category",
+      "targetId": "university-business",
+      "canonicalExpansion": "management",
+      "aliases": [
+        "management",
+        "principles of management",
+        "business management"
+      ],
+      "keywords": [
+        "planning",
+        "organizing",
+        "leading",
+        "controlling",
+        "motivation",
+        "decision",
+        "strategy",
+        "team",
+        "communication",
+        "organization"
+      ]
+    },
+    "marketing": {
+      "key": "marketing",
+      "name": "Marketing",
+      "targetType": "category",
+      "targetId": "university-business",
+      "canonicalExpansion": "marketing",
+      "aliases": [
+        "marketing",
+        "principles of marketing",
+        "marketing management"
+      ],
+      "keywords": [
+        "product",
+        "price",
+        "place",
+        "promotion",
+        "consumer",
+        "segmentation",
+        "brand",
+        "market research",
+        "sales",
+        "distribution"
+      ]
+    },
+    "elec": {
+      "key": "elec",
+      "name": "Electrical Engineering",
+      "targetType": "category",
+      "targetId": "university-engineering",
+      "canonicalExpansion": "electrical engineering",
+      "aliases": [
+        "electrical engineering",
+        "electrical",
+        "power engineering"
+      ],
+      "keywords": [
+        "circuit",
+        "voltage",
+        "current",
+        "resistance",
+        "power",
+        "transformer",
+        "motor",
+        "generator",
+        "control",
+        "electromagnet"
+      ]
+    },
+    "civil": {
+      "key": "civil",
+      "name": "Civil Engineering",
+      "targetType": "category",
+      "targetId": "university-engineering",
+      "canonicalExpansion": "civil engineering",
+      "aliases": [
+        "civil engineering",
+        "civil",
+        "structural engineering"
+      ],
+      "keywords": [
+        "structures",
+        "concrete",
+        "steel",
+        "soil mechanics",
+        "hydraulics",
+        "surveying",
+        "transportation",
+        "materials"
+      ]
+    },
+    "mech": {
+      "key": "mech",
+      "name": "Mechanical Engineering",
+      "targetType": "category",
+      "targetId": "university-engineering",
+      "canonicalExpansion": "mechanical engineering",
+      "aliases": [
+        "mechanical engineering",
+        "mechanical"
+      ],
+      "keywords": [
+        "thermodynamics",
+        "fluid mechanics",
+        "heat transfer",
+        "machine design",
+        "kinematics",
+        "manufacturing",
+        "automotive"
+      ]
+    },
+    "med": {
+      "key": "med",
+      "name": "Medicine",
+      "targetType": "category",
+      "targetId": "university-health-sciences",
+      "canonicalExpansion": "medicine",
+      "aliases": [
+        "medicine",
+        "human medicine",
+        "medical doctor"
+      ],
+      "keywords": [
+        "internal medicine",
+        "surgery",
+        "pediatrics",
+        "gynecology",
+        "obstetrics",
+        "pathology",
+        "pharmacology",
+        "clinical"
+      ]
+    },
+    "nursing": {
+      "key": "nursing",
+      "name": "Nursing",
+      "targetType": "category",
+      "targetId": "university-health-sciences",
+      "canonicalExpansion": "nursing",
+      "aliases": [
+        "nursing",
+        "clinical nursing",
+        "nursing science"
+      ],
+      "keywords": [
+        "patient care",
+        "vital signs",
+        "medication",
+        "fundamentals of nursing",
+        "surgical nursing",
+        "maternal health"
+      ]
+    },
+    "pharma": {
+      "key": "pharma",
+      "name": "Pharmacy",
+      "targetType": "category",
+      "targetId": "university-health-sciences",
+      "canonicalExpansion": "pharmacology",
+      "aliases": [
+        "pharmacology",
+        "pharmacy",
+        "drug study"
+      ],
+      "keywords": [
+        "drug",
+        "dose",
+        "adverse effect",
+        "mechanism",
+        "absorption",
+        "metabolism",
+        "receptor",
+        "interaction",
+        "toxicity",
+        "antibiotic"
+      ]
+    }
+  }
+}

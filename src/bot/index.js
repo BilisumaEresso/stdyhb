@@ -113,13 +113,17 @@ bot.command("dev", developerCommand);
 bot.command("saves", savesCommand);
 bot.command(["web", "app", "webapp"], async (ctx) => {
   const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  const channelUrl = process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
   await ctx.reply(
-    "🌐 <b>StudyHub Web & Mini App</b>\n\nExperience StudyHub with instant multi-filter search, in-browser PDF reader, exam photo lightboxes, and university browsing.\n\nTap below to launch:",
+    "🌐 <b>StudyHub Web & Mini App</b>\n\nExperience StudyHub with instant multi-filter search, in-browser PDF reader, exam photo lightboxes, and university browsing.\n\nTap below to launch or join our official channel for announcements:",
     {
       parse_mode: "HTML",
       ...Markup.inlineKeyboard([
         [Markup.button.webApp("🚀 Launch Web App", webAppUrl)],
-        [Markup.button.url("↗️ Open in Browser", webAppUrl)],
+        [
+          Markup.button.url("↗️ Open in Browser", webAppUrl),
+          Markup.button.url("📢 Official Channel", channelUrl),
+        ],
       ]),
     }
   );

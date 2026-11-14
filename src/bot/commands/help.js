@@ -40,9 +40,14 @@ async function getLiveSystemStats() {
  * 1. Main Help Center Hub
  */
 function renderHelpHub(isAdmin = false) {
-  const version = packageInfo.version || "2.0.0";
+  const version = packageInfo.version || "2.1.0";
+  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  const officialChannelUrl =
+    process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
+  const officialChannelUser =
+    process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
 
-  let text = `📚 <b>StudyHub ${version} — Academic Help Center</b>\n\n`;
+  let text = `📚 <b>StudyHub v${version} — Academic Help Center</b>\n\n`;
   text += `Welcome to StudyHub, your high-speed academic search engine designed for Ethiopian university students.\n\n`;
 
   text += `<b>Quick Navigation:</b>\n`;
@@ -50,6 +55,9 @@ function renderHelpHub(isAdmin = false) {
   text += `⌨️ <b>Commands Reference</b> — All personal, group, and management shortcuts\n`;
   text += `ℹ️ <b>About StudyHub</b> — System architecture, live repository stats & mission\n`;
   text += `👨‍💻 <b>About Developer</b> — Meet the creator, vision, tech stack & contact\n\n`;
+
+  text += `🌐 <b>Web App:</b> <a href="${webAppUrl}">${webAppUrl.replace(/^https?:\/\//, "")}</a>\n`;
+  text += `📢 <b>Official Channel:</b> <a href="${officialChannelUrl}">@${officialChannelUser}</a>\n\n`;
 
   text += `💡 <i>Pro Tip: You can search directly by typing any topic or course code (e.g. <code>CS301</code>, <code>General Physics</code>, <code>DBMS Final Exam</code>).</i>`;
 
@@ -63,6 +71,10 @@ function renderHelpHub(isAdmin = false) {
     "https://t.me/+251938730818";
 
   const rows = [
+    [
+      Markup.button.url("🌐 Visit Website", webAppUrl),
+      Markup.button.url("📢 Official Channel", officialChannelUrl),
+    ],
     [
       Markup.button.callback("🔍 Search Guide", "help_search"),
       Markup.button.callback("⌨️ Commands Reference", "help_commands"),
@@ -179,7 +191,12 @@ function renderCommandsGuide(isAdmin = false) {
  * 4. About StudyHub System View
  */
 function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmin = false) {
-  const version = packageInfo.version || "2.0.0";
+  const version = packageInfo.version || "2.1.0";
+  const webAppUrl = process.env.WEB_APP_URL || "https://webstudyhub.vercel.app";
+  const officialChannelUrl =
+    process.env.OFFICIAL_CHANNEL_URL || "https://t.me/studyhub_et";
+  const officialChannelUser =
+    process.env.OFFICIAL_CHANNEL_USERNAME || "studyhub_et";
   const contactUrl =
     process.env.ADMIN_TELEGRAM_URL ||
     process.env.DEVELOPER_TELEGRAM_URL ||
@@ -189,10 +206,12 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
   text += `StudyHub is an academic search engine and open educational repository indexer built for Ethiopian university students.\n\n`;
 
   text += `✨ <b>System Highlights:</b>\n`;
-  text += `• <b>Version:</b> <code>v${version} (StudyHub 2.0)</code>\n`;
+  text += `• <b>Version:</b> <code>v${version} (StudyHub 2.1)</code>\n`;
   text += `• <b>Engine:</b> Fault-tolerant GramJS MTProto crawler with archive backup\n`;
   text += `• <b>Search:</b> Typo-tolerant lexical scoring with campus affinity weighting\n`;
-  text += `• <b>Delivery:</b> Native Telegram Media Group album grouping & zero-loss forwarding\n\n`;
+  text += `• <b>Delivery:</b> Native Telegram Media Group album grouping & multi-channel failover\n`;
+  text += `• <b>Web Platform:</b> <a href="${webAppUrl}">${webAppUrl.replace(/^https?:\/\//, "")}</a>\n`;
+  text += `• <b>Official Channel:</b> <a href="${officialChannelUrl}">@${officialChannelUser}</a>\n\n`;
 
   text += `📊 <b>Live Repository Metrics:</b>\n`;
   text += `• 📚 Indexed Study Resources: <b>${stats.totalResources.toLocaleString()}</b>\n`;
@@ -202,19 +221,36 @@ function renderAboutView(stats = { totalResources: 0, totalChannels: 0 }, isAdmi
   text += `⚖️ <b>Open Access Mission:</b>\n`;
   text += `StudyHub does not host files on private servers; it indexes and curates publicly shared educational resources from Telegram channels to ensure every student has equal access to past exams and study materials.\n\n`;
 
+  if (isAdmin) {
+    text += `🛡️ <b>Admin Operator:</b> You have full administrative privileges to manage channels, view live indexer telemetry, and inspect audit logs.\n\n`;
+  }
+
   text += `📬 <b>Feedback & Direct Contact:</b>\n`;
   text += `Have suggestions, want your channel indexed, or found an issue? Reach out on Telegram: <a href="${contactUrl}">+251 938 730 818</a>`;
 
   const rows = [
     [
+      Markup.button.url("🌐 Visit Website", webAppUrl),
+      Markup.button.url("📢 Official Channel", officialChannelUrl),
+    ],
+    [
       Markup.button.callback("👨‍💻 About Developer", "about_developer"),
       Markup.button.callback("🔍 Search Guide", "help_search"),
     ],
-    [
+  ];
+
+  if (isAdmin) {
+    rows.push([
+      Markup.button.callback("🛡️ Admin Panel", "admin_panel"),
+      Markup.button.url("📬 Support & Contact", contactUrl),
+    ]);
+    rows.push([Markup.button.callback("◀ Back to Help", "help_main")]);
+  } else {
+    rows.push([
       Markup.button.url("📬 Support & Contact", contactUrl),
       Markup.button.callback("◀ Back to Help", "help_main"),
-    ],
-  ];
+    ]);
+  }
 
   return { text, keyboard: Markup.inlineKeyboard(rows) };
 }
@@ -451,6 +487,21 @@ function registerHelpHandlers(bot) {
 
   bot.action("about_studyhub", aboutCommand);
   bot.action("about_developer", developerCommand);
+
+  bot.action("admin_panel", async (ctx) => {
+    try {
+      if (!isAdminUser(ctx.from?.id)) {
+        return await ctx.answerCbQuery("⛔ Admin only. You are not authorized.", {
+          show_alert: true,
+        });
+      }
+      const adminModule = require("./admin");
+      return await adminModule.adminPanelCommand(ctx);
+    } catch (err) {
+      console.error("[HelpAdminPanel] Error:", err);
+      await ctx.answerCbQuery("❌ Error opening Admin Panel", { show_alert: true }).catch(() => {});
+    }
+  });
 }
 
 module.exports = {

@@ -197,23 +197,42 @@ router.get("/resources/:id", async (req, res) => {
     }
 
     let alternativeSources = [];
+    const altConditions = [];
+    if (resource.fileName && resource.fileSize > 0) {
+      altConditions.push({ fileName: resource.fileName, fileSize: resource.fileSize });
+    }
     if (resource.fileUniqueId) {
+      altConditions.push({ fileUniqueId: resource.fileUniqueId });
+    }
+
+    if (altConditions.length > 0) {
       const alts = await TelegramResource.find({
-        fileUniqueId: resource.fileUniqueId,
+        $or: altConditions,
         _id: { $ne: resource._id },
+        channelUsername: { $ne: resource.channelUsername },
         isAvailable: true
       })
-        .select("channelUsername messageId university downloadCount")
-        .limit(10)
+        .select("channelUsername messageId university downloadCount fileId archiveMessageId")
+        .limit(15)
         .lean();
 
-      alternativeSources = alts.map(a => ({
-        channelUsername: a.channelUsername,
-        messageId: a.messageId,
-        university: a.university || "",
-        downloadCount: a.downloadCount || 0,
-        _id: a._id
-      }));
+      // Deduplicate alternative sources by channelUsername
+      const seenChannels = new Set();
+      for (const a of alts) {
+        const ch = (a.channelUsername || "").toLowerCase();
+        if (ch && !seenChannels.has(ch)) {
+          seenChannels.add(ch);
+          alternativeSources.push({
+            channelUsername: a.channelUsername,
+            messageId: a.messageId,
+            university: a.university || "",
+            downloadCount: a.downloadCount || 0,
+            fileId: a.fileId,
+            archiveMessageId: a.archiveMessageId,
+            _id: a._id
+          });
+        }
+      }
     }
 
     res.json({

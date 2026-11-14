@@ -50,6 +50,7 @@ TelegramResourceSchema.index(
 );
 TelegramResourceSchema.index({ groupId: 1 });
 TelegramResourceSchema.index({ fileUniqueId: 1 });
+TelegramResourceSchema.index({ fileName: 1, fileSize: 1 });
 TelegramResourceSchema.index({ courseCode: 1 });
 TelegramResourceSchema.index({ isExam: 1, fileType: 1 });
 

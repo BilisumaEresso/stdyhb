@@ -35,7 +35,7 @@ export default function AboutPage() {
       <section className="page-hero container">
         <span className="eyebrow">
           <BrandEmblem size={16} />
-          <span>Our Mission & Platform</span>
+          <span>StudyHub v2.1.0 · Mission & Platform</span>
         </span>
         <h1>
           Making academic resources <span className="accent">easier to discover.</span>
@@ -62,8 +62,9 @@ export default function AboutPage() {
               or looking for university exit exam papers, StudyHub brings clarity to your studies.
             </p>
             <p className="muted" style={{ lineHeight: "1.7", fontSize: "16px" }}>
-              Search on the web with fast previews, or send materials directly to your Telegram via{" "}
-              <strong>@{botUsername}</strong> with a single tap.
+              Search on the web with fast previews, send materials directly to your Telegram via{" "}
+              <strong>@{botUsername}</strong> with a single tap, or join our official channel{" "}
+              <strong><a href="https://t.me/studyhub_et" target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>@studyhub_et</a></strong> for announcements and exam alerts.
             </p>
             <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <Link className="btn btn-primary" href="/explore">
@@ -78,6 +79,14 @@ export default function AboutPage() {
               >
                 <Send size={15} />
                 <span>Open Telegram Bot</span>
+              </a>
+              <a
+                className="btn btn-outline"
+                href="https://t.me/studyhub_et"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span>📢 Official Channel (@studyhub_et)</span>
               </a>
             </div>
           </div>
