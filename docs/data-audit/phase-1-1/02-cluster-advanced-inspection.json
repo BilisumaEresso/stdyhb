@@ -1,0 +1,277 @@
+{
+  "hostInfo": {
+    "error": "(Unauthorized) not authorized on admin to execute command { hostInfo: 1, lsid: { id: {4 [175 83 142 130 222 154 64 184 139 175 84 2 94 41 159 97]} }, $clusterTime: { clusterTime: {1794557419 1}, signature: { hash: {0 [96 58 67 12 36 148 0 21 88 97 104 253 10 17 39 45 13 190 152 58]}, keyId: 7657272088507449344.000000 } }, $db: \"admin\" }"
+  },
+  "cmdLineOpts": {
+    "argv": [],
+    "parsed": {},
+    "ok": 1
+  },
+  "replSetStatus": {
+    "set": "atlas-8ql1x9-shard-0",
+    "date": "2026-11-13T08:10:21.054Z",
+    "myState": 1,
+    "term": 366,
+    "syncSourceHost": "",
+    "syncSourceId": -1,
+    "heartbeatIntervalMillis": 2000,
+    "majorityVoteCount": 2,
+    "writeMajorityCount": 2,
+    "votingMembersCount": 3,
+    "writableVotingMembersCount": 3,
+    "optimes": {
+      "lastCommittedOpTime": {
+        "ts": {
+          "$timestamp": "7707565429694136325"
+        },
+        "t": 366
+      },
+      "lastCommittedWallTime": "2026-11-13T08:10:20.959Z",
+      "readConcernMajorityOpTime": {
+        "ts": {
+          "$timestamp": "7707565429694136325"
+        },
+        "t": 366
+      },
+      "appliedOpTime": {
+        "ts": {
+          "$timestamp": "7707565429694136325"
+        },
+        "t": 366
+      },
+      "durableOpTime": {
+        "ts": {
+          "$timestamp": "7707565429694136325"
+        },
+        "t": 366
+      },
+      "writtenOpTime": {
+        "ts": {
+          "$timestamp": "7707565429694136325"
+        },
+        "t": 366
+      },
+      "lastAppliedWallTime": "2026-11-13T08:10:20.959Z",
+      "lastDurableWallTime": "2026-11-13T08:10:20.959Z",
+      "lastWrittenWallTime": "2026-11-13T08:10:20.959Z"
+    },
+    "lastStableRecoveryTimestamp": {
+      "$timestamp": "7707565189175967754"
+    },
+    "electionCandidateMetrics": {
+      "lastElectionReason": "stepUpRequestSkipDryRun",
+      "lastElectionDate": "2026-11-11T05:04:42.705Z",
+      "electionTerm": 366,
+      "lastCommittedOpTimeAtElection": {
+        "ts": {
+          "$timestamp": "7706775421999644675"
+        },
+        "t": 365
+      },
+      "lastSeenWrittenOpTimeAtElection": {
+        "ts": {
+          "$timestamp": "7706775421999644675"
+        },
+        "t": 365
+      },
+      "lastSeenOpTimeAtElection": {
+        "ts": {
+          "$timestamp": "7706775421999644675"
+        },
+        "t": 365
+      },
+      "numVotesNeeded": 2,
+      "priorityAtElection": 7,
+      "electionTimeoutMillis": 5000,
+      "priorPrimaryMemberId": 2,
+      "numCatchUpOps": 0,
+      "newTermStartDate": "2026-11-11T05:04:42.808Z",
+      "wMajorityWriteAvailabilityDate": "2026-11-11T05:04:43.009Z"
+    },
+    "members": [
+      {
+        "_id": 0,
+        "name": "ac-2bcical-shard-00-00.rfdlc8z.mongodb.net:27017",
+        "health": 1,
+        "state": 2,
+        "stateStr": "SECONDARY",
+        "uptime": 184059,
+        "optime": {
+          "ts": {
+            "$timestamp": "7707565429694136321"
+          },
+          "t": 366
+        },
+        "optimeDurable": {
+          "ts": {
+            "$timestamp": "7707565429694136321"
+          },
+          "t": 366
+        },
+        "optimeWritten": {
+          "ts": {
+            "$timestamp": "7707565429694136321"
+          },
+          "t": 366
+        },
+        "optimeDate": "2026-11-13T08:10:20.000Z",
+        "optimeDurableDate": "2026-11-13T08:10:20.000Z",
+        "optimeWrittenDate": "2026-11-13T08:10:20.000Z",
+        "lastAppliedWallTime": "2026-11-13T08:10:20.959Z",
+        "lastDurableWallTime": "2026-11-13T08:10:20.959Z",
+        "lastWrittenWallTime": "2026-11-13T08:10:20.959Z",
+        "lastHeartbeat": "2026-11-13T08:10:20.063Z",
+        "lastHeartbeatRecv": "2026-11-13T08:10:20.411Z",
+        "pingMs": 0,
+        "lastHeartbeatMessage": "",
+        "syncSourceHost": "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+        "syncSourceId": 1,
+        "infoMessage": "",
+        "configVersion": 109,
+        "configTerm": 366
+      },
+      {
+        "_id": 1,
+        "name": "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+        "health": 1,
+        "state": 1,
+        "stateStr": "PRIMARY",
+        "uptime": 184091,
+        "optime": {
+          "ts": {
+            "$timestamp": "7707565429694136325"
+          },
+          "t": 366
+        },
+        "optimeDate": "2026-11-13T08:10:20.000Z",
+        "optimeWritten": {
+          "ts": {
+            "$timestamp": "7707565429694136325"
+          },
+          "t": 366
+        },
+        "optimeWrittenDate": "2026-11-13T08:10:20.000Z",
+        "lastAppliedWallTime": "2026-11-13T08:10:20.959Z",
+        "lastDurableWallTime": "2026-11-13T08:10:20.959Z",
+        "lastWrittenWallTime": "2026-11-13T08:10:20.959Z",
+        "syncSourceHost": "",
+        "syncSourceId": -1,
+        "infoMessage": "",
+        "electionTime": {
+          "$timestamp": "7706775421999644676"
+        },
+        "electionDate": "2026-11-11T05:04:42.000Z",
+        "configVersion": 109,
+        "configTerm": 366,
+        "self": true,
+        "lastHeartbeatMessage": ""
+      },
+      {
+        "_id": 2,
+        "name": "ac-2bcical-shard-00-02.rfdlc8z.mongodb.net:27017",
+        "health": 1,
+        "state": 2,
+        "stateStr": "SECONDARY",
+        "uptime": 183737,
+        "optime": {
+          "ts": {
+            "$timestamp": "7707565421104201732"
+          },
+          "t": 366
+        },
+        "optimeDurable": {
+          "ts": {
+            "$timestamp": "7707565421104201732"
+          },
+          "t": 366
+        },
+        "optimeWritten": {
+          "ts": {
+            "$timestamp": "7707565421104201732"
+          },
+          "t": 366
+        },
+        "optimeDate": "2026-11-13T08:10:18.000Z",
+        "optimeDurableDate": "2026-11-13T08:10:18.000Z",
+        "optimeWrittenDate": "2026-11-13T08:10:18.000Z",
+        "lastAppliedWallTime": "2026-11-13T08:10:20.959Z",
+        "lastDurableWallTime": "2026-11-13T08:10:20.959Z",
+        "lastWrittenWallTime": "2026-11-13T08:10:20.959Z",
+        "lastHeartbeat": "2026-11-13T08:10:19.372Z",
+        "lastHeartbeatRecv": "2026-11-13T08:10:20.068Z",
+        "pingMs": 0,
+        "lastHeartbeatMessage": "",
+        "syncSourceHost": "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+        "syncSourceId": 1,
+        "infoMessage": "",
+        "configVersion": 109,
+        "configTerm": 366
+      }
+    ],
+    "ok": 1,
+    "$clusterTime": {
+      "clusterTime": {
+        "$timestamp": "7707565429694136325"
+      },
+      "signature": {
+        "hash": "qrmO1FynlwvqB9fOOmZ3f7ZeVI8=",
+        "keyId": {
+          "high": 1782847589,
+          "low": 2,
+          "unsigned": false
+        }
+      }
+    },
+    "operationTime": {
+      "$timestamp": "7707565429694136325"
+    }
+  },
+  "listDatabases": {
+    "databases": [
+      {
+        "name": "layoscan",
+        "sizeOnDisk": 2154496,
+        "empty": false
+      },
+      {
+        "name": "matana",
+        "sizeOnDisk": 712704,
+        "empty": false
+      },
+      {
+        "name": "studyhub",
+        "sizeOnDisk": 74129408,
+        "empty": false
+      },
+      {
+        "name": "admin",
+        "sizeOnDisk": 0,
+        "empty": false
+      },
+      {
+        "name": "local",
+        "sizeOnDisk": 0,
+        "empty": false
+      }
+    ],
+    "totalSize": 76996608,
+    "totalSizeMb": 76,
+    "ok": 1,
+    "$clusterTime": {
+      "clusterTime": {
+        "$timestamp": "7707565433989103617"
+      },
+      "signature": {
+        "hash": "w0SKx7zTg2l2B0v5y1xiw8ZFTxQ=",
+        "keyId": {
+          "high": 1782847589,
+          "low": 2,
+          "unsigned": false
+        }
+      }
+    },
+    "operationTime": {
+      "$timestamp": "7707565433989103617"
+    }
+  }
+}

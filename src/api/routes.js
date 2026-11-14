@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const TelegramResource = require("../db/models/TelegramResource");
 const searchService = require("../search/search.service");
+const suggestionService = require("../search/suggestion.service");
 const { getClient } = require("../search/telegramIndexer");
 const { generateDisplayTitle } = require("../utils/titleGenerator");
 
@@ -62,6 +63,22 @@ router.get("/trending", async (req, res) => {
   }
 });
 
+// ─── GET /api/search/suggestions ───────────────────────────────────────────
+router.get("/search/suggestions", (req, res) => {
+  try {
+    const { q = "", limit = 6 } = req.query;
+    const limitNum = Math.min(20, Math.max(1, parseInt(limit, 10) || 6));
+    const suggestions = suggestionService.getSuggestions(q, { limit: limitNum });
+
+    res.json({
+      success: true,
+      data: suggestions
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── GET /api/search ─────────────────────────────────────────────────────────
 router.get("/search", async (req, res) => {
   try {
@@ -74,14 +91,20 @@ router.get("/search", async (req, res) => {
       limit = 20
     } = req.query;
 
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
 
     if (q.trim()) {
       let results = await searchService.searchResources(q.trim(), null);
 
       if (university) {
-        results = results.filter(r => (r.university || "").toLowerCase().includes(university.toLowerCase()));
+        const uLower = university.toLowerCase();
+        results = results.filter(r => {
+          if ((r.university || "").toLowerCase().includes(uLower)) return true;
+          if (r.universities && r.universities.some(u => u.toLowerCase().includes(uLower))) return true;
+          if (r.alternativeSources && r.alternativeSources.some(s => (s.university || "").toLowerCase().includes(uLower))) return true;
+          return false;
+        });
       }
       if (fileType) {
         results = results.filter(r => (r.fileType || "").toLowerCase() === fileType.toLowerCase());
@@ -91,24 +114,26 @@ router.get("/search", async (req, res) => {
       }
 
       const total = results.length;
-      const startIdx = (pageNum - 1) * limitNum;
+      const totalPages = Math.max(1, Math.ceil(total / limitNum));
+      const safePage = Math.min(pageNum, totalPages);
+      const startIdx = (safePage - 1) * limitNum;
       const paginated = results.slice(startIdx, startIdx + limitNum);
 
       return res.json({
         success: true,
         data: paginated,
         pagination: {
-          page: pageNum,
+          page: safePage,
           limit: limitNum,
           total,
-          totalPages: Math.ceil(total / limitNum)
+          totalPages
         }
       });
     }
 
     const filter = {
       isAvailable: true,
-      $or: [{ groupId: null }, { groupIndex: 0 }, { groupIndex: { $exists: false } }]
+      $or: [{ groupId: null }, { groupIndex: 1 }, { groupIndex: { $exists: false } }]
     };
     if (university) {
       filter.university = new RegExp(university, "i");
@@ -120,28 +145,31 @@ router.get("/search", async (req, res) => {
       filter.isExam = true;
     }
 
-    const [total, items] = await Promise.all([
-      TelegramResource.countDocuments(filter),
-      TelegramResource.find(filter)
-        .sort({ downloadCount: -1, indexedAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .lean()
-    ]);
+    const total = await TelegramResource.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / limitNum));
+    const safePage = Math.min(pageNum, totalPages);
+
+    const items = await TelegramResource.find(filter)
+      .sort({ downloadCount: -1, indexedAt: -1, _id: 1 })
+      .skip((safePage - 1) * limitNum)
+      .limit(limitNum)
+      .lean();
 
     const formattedItems = items.map(r => ({
       ...r,
-      title: r.cleanTitle || generateDisplayTitle(r)
+      title: r.cleanTitle || generateDisplayTitle(r),
+      _isGrouped: Boolean(r.groupId),
+      groupSize: r.groupTotal || (r.groupId ? 1 : undefined)
     }));
 
     res.json({
       success: true,
       data: formattedItems,
       pagination: {
-        page: pageNum,
+        page: safePage,
         limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages
       }
     });
   } catch (err) {
@@ -168,11 +196,33 @@ router.get("/resources/:id", async (req, res) => {
         .lean();
     }
 
+    let alternativeSources = [];
+    if (resource.fileUniqueId) {
+      const alts = await TelegramResource.find({
+        fileUniqueId: resource.fileUniqueId,
+        _id: { $ne: resource._id },
+        isAvailable: true
+      })
+        .select("channelUsername messageId university downloadCount")
+        .limit(10)
+        .lean();
+
+      alternativeSources = alts.map(a => ({
+        channelUsername: a.channelUsername,
+        messageId: a.messageId,
+        university: a.university || "",
+        downloadCount: a.downloadCount || 0,
+        _id: a._id
+      }));
+    }
+
     res.json({
       success: true,
       data: {
         ...resource,
         title: resource.cleanTitle || generateDisplayTitle(resource),
+        alternativeSources,
+        channelCount: alternativeSources.length + 1,
         groupItems: groupItems.map(g => ({
           ...g,
           title: g.cleanTitle || generateDisplayTitle(g)

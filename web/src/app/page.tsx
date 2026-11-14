@@ -24,6 +24,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import BrandEmblem from "@/components/BrandEmblem";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
+import ResourceCard from "@/components/ResourceCard";
 import {
   FilePdfIcon,
   FilePptIcon,
@@ -187,22 +189,20 @@ export default function HomePage() {
               university communities — all in one focused search platform.
             </p>
 
-            {/* Omnibar Search Form */}
-            <form className="searchbar" onSubmit={handleSearch}>
-              <span className="search-icon">
-                <Search size={20} />
-              </span>
-              <input
-                aria-label="Search study materials"
-                placeholder="Search courses, past exams, lecture notes, or codes (e.g. DBMS, Calculus)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button type="submit" className="btn btn-primary">
-                <span>Search</span>
-                <ArrowRight size={15} />
-              </button>
-            </form>
+            {/* Omnibar Search Form with Smart Autocomplete */}
+            <SearchAutocomplete
+              id="home-search"
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onSubmit={(term) => {
+                if (term.trim()) {
+                  router.push(`/explore?q=${encodeURIComponent(term.trim())}`);
+                } else {
+                  router.push("/explore");
+                }
+              }}
+              placeholder="Search courses, past exams, lecture notes, or codes (e.g. DBMS, Calculus)..."
+            />
 
             {/* Popular Search Suggestions */}
             <div className="popular">
@@ -359,68 +359,9 @@ export default function HomePage() {
           </div>
 
           <div className="resource-grid">
-            {recentResources.map((item) => {
-              const displayTitle = item.cleanTitle || item.title || item.fileName || "Academic Resource";
-              const isExam = item.isExam;
-              const type = (item.fileType || "pdf").toLowerCase();
-              return (
-                <article key={item._id} className="resource-card">
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div className={`file-type ${type}`} title={`${type.toUpperCase()} Document`}>
-                      {type === "ppt" ? (
-                        <FilePptIcon size={22} />
-                      ) : type === "doc" ? (
-                        <FileDocIcon size={22} />
-                      ) : type === "image" ? (
-                        <FileImageIcon size={22} />
-                      ) : (
-                        <FilePdfIcon size={22} />
-                      )}
-                    </div>
-                    {isExam && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: "8px",
-                          background: "var(--gold-soft)",
-                          color: "var(--gold)",
-                        }}
-                      >
-                        PAST EXAM
-                      </span>
-                    )}
-                  </div>
-
-                  <h3>
-                    <Link href={`/resource/${item._id}`} style={{ color: "inherit" }}>
-                      {displayTitle}
-                    </Link>
-                  </h3>
-
-                  <div className="resource-meta">
-                    <span>{item.university || "Ethiopian University"}</span>
-                    {item.channelUsername && (
-                      <>
-                        <span>•</span>
-                        <span>@{item.channelUsername}</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="resource-bottom">
-                    <span className="source">
-                      {item.fileSize ? `${(item.fileSize / (1024 * 1024)).toFixed(1)} MB` : "Document"}
-                    </span>
-                    <Link className="resource-link" href={`/resource/${item._id}`}>
-                      <span>View Resource</span>
-                      <ArrowRight size={13} />
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
+            {recentResources.map((item) => (
+              <ResourceCard key={item._id} item={item} />
+            ))}
           </div>
         </section>
       )}

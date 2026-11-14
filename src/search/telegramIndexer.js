@@ -165,7 +165,8 @@ const JUNK_PATTERNS = [
   // Financial scams & paid-answer services
   /\b(telebirr|commercial\s*bank|account\s*number|cbe\s*birr|betting|forex|crypto|airdrop|airtime\s*giveaway|giveaway\s*airtime)\b/i,
   /\b(contact\s*admin\s*for\s*answers|buy\s*exam|vip\s*channel|vip\s*group|paid\s*channel|subscription\s*fee|promo\s*code)\b/i,
-  /(ብር|ክፍያ|ዋጋ|መክፈያ|ፈተና\s*እንሸጣለን|መልስ\s*ለመግዛት)/i,
+  /\b(ExamClass|Freshman\s*Master\s*Class|MasterClassBot|RegBot|ExamClass_RegBot|FreshmanMasterClassBot|MalefiaTrainingInstitute)\b/i,
+  /(ብር|ክፍያ|ዋጋ|መክፈያ|ፈተና\s*እንሸጣለን|መልስ\s*ለመግዛት|ባማከለ\s*ክፍያ|ኮርስ\s*ለመግዛት|ስልጠና\s*እንሰጣለን|ተማሪን\s*ባማከለ)/i,
   // Dorm/admission/registration notices (not study materials)
   /\b(dorm\s*placement|dorm\s*assignment|orientation\s*day|admitted\s*students|placement\s*result|remedial\s*registration)\b/i,
   /\b(vacancy|job\s*opportunity|hiring|senate\s*decision|presidential\s*directive|graduation\s*ceremony)\b/i,

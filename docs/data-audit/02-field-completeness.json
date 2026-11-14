@@ -1,0 +1,401 @@
+{
+  "timestamp": "2026-11-13T05:53:46.977Z",
+  "totalDocuments": 92140,
+  "availableDocuments": 83070,
+  "fields": [
+    {
+      "field": "__v",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "0 | 0 | 0"
+    },
+    {
+      "field": "_id",
+      "dataType": "ObjectId",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "6a38158c81cff0b089b1184a | 6a38158c81cff0b089b1184c | 6a38158d81cff0b089b1184e"
+    },
+    {
+      "field": "archiveMessageId",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 74946,
+      "missingCount": 17194,
+      "populatedPct": 81.34,
+      "sampleValues": "23823 | 23824 | 23825"
+    },
+    {
+      "field": "caption",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 70083,
+      "missingCount": 22057,
+      "populatedPct": 76.06,
+      "sampleValues": "\"moeexitexamofficial\" | \"Greetings all,\n\n1) Start your ...\" | \"Good Day Everyone,\n\nYour entra...\""
+    },
+    {
+      "field": "channelUsername",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "\"AplusEthiopian\" | \"AplusEthiopian\" | \"AplusEthiopian\""
+    },
+    {
+      "field": "chatId",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "2405012754 | 2405012754 | 2405012754"
+    },
+    {
+      "field": "cleanTitle",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 83071,
+      "missingCount": 9069,
+      "populatedPct": 90.16,
+      "sampleValues": "\"Good Day Everyone - Your Entra...\" | \"Good Day Everyone - Your Entra...\" | \"Good Day Everyone - Your Entra...\""
+    },
+    {
+      "field": "courseCode",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 12500,
+      "missingCount": 79640,
+      "populatedPct": 13.57,
+      "sampleValues": "\"AASTU15\" | \"AATI12\" | \"AATI12\""
+    },
+    {
+      "field": "downloadCount",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "0 | 0 | 0"
+    },
+    {
+      "field": "fileId",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "\"5783177974239661600\" | \"5920228834466794328\" | \"5856970120884850273\""
+    },
+    {
+      "field": "fileName",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 62552,
+      "missingCount": 29588,
+      "populatedPct": 67.89,
+      "sampleValues": "\"Five year coures.pdf\" | \"Software Engineering, 10th Edi...\" | \"Data_Communication_and_Network...\""
+    },
+    {
+      "field": "fileSize",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "0 | 0 | 0"
+    },
+    {
+      "field": "fileType",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "\"image\" | \"image\" | \"image\""
+    },
+    {
+      "field": "fileUniqueId",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "\"7899078049547726858\" | \"-7603261765725718613\" | \"6777694097285524416\""
+    },
+    {
+      "field": "groupId",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 55970,
+      "missingCount": 36170,
+      "populatedPct": 60.74,
+      "sampleValues": "\"14248702666835540\" | \"14248702666835540\" | \"14248702666835540\""
+    },
+    {
+      "field": "groupIndex",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "0 | 0 | 1"
+    },
+    {
+      "field": "groupTotal",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "1 | 1 | 4"
+    },
+    {
+      "field": "indexedAt",
+      "dataType": "Date",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "2026-06-21 | 2026-06-21 | 2026-06-21"
+    },
+    {
+      "field": "isAvailable",
+      "dataType": "boolean",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "false | false | true"
+    },
+    {
+      "field": "isExam",
+      "dataType": "boolean",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "false | false | false"
+    },
+    {
+      "field": "messageDate",
+      "dataType": "Date",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "2026-05-16 | 2026-05-16 | 2026-06-10"
+    },
+    {
+      "field": "messageId",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "47 | 48 | 49"
+    },
+    {
+      "field": "relevanceScore",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 92140,
+      "missingCount": 0,
+      "populatedPct": 100,
+      "sampleValues": "1 | 6 | 6"
+    },
+    {
+      "field": "reportCount",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 24634,
+      "missingCount": 67506,
+      "populatedPct": 26.74,
+      "sampleValues": "1 | 1 | 0"
+    },
+    {
+      "field": "semester",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 708,
+      "missingCount": 91432,
+      "populatedPct": 0.77,
+      "sampleValues": "\"3rdYear\" | \"3RDYEAR\" | \"3RDYEAR\""
+    },
+    {
+      "field": "tags",
+      "dataType": "Array",
+      "total": 92140,
+      "populatedCount": 65478,
+      "missingCount": 26662,
+      "populatedPct": 71.06,
+      "sampleValues": "[abstract_algebra] | [exam, accounting, economics] | [exam, accounting, economics]"
+    },
+    {
+      "field": "university",
+      "dataType": "string",
+      "total": 92140,
+      "populatedCount": 8128,
+      "missingCount": 84012,
+      "populatedPct": 8.82,
+      "sampleValues": "\"ASTU\" | \"ASTU\" | \"Jimma\""
+    },
+    {
+      "field": "year",
+      "dataType": "number",
+      "total": 92140,
+      "populatedCount": 21560,
+      "missingCount": 70580,
+      "populatedPct": 23.4,
+      "sampleValues": "2013 | 2023 | 2023"
+    }
+  ],
+  "availableFields": [
+    {
+      "field": "__v",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "_id",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "archiveMessageId",
+      "populatedCount": 67125,
+      "populatedPct": 80.81
+    },
+    {
+      "field": "caption",
+      "populatedCount": 61244,
+      "populatedPct": 73.73
+    },
+    {
+      "field": "channelUsername",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "chatId",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "cleanTitle",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "courseCode",
+      "populatedCount": 11298,
+      "populatedPct": 13.6
+    },
+    {
+      "field": "downloadCount",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "fileId",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "fileName",
+      "populatedCount": 62462,
+      "populatedPct": 75.19
+    },
+    {
+      "field": "fileSize",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "fileType",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "fileUniqueId",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "groupId",
+      "populatedCount": 55840,
+      "populatedPct": 67.22
+    },
+    {
+      "field": "groupIndex",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "groupTotal",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "indexedAt",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "isAvailable",
+      "populatedCount": 92140,
+      "populatedPct": 110.92
+    },
+    {
+      "field": "isExam",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "messageDate",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "messageId",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "relevanceScore",
+      "populatedCount": 83070,
+      "populatedPct": 100
+    },
+    {
+      "field": "reportCount",
+      "populatedCount": 22971,
+      "populatedPct": 27.65
+    },
+    {
+      "field": "semester",
+      "populatedCount": 651,
+      "populatedPct": 0.78
+    },
+    {
+      "field": "tags",
+      "populatedCount": 56441,
+      "populatedPct": 67.94
+    },
+    {
+      "field": "university",
+      "populatedCount": 7709,
+      "populatedPct": 9.28
+    },
+    {
+      "field": "year",
+      "populatedCount": 19684,
+      "populatedPct": 23.7
+    }
+  ]
+}

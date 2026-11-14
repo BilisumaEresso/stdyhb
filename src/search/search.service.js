@@ -1,7 +1,7 @@
 const CachedSearch = require("../db/models/CachedSearch");
 const TelegramResource = require("../db/models/TelegramResource");
 const { searchGitHub } = require("./providers/github");
-const { expandQuery } = require("../config/subjectAliases");
+const { expandQuery, SUBJECT_ALIASES } = require("../config/subjectAliases");
 const { correctTypos } = require("./typoCorrector");
 const { generateDisplayTitle } = require("../utils/titleGenerator");
 
@@ -15,6 +15,288 @@ const BOOK_CHANNELS = new Set([
   "medallbooks",
   "freshmanebook",
 ]);
+
+// Generic intent and material type tokens
+const GENERIC_TYPES = new Set([
+  "exam", "exams", "examination", "examinations",
+  "mid", "midterm", "midterms",
+  "final", "finals",
+  "test", "tests", "quiz", "quizzes",
+  "paper", "papers", "question", "questions",
+  "model", "sample", "past", "previous", "exit", "entrance",
+  "note", "notes", "handout", "handouts", "lecture", "lectures",
+  "summary", "summaries", "short", "review", "revision", "outline",
+  "ppt", "pptx", "pdf", "doc", "docx", "slide", "slides", "presentation", "powerpoint",
+  "assignment", "assignments", "project", "projects", "lab", "labs", "manual", "manuals",
+  "worksheet", "worksheets", "exercise", "exercises", "solution", "solutions",
+  "report", "reports", "case", "study",
+  "book", "books", "module", "modules", "textbook", "textbooks", "guide", "guidebook", "reference"
+]);
+
+// Generic academic modifiers and noise tokens
+const GENERIC_MODIFIERS = new Set([
+  "general", "introduction", "intro", "introductory", "fundamentals", "fundamental",
+  "basic", "basics", "principles", "principle", "applied", "advanced", "elementary",
+  "freshman", "department", "course", "part", "chapter", "unit", "ch", "vol", "volume",
+  "year", "semester", "sem", "1st", "2nd", "3rd", "4th"
+]);
+
+// Stopwords & connectors
+const STOPWORDS = new Set([
+  "for", "in", "and", "of", "to", "the", "a", "an", "on", "with", "by", "from", "at", "about"
+]);
+
+// Stemming / variant mapping for core academic terms
+const STEM_MAP = {
+  mathematics: "math",
+  mathes: "math",
+  maths: "math",
+  math: "math",
+  physics: "phys",
+  physical: "phys",
+  chemistry: "chem",
+  chemical: "chem",
+  biology: "bio",
+  biological: "bio",
+  network: "net",
+  networks: "net",
+  networking: "net",
+  database: "db",
+  databases: "db",
+  algorithm: "algo",
+  algorithms: "algo",
+  structure: "struct",
+  structures: "struct",
+  "c++": "cpp",
+  cpp: "cpp"
+};
+
+function normalizeTerm(term) {
+  const t = (term || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return STEM_MAP[t] || t;
+}
+
+/**
+ * Extract subject tokens, generic tokens, modifiers, and alias phrases from query.
+ */
+function extractSubjectIntent(query, appliedAliases = []) {
+  const clean = (query || "").toLowerCase().replace(/[()_,-]/g, " ");
+  const rawTokens = clean.split(/\s+/).filter(w => w.length >= 2);
+
+  const subjectTokens = [];
+  const genericTokens = [];
+  const modifiers = [];
+
+  for (const token of rawTokens) {
+    if (STOPWORDS.has(token)) {
+      continue;
+    } else if (GENERIC_TYPES.has(token)) {
+      genericTokens.push(token);
+    } else if (GENERIC_MODIFIERS.has(token)) {
+      modifiers.push(token);
+    } else {
+      subjectTokens.push(token);
+    }
+  }
+
+  const aliasPhrases = new Set();
+  const aliasKeywords = new Set();
+
+  if (Array.isArray(appliedAliases)) {
+    for (const aliasKey of appliedAliases) {
+      const data = SUBJECT_ALIASES[aliasKey];
+      if (data) {
+        (data.aliases || []).forEach(a => aliasPhrases.add(a.toLowerCase()));
+        (data.keywords || []).forEach(k => aliasKeywords.add(k.toLowerCase()));
+      }
+    }
+  }
+
+  for (const [key, data] of Object.entries(SUBJECT_ALIASES)) {
+    if (!data.aliases) continue;
+    let matched = false;
+    for (const a of data.aliases) {
+      const aLower = a.toLowerCase();
+      const safe = aLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const isWord = aLower.length <= 4 && !aLower.includes(" ")
+        ? new RegExp(`(^|[^a-z0-9])${safe}([^a-z0-9]|$)`, "i").test(clean)
+        : clean.includes(aLower);
+      if (isWord) {
+        matched = true;
+        break;
+      }
+    }
+    if (matched) {
+      (data.aliases || []).forEach(a => aliasPhrases.add(a.toLowerCase()));
+      (data.keywords || []).forEach(k => aliasKeywords.add(k.toLowerCase()));
+    }
+  }
+
+  return {
+    rawTokens,
+    subjectTokens,
+    genericTokens,
+    modifiers,
+    aliasPhrases: Array.from(aliasPhrases),
+    aliasKeywords: Array.from(aliasKeywords),
+    hasSpecificSubject: subjectTokens.length > 0 || aliasPhrases.size > 0
+  };
+}
+
+/**
+ * Evaluate document alignment with the query's academic subject intent.
+ */
+function evaluateSubjectMatch(resource, subjectIntent) {
+  if (!subjectIntent.hasSpecificSubject) {
+    return { isSubjectMatch: true, matchType: "generic_query", boost: 0, penalty: 0 };
+  }
+
+  const title = (resource.cleanTitle || "").toLowerCase();
+  const fileName = (resource.fileName || "").toLowerCase();
+  const primaryText = `${title} ${fileName}`;
+  const caption = (resource.caption || "").toLowerCase();
+  const tags = (resource.tags || []).map(t => t.toLowerCase());
+
+  const primaryNormalizedTokens = new Set(primaryText.split(/[^a-z0-9]+/).filter(Boolean).map(normalizeTerm));
+  const tagNormalizedTokens = new Set(tags.map(t => t.replace(/_/g, " ")).join(" ").split(/[^a-z0-9]+/).filter(Boolean).map(normalizeTerm));
+  const primaryAndTagTokens = new Set([...primaryNormalizedTokens, ...tagNormalizedTokens]);
+
+  let isExactPhrase = false;
+  let isAliasMatch = false;
+  let primaryMatchedTokens = 0;
+
+  // 1. Check exact subject phrases from aliases or multi-word subject in primary text/tags
+  for (const phrase of subjectIntent.aliasPhrases) {
+    const isShortAcronym = phrase.length <= 4 && !phrase.includes(" ");
+    if (isShortAcronym) {
+      const safe = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`(^|[^a-z0-9])${safe}([^a-z0-9]|$)`, "i").test(primaryText)) {
+        isExactPhrase = true;
+        break;
+      }
+    } else {
+      if (primaryText.includes(phrase)) {
+        isExactPhrase = true;
+        break;
+      }
+    }
+
+    const phraseNorm = phrase.split(/\s+/).map(normalizeTerm).join(" ");
+    const tagMatched = tags.some(t => {
+      const tagNorm = t.replace(/_/g, " ").split(/\s+/).map(normalizeTerm).join(" ");
+      if (phraseNorm.length <= 3) {
+        return tagNorm === phraseNorm;
+      }
+      return tagNorm === phraseNorm || (phraseNorm.length >= 6 && tagNorm.includes(phraseNorm));
+    });
+    if (tagMatched) {
+      isExactPhrase = true;
+      break;
+    }
+  }
+
+  if (!isExactPhrase && subjectIntent.subjectTokens.length >= 2) {
+    const multiSubject = subjectIntent.subjectTokens.join(" ");
+    if (primaryText.includes(multiSubject) || tags.some(t => t.replace(/_/g, " ").includes(multiSubject))) {
+      isExactPhrase = true;
+    }
+  }
+
+  if (!isExactPhrase && subjectIntent.modifiers.length > 0 && subjectIntent.subjectTokens.length > 0) {
+    for (const mod of subjectIntent.modifiers) {
+      for (const subj of subjectIntent.subjectTokens) {
+        const combo = `${mod} ${subj}`;
+        if (primaryText.includes(combo) || tags.some(t => t.replace(/_/g, " ").includes(combo))) {
+          isExactPhrase = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // 2. Check subject alias acronyms in primary text/tags
+  if (!isExactPhrase) {
+    for (const phrase of subjectIntent.aliasPhrases) {
+      const safe = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(^|[^a-z0-9])${safe}([^a-z0-9]|$)`, "i");
+      if (regex.test(primaryText) || tags.some(t => t.toLowerCase() === phrase)) {
+        isAliasMatch = true;
+        break;
+      }
+    }
+  }
+
+  // 3. Check alias keywords in primary text/tags
+  if (!isExactPhrase && !isAliasMatch) {
+    for (const kw of subjectIntent.aliasKeywords) {
+      const kwNorm = normalizeTerm(kw);
+      if (primaryAndTagTokens.has(kwNorm)) {
+        isAliasMatch = true;
+        break;
+      }
+    }
+  }
+
+  // 4. Count matching subject tokens in primary text/tags
+  for (const token of subjectIntent.subjectTokens) {
+    const norm = normalizeTerm(token);
+    if (primaryAndTagTokens.has(norm)) {
+      primaryMatchedTokens++;
+    } else if (token.length >= 4 && (title.includes(token) || fileName.includes(token))) {
+      primaryMatchedTokens++;
+    }
+  }
+
+  const subjectRatio = subjectIntent.subjectTokens.length > 0
+    ? primaryMatchedTokens / subjectIntent.subjectTokens.length
+    : 0;
+
+  const titleHasSubject = subjectIntent.subjectTokens.some(st => title.includes(st) || title.includes(normalizeTerm(st))) ||
+    subjectIntent.aliasPhrases.some(ap => title.includes(ap));
+  const fileNameHasSubject = subjectIntent.subjectTokens.some(st => fileName.includes(st) || fileName.includes(normalizeTerm(st))) ||
+    subjectIntent.aliasPhrases.some(ap => fileName.includes(ap));
+  const hasPrimaryMatch = titleHasSubject || fileNameHasSubject;
+
+  if (isExactPhrase) {
+    return { isSubjectMatch: true, matchType: "exact_phrase", boost: 180, penalty: 0, hasPrimaryMatch: true };
+  } else if (isAliasMatch) {
+    return { isSubjectMatch: true, matchType: "alias_match", boost: 140, penalty: 0, hasPrimaryMatch: true };
+  } else if (subjectRatio === 1) {
+    const boost = hasPrimaryMatch ? 130 : 35;
+    return { isSubjectMatch: true, matchType: "full_subject", boost, penalty: 0, hasPrimaryMatch };
+  } else if (subjectRatio >= 0.5) {
+    const hasQuantum = subjectIntent.subjectTokens.includes("quantum");
+    const matchedQuantum = hasQuantum && (primaryAndTagTokens.has("quantum") || title.includes("quantum"));
+    if (hasQuantum && !matchedQuantum) {
+      return { isSubjectMatch: true, matchType: "partial_subject_no_discriminator", boost: 30, penalty: 0, hasPrimaryMatch };
+    }
+    const boost = hasPrimaryMatch ? 80 : 30;
+    return { isSubjectMatch: true, matchType: "partial_subject", boost, penalty: 0, hasPrimaryMatch };
+  }
+
+  // Check if subject is mentioned only in caption (secondary/weaker match)
+  const captionTokens = new Set(caption.split(/[^a-z0-9]+/).filter(Boolean).map(normalizeTerm));
+  let captionMatched = false;
+  for (const token of subjectIntent.subjectTokens) {
+    if (captionTokens.has(normalizeTerm(token))) {
+      captionMatched = true;
+      break;
+    }
+  }
+  for (const phrase of subjectIntent.aliasPhrases) {
+    if (caption.includes(phrase)) {
+      captionMatched = true;
+      break;
+    }
+  }
+
+  if (captionMatched) {
+    return { isSubjectMatch: true, matchType: "caption_only", boost: 35, penalty: 0 };
+  }
+
+  // Zero subject match!
+  return { isSubjectMatch: false, matchType: "zero_subject", boost: 0, penalty: 140 };
+}
 
 
 // Search debugging logger
@@ -169,18 +451,36 @@ class SearchService {
   }
 
   /**
-   * Calculate priority score for Telegram resources based on textScore, tags, and type
+   * Calculate priority score for Telegram resources based on textScore, tags, subject intent, and type
    */
-  calculateTelegramScore(resource, query, textScore, intent, user) {
+  calculateTelegramScore(resource, query, textScore, intent, user, context = {}) {
     let score = (textScore || 0) * 10; // Base score from MongoDB text index
 
-    const queryLower = query.toLowerCase();
-    const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+    // Subject intent and match evaluation
+    const subjectIntent = context.subjectIntent || extractSubjectIntent(context.normalizedQuery || query, context.appliedAliases);
+    const match = evaluateSubjectMatch(resource, subjectIntent);
 
-    // Tag intersection boost
+    if (match.isSubjectMatch) {
+      score += match.boost;
+    } else {
+      score -= match.penalty;
+    }
+
+    // Tag intersection boost: Subject tags vs Generic tags
     if (resource.tags && resource.tags.length > 0) {
-      const intersection = resource.tags.filter(tag => queryWords.includes(tag.toLowerCase()));
-      score += intersection.length * 20; // +20 per matching tag
+      for (const tag of resource.tags) {
+        const tagLower = tag.toLowerCase().replace(/_/g, " ");
+        const tagTokens = tagLower.split(/\s+/).map(normalizeTerm);
+        const isSubjectTag = subjectIntent.subjectTokens.some(st => tagTokens.includes(normalizeTerm(st))) ||
+          subjectIntent.aliasPhrases.some(ap => tagLower.includes(ap)) ||
+          subjectIntent.aliasKeywords.some(ak => tagTokens.includes(normalizeTerm(ak)));
+
+        if (isSubjectTag) {
+          score += 30; // Strong boost for subject-specific tags
+        } else if (match.isSubjectMatch && (tagLower === "exam" || tagLower === "final" || tagLower === "mid" || tagLower === "quiz" || tagLower === "notes")) {
+          score += 10; // Bounded generic tag boost ONLY when document matches subject
+        }
+      }
     }
 
     const isImageGroup = (resource.groupId && resource.fileType === "image") || (resource._isGrouped && resource.fileType === "image");
@@ -189,69 +489,106 @@ class SearchService {
     const isBookChannel = BOOK_CHANNELS.has(channelLower);
     const hasAmharicQuery = /[ሀ-፼]/.test(query);
 
-    // Explicit format matching vs Default Exam Photo Set Priority
-    if (intent.explicitFormat) {
-      if (intent.ppt && resource.fileType === "ppt") score += 200;
-      if (intent.pdf && resource.fileType === "pdf") score += 200;
-      if (intent.doc && resource.fileType === "doc") score += 200;
-      if (isDocGroup && !isBookChannel) score += 40;
+    if (match.isSubjectMatch) {
+      // Explicit format matching vs Default Exam Photo Set Priority
+      if (intent.explicitFormat) {
+        if (intent.ppt && resource.fileType === "ppt") score += 200;
+        if (intent.pdf && resource.fileType === "pdf") score += 200;
+        if (intent.doc && resource.fileType === "doc") score += 200;
+        if (isDocGroup && !isBookChannel) score += 40;
+      } else {
+        // User did not specify a format: Prioritize contextually
+        if (isImageGroup) {
+          if (intent.book) {
+            score += 10; // Do not prioritize image covers when user is searching for books
+          } else if (intent.exam) {
+            score += 160; // Top priority for exam photo bundles when user asked for exams
+          } else if (resource.isExam && match.hasPrimaryMatch) {
+            score += 50; // Moderate priority when exam wasn't explicitly requested but matches title
+          } else if (hasAmharicQuery) {
+            score += 40;
+          } else {
+            score += 25;
+          }
+        } else if (isDocGroup && !isBookChannel) {
+          score += 100;
+        } else if (resource.fileType === "image" && resource.isExam) {
+          score += intent.exam ? 100 : (match.hasPrimaryMatch ? 30 : 15);
+        } else if (resource.fileType === "pdf") {
+          score += 50;
+          if (isBookChannel || intent.book) {
+            score += 130;
+          }
+          if (hasAmharicQuery && /[ሀ-፼]/.test(resource.fileName || resource.cleanTitle || "")) {
+            score += 100;
+          }
+        } else if (resource.fileType === "ppt") {
+          score += 20;
+        } else if (resource.fileType === "doc") {
+          score += 15;
+        }
+      }
+
+      // Exam boost
+      if (intent.exam && resource.isExam) {
+        score += 80;
+      } else if (!intent.explicitFormat && !intent.notes && resource.isExam) {
+        score += 30;
+      }
+
+      // Notes boost
+      if (intent.notes) {
+        if (resource.fileType === "ppt" || resource.fileType === "doc" || resource.fileType === "pdf") {
+          score += 40;
+        }
+        const titleLower = ((resource.cleanTitle || "") + " " + (resource.fileName || "")).toLowerCase();
+        if (titleLower.includes("note") || titleLower.includes("lecture") || (resource.tags || []).includes("notes")) {
+          score += 50;
+        }
+      }
+
+      if (intent.simple) {
+        if (resource.tags && (resource.tags.includes("summary") || resource.tags.includes("short"))) score += 50;
+      }
+
+      if (intent.assignmentLab) {
+        if (resource.tags && (resource.tags.includes("assignment") || resource.tags.includes("project") || resource.tags.includes("lab"))) score += 60;
+      }
+
+      if (intent.year) {
+        if (resource.tags && resource.tags.includes(intent.year)) score += 100;
+        else if (resource.messageDate && resource.messageDate.getFullYear().toString() === intent.year) score += 50;
+      }
+
+      // Calibrated ISR Popularity Boosting for relevant matches
+      if (resource.downloadCount && resource.downloadCount > 0) {
+        const dl = resource.downloadCount;
+        if (dl >= 5) score += 150;
+        else if (dl === 4) score += 120;
+        else if (dl === 3) score += 90;
+        else if (dl === 2) score += 60;
+        else score += 35;
+      }
     } else {
-      // User did not specify a format: Prioritize contextually
-      if (isImageGroup) {
-        if (intent.book) {
-          score += 10; // Do not prioritize image covers when user is searching for books
-        } else if (intent.exam || resource.isExam) {
-          score += 160; // Top priority for exam photo bundles
-        } else if (hasAmharicQuery) {
-          score += 40; // Do not allow exam photo albums to bury Amharic books
-        } else {
-          score += 90;
-        }
-      } else if (isDocGroup && !isBookChannel) {
-        score += 120; // High priority for curated document bundles (e.g. 10-pdf exam pack, slide set)
-      } else if (resource.fileType === "image" && resource.isExam) {
-        score += 100;
-      } else if (resource.fileType === "pdf") {
-        score += 50;
-        // Priority for books and curated book channels
-        if (isBookChannel || intent.book) {
-          score += 130; // Direct boost for books from @Amharic_Fiction_Books, @muscatnonfiction, etc.
-        }
-        if (hasAmharicQuery && /[ሀ-፼]/.test(resource.fileName || resource.cleanTitle || "")) {
-          score += 100; // Strong match for Amharic literature/books
-        }
-      } else if (resource.fileType === "ppt") {
-        score += 20;
-      } else if (resource.fileType === "doc") {
-        score += 15;
+      // Zero subject match: Generic boosts are heavily scaled down to prevent irrelevant matches from competing
+      if (intent.explicitFormat) {
+        if (intent.ppt && resource.fileType === "ppt") score += 20;
+        if (intent.pdf && resource.fileType === "pdf") score += 20;
+        if (intent.doc && resource.fileType === "doc") score += 20;
+      } else {
+        if (resource.fileType === "pdf") score += 10;
+        else if (resource.fileType === "ppt") score += 10;
+      }
+
+      if (intent.exam && resource.isExam) score += 15;
+      else if (resource.isExam) score += 10;
+
+      if (resource.downloadCount && resource.downloadCount > 0) {
+        score += Math.min(30, resource.downloadCount * 6);
       }
     }
 
-    // Exam boost
-    if (intent.exam && resource.isExam) {
-      score += 80;
-    } else if (!intent.explicitFormat && resource.isExam) {
-      score += 50;
-    }
-
-    if (intent.notes && (resource.fileType === "ppt" || resource.fileType === "doc" || resource.fileType === "pdf")) {
-      score += 40;
-    }
-
-    if (intent.simple) {
-      if (resource.tags && (resource.tags.includes("summary") || resource.tags.includes("short"))) score += 50;
-    }
-
-    if (intent.assignmentLab) {
-      if (resource.tags && (resource.tags.includes("assignment") || resource.tags.includes("project") || resource.tags.includes("lab"))) score += 60;
-    }
-
-    if (intent.year) {
-      if (resource.tags && resource.tags.includes(intent.year)) score += 100;
-      else if (resource.messageDate && resource.messageDate.getFullYear().toString() === intent.year) score += 50;
-    }
-
-    // Personalization scoring
+    // Personalization scoring (preserved fully)
     if (
       user &&
       user.university &&
@@ -266,14 +603,10 @@ class SearchService {
       score -= 150;
     }
 
-    // 📈 Calibrated ISR Popularity Boosting (High-delivery priority)
-    if (resource.downloadCount && resource.downloadCount > 0) {
-      const dl = resource.downloadCount;
-      if (dl >= 5) score += 150;
-      else if (dl === 4) score += 120;
-      else if (dl === 3) score += 90;
-      else if (dl === 2) score += 60;
-      else score += 35; // 1 download
+    // Demote non-academic magazines
+    const titleAndFileLower = ((resource.cleanTitle || "") + " " + (resource.fileName || "")).toLowerCase();
+    if (titleAndFileLower.includes("popular mechanics") || titleAndFileLower.includes("magazine")) {
+      score -= 120;
     }
 
     return Math.max(0, score);
@@ -282,12 +615,17 @@ class SearchService {
   /**
    * Search Telegram indexed resources with intelligence
    */
-  async searchTelegramResources(query, intent, user, logger = null, limit = 200) {
+  async searchTelegramResources(query, intent, user, logger = null, limit = 200, queryContext = {}) {
     try {
       console.log(`  📱 Searching Telegram resources...`);
 
-      // Clean search string of boolean/syntax artifacts for MongoDB text search
-      const cleanSearch = query.replace(/[()]/g, " ").trim();
+      // Clean search string of syntax artifacts for MongoDB text search
+      const cleanSearch = (query || "").replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+      if (!cleanSearch) {
+        return [];
+      }
+
+      const subjectIntent = queryContext.subjectIntent || extractSubjectIntent(queryContext.normalizedQuery || query, queryContext.appliedAliases);
 
       // Partitioned search: Guarantee both images/image groups and documents are retrieved
       const [images, docs] = await Promise.all([
@@ -345,12 +683,18 @@ class SearchService {
       // Score and prioritize results
       const scoredResults = Array.from(uniqueDocs.values()).map((resource) => {
         const textScore = resource.get ? resource.get("score") : 5;
-        const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user);
+        const telegramScore = this.calculateTelegramScore(resource, query, textScore, intent, user, { ...queryContext, subjectIntent });
 
-        const computedTitle =
+        let computedTitle =
           resource.cleanTitle ||
           generateDisplayTitle(resource) ||
           "Untitled Resource";
+
+        // Remove commercial trailing watermarks like "ExamClass" from display title
+        computedTitle = computedTitle
+          .replace(/\b(ExamClass|Freshman\s*Master\s*Class)\b/gi, "")
+          .replace(/\s+/g, " ")
+          .trim();
 
         return {
           title: computedTitle,
@@ -359,9 +703,14 @@ class SearchService {
           type: this.mapFileTypeToResourceType(resource.fileType),
           score: telegramScore,
           fileId: resource.fileId,
+          fileUniqueId: resource.fileUniqueId,
           channelUsername: resource.channelUsername,
+          chatId: resource.chatId,
+          university: resource.university || "",
+          cleanTitle: resource.cleanTitle || "",
           isExam: resource.isExam,
           groupId: resource.groupId,
+          groupIndex: resource.groupIndex || 0,
           caption: resource.caption,
           tags: resource.tags,
           downloadCount: resource.downloadCount || 0,
@@ -453,14 +802,167 @@ class SearchService {
   }
 
   /**
-   * Remove duplicate URLs, keeping highest score
+   * Collapse exact cross-channel duplicate files using (fileName + fileSize) and fileUniqueId.
+   * Golden Rule: "no file can have exact same name and size by accident".
+   * Collapses duplicates into a single high-quality representative card,
+   * retaining all alternative channel sources, universities, download totals, and bundle structure.
    */
-  deduplicateResults(results) {
+  deduplicateStandaloneDuplicates(results, user = null) {
+    if (!Array.isArray(results) || results.length <= 1) {
+      return results || [];
+    }
+
+    const userUni = (user && user.university && typeof user.university === "string")
+      ? user.university.trim().toLowerCase()
+      : null;
+
+    const clusterMap = new Map(); // signature -> Array of duplicate items
+    const orderedOutput = []; // Preserves search ranking order
+
+    for (const r of results) {
+      // 1. Check exact physical file signature (fileName + fileSize > 0)
+      let key = null;
+      const fn = (r.fileName || "").trim().toLowerCase();
+      const fs = Number(r.fileSize) || 0;
+
+      if (fn && fs > 0) {
+        key = `file::${fn}::${fs}`;
+      } else if (typeof r.fileUniqueId === "string" && r.fileUniqueId.trim().length > 0) {
+        key = `fuid::${r.fileUniqueId.trim()}`;
+      } else if (r.groupId) {
+        // For image albums / media groups: collapse if same channel and matching title/caption
+        const normTitle = (r.cleanTitle || r.title || "").trim().toLowerCase();
+        if (normTitle && normTitle.length > 5 && r.channelUsername) {
+          key = `album::${r.channelUsername.toLowerCase()}::${normTitle}`;
+        }
+      }
+
+      if (key) {
+        if (!clusterMap.has(key)) {
+          clusterMap.set(key, [r]);
+          orderedOutput.push({ type: "cluster", key });
+        } else {
+          clusterMap.get(key).push(r);
+        }
+      } else {
+        orderedOutput.push({ type: "passthrough", item: r });
+      }
+    }
+
+    const finalResults = [];
+
+    for (const entry of orderedOutput) {
+      if (entry.type === "passthrough") {
+        finalResults.push(entry.item);
+        continue;
+      }
+
+      const cluster = clusterMap.get(entry.key);
+      if (!cluster || cluster.length === 0) continue;
+      clusterMap.delete(entry.key);
+
+      if (cluster.length === 1) {
+        const item = cluster[0];
+        item.channelCount = 1;
+        item.duplicateCount = 1;
+        item.alternativeSources = [];
+        item.universities = item.university ? [item.university] : [];
+        finalResults.push(item);
+        continue;
+      }
+
+      // Pick best representative:
+      // 1. Matches user university
+      // 2. Retains grouped bundle structure if present
+      // 3. Highest search score
+      // 4. Highest download count
+      // 5. Has cleanTitle or fileName
+      cluster.sort((a, b) => {
+        if (userUni) {
+          const aMatch = (a.university || "").toLowerCase().includes(userUni);
+          const bMatch = (b.university || "").toLowerCase().includes(userUni);
+          if (aMatch && !bMatch) return -1;
+          if (!aMatch && bMatch) return 1;
+        }
+
+        const aGrouped = a._isGrouped ? 1 : 0;
+        const bGrouped = b._isGrouped ? 1 : 0;
+        if (bGrouped !== aGrouped) return bGrouped - aGrouped;
+
+        const scoreDiff = (b.score || 0) - (a.score || 0);
+        if (Math.abs(scoreDiff) > 0.001) return scoreDiff;
+
+        const dlDiff = (b.downloadCount || 0) - (a.downloadCount || 0);
+        if (dlDiff !== 0) return dlDiff;
+
+        const aHasTitle = (a.cleanTitle || a.fileName) ? 1 : 0;
+        const bHasTitle = (b.cleanTitle || b.fileName) ? 1 : 0;
+        return bHasTitle - aHasTitle;
+      });
+
+      const representative = cluster[0];
+      const alternatives = cluster.slice(1);
+
+      // Merge download counts across duplicates
+      representative.downloadCount = cluster.reduce((sum, item) => sum + (item.downloadCount || 0), 0);
+
+      const allChannels = new Set();
+      if (representative.channelUsername) {
+        allChannels.add(representative.channelUsername.toLowerCase());
+      }
+      alternatives.forEach(alt => {
+        if (alt.channelUsername) {
+          allChannels.add(alt.channelUsername.toLowerCase());
+        }
+      });
+
+      const allUniversities = new Set();
+      if (representative.university) {
+        allUniversities.add(representative.university);
+      }
+      alternatives.forEach(alt => {
+        if (alt.university) {
+          allUniversities.add(alt.university);
+        }
+      });
+
+      const alternativeSources = alternatives.map(alt => ({
+        channelUsername: alt.channelUsername,
+        messageId: alt.messageId,
+        url: alt.url,
+        fileId: alt.fileId,
+        archiveMessageId: alt.archiveMessageId,
+        university: alt.university || "",
+        downloadCount: alt.downloadCount || 0,
+        score: alt.score,
+        _id: alt._id
+      }));
+
+      representative.alternativeSources = alternativeSources;
+      representative.channelCount = allChannels.size;
+      representative.duplicateCount = cluster.length;
+      representative.universities = Array.from(allUniversities);
+
+      if (!representative.university && representative.universities.length > 0) {
+        representative.university = representative.universities[0];
+      }
+
+      finalResults.push(representative);
+    }
+
+    return finalResults;
+  }
+
+  /**
+   * Remove duplicate URLs and cross-channel identical files
+   */
+  deduplicateResults(results, user = null) {
+    if (!Array.isArray(results)) return [];
+    const standaloneDeduped = this.deduplicateStandaloneDuplicates(results, user);
+
     const seen = new Map();
-
-    results.forEach((result) => {
-      const normalized = result.url.toLowerCase().replace(/\/$/, "");
-
+    standaloneDeduped.forEach((result) => {
+      const normalized = (result.url || "").toLowerCase().replace(/\/$/, "");
       if (seen.has(normalized)) {
         const existing = seen.get(normalized);
         if (result.score > existing.score) {
@@ -519,9 +1021,16 @@ class SearchService {
       const intent = this.detectIntent(normalizedQuery);
       logger.log("Intent", intent);
 
+      const queryContext = {
+        originalQuery: query,
+        normalizedQuery,
+        correctedQuery,
+        appliedAliases: expanded.appliedAliases || []
+      };
+
       // Primary search with corrected & expanded query
       console.log(`\n📱 PHASE 1: Primary Telegram search...`);
-      let allResults = await this.searchTelegramResources(expanded.expanded, intent, user, logger, 200);
+      let allResults = await this.searchTelegramResources(expanded.expanded, intent, user, logger, 200, queryContext);
 
       const queryWords = normalizedQuery.split(/\s+/);
       if (allResults.length < 5 && queryWords.length >= 3) {
@@ -549,7 +1058,7 @@ class SearchService {
         if (fallbackQueries.size > 0) {
           console.log(`Executing ${fallbackQueries.size} fallback searches concurrently...`);
           // Use smaller limit=50 for fallback queries
-          const searchPromises = Array.from(fallbackQueries).map(q => this.searchTelegramResources(q, intent, user, logger, 50));
+          const searchPromises = Array.from(fallbackQueries).map(q => this.searchTelegramResources(q, intent, user, logger, 50, queryContext));
           const resultsArrays = await Promise.all(searchPromises);
 
           for (const resArray of resultsArrays) {
@@ -625,11 +1134,26 @@ class SearchService {
              r.groupSize = r.groupTotal || 1;
 
              // Clean title for collapsed bundle
-             r.title = r.cleanTitle || generateDisplayTitle(r);
+             r.title = (r.cleanTitle || generateDisplayTitle(r))
+               .replace(/\b(ExamClass|Freshman\s*Master\s*Class)\b/gi, "")
+               .replace(/\s+/g, " ")
+               .trim();
           }
           collapsed.push(r);
         }
         allResults = collapsed;
+        allResults.sort((a, b) => b.score - a.score);
+      }
+
+      // Step 4b: Deduplicate exact standalone files across channels using fileUniqueId
+      if (allResults.length > 0) {
+        console.log(`\n📑 Collapsing exact cross-channel duplicate files...`);
+        const beforeCount = allResults.length;
+        allResults = this.deduplicateStandaloneDuplicates(allResults, user);
+        const deduplicatedCount = beforeCount - allResults.length;
+        if (deduplicatedCount > 0) {
+          console.log(`  ✓ Collapsed ${deduplicatedCount} duplicate file instances`);
+        }
         allResults.sort((a, b) => b.score - a.score);
       }
 

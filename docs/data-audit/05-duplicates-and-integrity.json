@@ -1,0 +1,536 @@
+{
+  "timestamp": "2026-11-13T05:58:25.475Z",
+  "fileUniqueIdDuplicates": {
+    "totalClusters": 13133,
+    "totalDocumentsInvolved": 43536,
+    "crossChannelClusters": 5972,
+    "sampleClusters": [
+      {
+        "_id": "4453692629696188461",
+        "count": 37,
+        "channels": [
+          "ethioacadamic",
+          "Ethio_Students_only",
+          "keleme_2013",
+          "Ethiel_Academy",
+          "QesemAcademy",
+          "Best_book_for_students",
+          "qubeeacademy",
+          "Marvel_Educations"
+        ],
+        "fileNames": [
+          "WORK BOOK-GEOGRAPHY-GRADE-11&12.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a3ac6cd470448ae5ec56f81",
+          "6a3ac6e4470448ae5ec57032",
+          "6a3ac8a5470448ae5ec571ed",
+          "6a3ac8a8470448ae5ec57200",
+          "6a3ac8c9470448ae5ec572ba",
+          "6a3aca36470448ae5ec583a4",
+          "6a3aca38470448ae5ec583d2",
+          "6a3aca45470448ae5ec58490",
+          "6a3aca49470448ae5ec584a6",
+          "6a3aca4c470448ae5ec584c0",
+          "6a3aca5f470448ae5ec58572",
+          "6a3aca5f470448ae5ec5857b",
+          "6a3aca60470448ae5ec58581",
+          "6a3aca82470448ae5ec586bc",
+          "6a3aca8c470448ae5ec58738",
+          "6a3acb26470448ae5ec58da4",
+          "6a3acb88470448ae5ec591e0",
+          "6a3acf8152caf8d232a1dbb9",
+          "6a3ad19652caf8d232a1e1da",
+          "6a3ad1e052caf8d232a1e3d3",
+          "6a3ad1e952caf8d232a1e3fe",
+          "6a3ad1f452caf8d232a1e480",
+          "6a3ad6f152caf8d232a1f397",
+          "6a3add7152caf8d232a20b21",
+          "6a3add7552caf8d232a20b4f",
+          "6a3add9752caf8d232a20d79",
+          "6a3add9852caf8d232a20d87",
+          "6a3adda452caf8d232a20e1c",
+          "6a3addbe52caf8d232a20ef5",
+          "6a3addd152caf8d232a20ffe",
+          "6a3b67f9387be11b0734b67a",
+          "6a3b6844387be11b0734b892",
+          "6a3b687d387be11b0734ba04",
+          "6a3b7b2936ec1aec72179db1",
+          "6a3b7b8e36ec1aec7217a0e8",
+          "6a3b87ad36ec1aec7217d3e1",
+          "6a3b883636ec1aec7217dbce"
+        ]
+      },
+      {
+        "_id": "-3888241929028583782",
+        "count": 35,
+        "channels": [
+          "qubeeacademy",
+          "Marvel_Educations",
+          "QesemAcademy",
+          "Best_book_for_students",
+          "ethioacadamic",
+          "Ethio_Students_only",
+          "keleme_2013"
+        ],
+        "fileNames": [
+          "WORK BOOK-ENGLISH-GRADE 11&12.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a3ac6e4470448ae5ec57035",
+          "6a3ac8a1470448ae5ec571e3",
+          "6a3ac8a6470448ae5ec571f3",
+          "6a3ac8a9470448ae5ec57207",
+          "6a3ac8f0470448ae5ec573bf",
+          "6a3ac935470448ae5ec576b7",
+          "6a3aca60470448ae5ec58582",
+          "6a3aca8c470448ae5ec58739",
+          "6a3acaad470448ae5ec58875",
+          "6a3ad19652caf8d232a1e1dd",
+          "6a3ad1dd52caf8d232a1e3bf",
+          "6a3ad1e952caf8d232a1e401",
+          "6a3ad1f452caf8d232a1e483",
+          "6a3ad28652caf8d232a1ea8d",
+          "6a3add7152caf8d232a20b24",
+          "6a3add7852caf8d232a20b71",
+          "6a3add9752caf8d232a20d7c",
+          "6a3adda452caf8d232a20e19",
+          "6a3addbe52caf8d232a20ef8",
+          "6a3addd152caf8d232a21000",
+          "6a3ade6452caf8d232a21674",
+          "6a3ade7052caf8d232a216f0",
+          "6a3adef152caf8d232a21cc8",
+          "6a3b67e7387be11b0734b5db",
+          "6a3b67ee387be11b0734b617",
+          "6a3b7ae936ec1aec72179b9c",
+          "6a3b7ae936ec1aec72179b98",
+          "6a3b7c5b36ec1aec7217a881",
+          "6a3b7da436ec1aec7217b31e",
+          "6a3b7da436ec1aec7217b31a",
+          "6a3b7dc236ec1aec7217b3de",
+          "6a3b7dc236ec1aec7217b3da",
+          "6a3b870836ec1aec7217c98c",
+          "6a3b883636ec1aec7217dbd0",
+          "6a3bd2cd8a01628c857848fe"
+        ]
+      },
+      {
+        "_id": "-3222592791911280835",
+        "count": 32,
+        "channels": [
+          "Ethio_Students_only",
+          "QesemAcademy",
+          "Best_book_for_students",
+          "ethioacadamic",
+          "qubeeacademy"
+        ],
+        "fileNames": [
+          "Handout- English for Grade 12.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a3ac680470448ae5ec56db7",
+          "6a3ac8d2470448ae5ec572db",
+          "6a3ac8d8470448ae5ec57311",
+          "6a3ac8e7470448ae5ec57363",
+          "6a3ac8eb470448ae5ec5737f",
+          "6a3ac8ee470448ae5ec573a1",
+          "6a3ac8f1470448ae5ec573c3",
+          "6a3ac8f5470448ae5ec573d3",
+          "6a3ac8fa470448ae5ec573fb",
+          "6a3ac8fc470448ae5ec57421",
+          "6a3ac900470448ae5ec57447",
+          "6a3ac900470448ae5ec5744d",
+          "6a3ac901470448ae5ec5744f",
+          "6a3ac90b470448ae5ec574a3",
+          "6a3ac90d470448ae5ec574dd",
+          "6a3ac917470448ae5ec5754f",
+          "6a3ac91b470448ae5ec5755f",
+          "6a3ac921470448ae5ec575c3",
+          "6a3ac925470448ae5ec575e7",
+          "6a3ac92e470448ae5ec5765d",
+          "6a3ac92f470448ae5ec5766f",
+          "6a3ac933470448ae5ec5769b",
+          "6a3ac999470448ae5ec57b3c",
+          "6a3ac999470448ae5ec57b3f",
+          "6a3ac9a2470448ae5ec57be3",
+          "6a3acb3d470448ae5ec58ec3",
+          "6a3ad1aa52caf8d232a1e281",
+          "6a3ad24652caf8d232a1e749",
+          "6a3b67df387be11b0734b59d",
+          "6a3b690a387be11b0734be55",
+          "6a3b7ae236ec1aec72179b58",
+          "6a3b7d9c36ec1aec7217b2da"
+        ]
+      },
+      {
+        "_id": "9120293017383871851",
+        "count": 32,
+        "channels": [
+          "qubeeacademy",
+          "Marvel_Educations",
+          "Ethiel_Academy",
+          "QesemAcademy",
+          "Best_book_for_students",
+          "ethioacadamic",
+          "Ethio_Students_only"
+        ],
+        "fileNames": [
+          "WORK BOOK-HISTORY-GRADE-11&12.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a3ac669470448ae5ec56cf9",
+          "6a3ac6e4470448ae5ec57031",
+          "6a3ac8a7470448ae5ec571f9",
+          "6a3ac8aa470448ae5ec5720d",
+          "6a3ac8dd470448ae5ec57333",
+          "6a3ac8e0470448ae5ec5734b",
+          "6a3ac8f5470448ae5ec573dd",
+          "6a3ac936470448ae5ec576b9",
+          "6a3aca36470448ae5ec583a6",
+          "6a3aca38470448ae5ec583d4",
+          "6a3aca45470448ae5ec58491",
+          "6a3aca49470448ae5ec584a7",
+          "6a3aca4c470448ae5ec584c1",
+          "6a3aca5f470448ae5ec58573",
+          "6a3aca82470448ae5ec586bd",
+          "6a3acb26470448ae5ec58da5",
+          "6a3acb88470448ae5ec591e1",
+          "6a3acf8152caf8d232a1dbba",
+          "6a3ad1ab52caf8d232a1e28d",
+          "6a3ad1e952caf8d232a1e3fd",
+          "6a3ad6f152caf8d232a1f398",
+          "6a3ad6f252caf8d232a1f39b",
+          "6a3add7152caf8d232a20b20",
+          "6a3add9752caf8d232a20d78",
+          "6a3adda452caf8d232a20e1b",
+          "6a3addbe52caf8d232a20ef4",
+          "6a3addd152caf8d232a20ffd",
+          "6a3b67ef387be11b0734b61b",
+          "6a3b6801387be11b0734b6bf",
+          "6a3b6845387be11b0734b89b",
+          "6a3b6877387be11b0734b9a3",
+          "6a3b7b8e36ec1aec7217a0e9"
+        ]
+      },
+      {
+        "_id": "-7056705858922268782",
+        "count": 32,
+        "channels": [
+          "topstudents1",
+          "time_for_edu",
+          "ethio_new_curriculum",
+          "Exit_Exam_Questions",
+          "AplusEthiopian"
+        ],
+        "fileNames": [
+          "Entrance Exam Physics.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a381cd481cff0b089b12f19",
+          "6a381d1a81cff0b089b131b6",
+          "6a382aa581cff0b089b15957",
+          "6a382aa681cff0b089b15965",
+          "6a382b0781cff0b089b15c5c",
+          "6a382cbb81cff0b089b168af",
+          "6a382d8081cff0b089b170e8",
+          "6a382db881cff0b089b1723c",
+          "6a382dc081cff0b089b17290",
+          "6a382dd581cff0b089b17319",
+          "6a382e2681cff0b089b175c3",
+          "6af05928fab309c3037a6cec",
+          "6af05dbbdea78f9cb87ea9b3",
+          "6af05dbbdea78f9cb87ea9bf",
+          "6af05dbcdea78f9cb87ea9da",
+          "6af05df4dea78f9cb87eac90",
+          "6af05e09dea78f9cb87ead48",
+          "6af05e11dea78f9cb87ead90",
+          "6af05e3bdea78f9cb87eafc5",
+          "6af05e6edea78f9cb87eb2cc",
+          "6af05e6edea78f9cb87eb2dd",
+          "6af05e6fdea78f9cb87eb2fd",
+          "6af05e85dea78f9cb87eb3d3",
+          "6af05e8edea78f9cb87eb43a",
+          "6af05e93dea78f9cb87eb480",
+          "6af05e9cdea78f9cb87eb4d6",
+          "6af09bbcf6787ba5da1b1eda",
+          "6af09bcef6787ba5da1b1fba",
+          "6af09bcff6787ba5da1b1fd8",
+          "6af09c0af6787ba5da1b228d",
+          "6af09d08f6787ba5da1b2af6",
+          "6af09dacf6787ba5da1b31ef"
+        ]
+      },
+      {
+        "_id": "-4332741518952132531",
+        "count": 32,
+        "channels": [
+          "topstudents1",
+          "time_for_edu",
+          "ethio_new_curriculum",
+          "Exit_Exam_Questions",
+          "AplusEthiopian"
+        ],
+        "fileNames": [
+          "Entrance Exam Chemistry 2013.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a381cd481cff0b089b12f1a",
+          "6a381d1a81cff0b089b131b7",
+          "6a382aa581cff0b089b15958",
+          "6a382aa681cff0b089b15966",
+          "6a382b0781cff0b089b15c5d",
+          "6a382cbb81cff0b089b168b0",
+          "6a382d8081cff0b089b170e9",
+          "6a382db881cff0b089b1723d",
+          "6a382dc081cff0b089b17291",
+          "6a382dd581cff0b089b1731a",
+          "6a382e2681cff0b089b175c4",
+          "6af05928fab309c3037a6ced",
+          "6af05dbbdea78f9cb87ea9b4",
+          "6af05dbbdea78f9cb87ea9c0",
+          "6af05dbcdea78f9cb87ea9db",
+          "6af05df4dea78f9cb87eac91",
+          "6af05e09dea78f9cb87ead49",
+          "6af05e11dea78f9cb87ead91",
+          "6af05e3bdea78f9cb87eafc6",
+          "6af05e6edea78f9cb87eb2cd",
+          "6af05e6edea78f9cb87eb2de",
+          "6af05e6fdea78f9cb87eb2fe",
+          "6af05e85dea78f9cb87eb3d4",
+          "6af05e8edea78f9cb87eb43b",
+          "6af05e93dea78f9cb87eb481",
+          "6af05e9cdea78f9cb87eb4d7",
+          "6af09bbcf6787ba5da1b1edb",
+          "6af09bcef6787ba5da1b1fbb",
+          "6af09bcff6787ba5da1b1fd9",
+          "6af09c0af6787ba5da1b228e",
+          "6af09d08f6787ba5da1b2af7",
+          "6af09dacf6787ba5da1b31f0"
+        ]
+      },
+      {
+        "_id": "-4390793848611648050",
+        "count": 31,
+        "channels": [
+          "ethioacadamic",
+          "qubeeacademy",
+          "Best_book_for_students",
+          "Ethio_Students_only",
+          "QesemAcademy"
+        ],
+        "fileNames": [
+          "Biology Grade,G-11 short Notes 2012.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a3ac62a470448ae5ec56b1b",
+          "6a3ac697470448ae5ec56e3d",
+          "6a3ac8e2470448ae5ec57353",
+          "6a3ac8eb470448ae5ec57381",
+          "6a3ac8ee470448ae5ec573a3",
+          "6a3ac8f1470448ae5ec573c5",
+          "6a3ac8f5470448ae5ec573d5",
+          "6a3ac8f7470448ae5ec573e9",
+          "6a3ac8fa470448ae5ec573fd",
+          "6a3ac8fc470448ae5ec57423",
+          "6a3ac900470448ae5ec57449",
+          "6a3ac901470448ae5ec57451",
+          "6a3ac90b470448ae5ec574a5",
+          "6a3ac90d470448ae5ec574df",
+          "6a3ac917470448ae5ec57551",
+          "6a3ac91b470448ae5ec57561",
+          "6a3ac921470448ae5ec575c5",
+          "6a3ac925470448ae5ec575e9",
+          "6a3ac92e470448ae5ec5765f",
+          "6a3ac92f470448ae5ec57671",
+          "6a3ac933470448ae5ec5769d",
+          "6a3ac9a2470448ae5ec57be5",
+          "6a3acb3d470448ae5ec58ec5",
+          "6a3acbe7470448ae5ec595ef",
+          "6a3ad1b252caf8d232a1e2ad",
+          "6a3b67df387be11b0734b59e",
+          "6a3b6861387be11b0734b921",
+          "6a3b68e5387be11b0734bd3d",
+          "6a3b690a387be11b0734be56",
+          "6a3b7ae236ec1aec72179b55",
+          "6a3b7d9c36ec1aec7217b2d7"
+        ]
+      },
+      {
+        "_id": "7668387388314409919",
+        "count": 30,
+        "channels": [
+          "AplusEthiopian",
+          "ethio_new_curriculum",
+          "Exit_Exam_Questions",
+          "topstudents1"
+        ],
+        "fileNames": [
+          "Physics Entrance Exam 2000-2011.pdf"
+        ],
+        "fileTypes": [
+          "pdf"
+        ],
+        "ids": [
+          "6a381cd481cff0b089b12f1f",
+          "6a381d1a81cff0b089b131bc",
+          "6a382a9f81cff0b089b15908",
+          "6a382aa681cff0b089b1596b",
+          "6a382b0781cff0b089b15c62",
+          "6a382cbb81cff0b089b168b5",
+          "6a382d8081cff0b089b170ee",
+          "6a382d8281cff0b089b1710c",
+          "6a382d8781cff0b089b1711c",
+          "6a382db881cff0b089b17242",
+          "6a382dc081cff0b089b17296",
+          "6af05dbbdea78f9cb87ea9c5",
+          "6af05dbcdea78f9cb87ea9e0",
+          "6af05df4dea78f9cb87eac96",
+          "6af05df7dea78f9cb87eac9e",
+          "6af05df9dea78f9cb87eacaa",
+          "6af05e09dea78f9cb87ead4e",
+          "6af05e11dea78f9cb87ead96",
+          "6af05e6edea78f9cb87eb2d2",
+          "6af05e6edea78f9cb87eb2e3",
+          "6af05e85dea78f9cb87eb3d9",
+          "6af05e8edea78f9cb87eb440",
+          "6af05e93dea78f9cb87eb486",
+          "6af05e9cdea78f9cb87eb4dc",
+          "6af09bbcf6787ba5da1b1ee0",
+          "6af09bcef6787ba5da1b1fc0",
+          "6af09bcff6787ba5da1b1fde",
+          "6af09c0af6787ba5da1b2293",
+          "6af09d08f6787ba5da1b2afc",
+          "6af09dacf6787ba5da1b31f5"
+        ]
+      },
+      {
+        "_id": "-1830296576849159579",
+        "count": 30,
+        "channels": [
+          "keleme_2013",
+          "qubeeacademy"
+        ],
+        "fileNames": [
+          ""
+        ],
+        "fileTypes": [
+          "image"
+        ],
+        "ids": [
+          "6a3ac9ed470448ae5ec57f52",
+          "6a3ac9ed470448ae5ec57f66",
+          "6a3ac9ef470448ae5ec57f7a",
+          "6a3ac9f0470448ae5ec57f8e",
+          "6a3ac9f1470448ae5ec57fa4",
+          "6a3ac9f1470448ae5ec57fb8",
+          "6a3ac9f1470448ae5ec57fcc",
+          "6a3ac9f2470448ae5ec57fe0",
+          "6a3ac9f3470448ae5ec57ffe",
+          "6a3ac9f5470448ae5ec58012",
+          "6a3ac9f6470448ae5ec58026",
+          "6a3ac9f6470448ae5ec5803a",
+          "6a3ac9f7470448ae5ec5804e",
+          "6a3ac9f8470448ae5ec5806c",
+          "6a3ac9f8470448ae5ec58084",
+          "6a3ac9fb470448ae5ec5809e",
+          "6a3ac9fc470448ae5ec580b2",
+          "6a3ac9fd470448ae5ec580d8",
+          "6a3aca00470448ae5ec5810a",
+          "6a3aca01470448ae5ec58122",
+          "6a3aca02470448ae5ec58138",
+          "6a3aca06470448ae5ec58165",
+          "6a3aca0b470448ae5ec581a4",
+          "6a3aca0e470448ae5ec581cc",
+          "6a3aca0f470448ae5ec581f2",
+          "6a3aca16470448ae5ec58232",
+          "6a3aca2b470448ae5ec58330",
+          "6a3b874b36ec1aec7217cdbf",
+          "6a3b875036ec1aec7217ce15",
+          "6a3b876736ec1aec7217d019"
+        ]
+      },
+      {
+        "_id": "8143362658467513513",
+        "count": 30,
+        "channels": [
+          "qubeeacademy",
+          "keleme_2013"
+        ],
+        "fileNames": [
+          ""
+        ],
+        "fileTypes": [
+          "image"
+        ],
+        "ids": [
+          "6a3ac9ed470448ae5ec57f53",
+          "6a3ac9ed470448ae5ec57f67",
+          "6a3ac9ef470448ae5ec57f7b",
+          "6a3ac9f0470448ae5ec57f8f",
+          "6a3ac9f1470448ae5ec57fa5",
+          "6a3ac9f1470448ae5ec57fb9",
+          "6a3ac9f1470448ae5ec57fcd",
+          "6a3ac9f2470448ae5ec57fe1",
+          "6a3ac9f3470448ae5ec57fff",
+          "6a3ac9f5470448ae5ec58013",
+          "6a3ac9f6470448ae5ec58027",
+          "6a3ac9f6470448ae5ec5803b",
+          "6a3ac9f7470448ae5ec5804f",
+          "6a3ac9f8470448ae5ec5806d",
+          "6a3ac9f8470448ae5ec58085",
+          "6a3ac9fb470448ae5ec5809f",
+          "6a3ac9fc470448ae5ec580b3",
+          "6a3ac9fd470448ae5ec580d9",
+          "6a3aca00470448ae5ec5810b",
+          "6a3aca01470448ae5ec58123",
+          "6a3aca02470448ae5ec58139",
+          "6a3aca06470448ae5ec58166",
+          "6a3aca0b470448ae5ec581a5",
+          "6a3aca0e470448ae5ec581cd",
+          "6a3aca0f470448ae5ec581f3",
+          "6a3aca16470448ae5ec58233",
+          "6a3aca2b470448ae5ec58331",
+          "6a3b874b36ec1aec7217cdc0",
+          "6a3b875036ec1aec7217ce16",
+          "6a3b876736ec1aec7217d01a"
+        ]
+      }
+    ]
+  },
+  "nameSizeDuplicates": {
+    "totalClusters": 9751,
+    "totalDocumentsInvolved": 40762
+  },
+  "channelIntegrity": {
+    "knownChannelsCount": 91,
+    "resourceChannelsCount": 81,
+    "orphanedChannelsCount": 0,
+    "orphanedDocumentsCount": 0,
+    "orphanedChannelNames": []
+  },
+  "dateIntegrity": {
+    "missingDates": 0,
+    "futureDates": 0
+  }
+}

@@ -1,0 +1,537 @@
+{
+  "backupId": "studyhub-backup-2026-11-13T08-29-09-450Z",
+  "backupTimestamp": "2026-11-13T08:29:09.450Z",
+  "completedTimestamp": "2026-11-13T08:31:37.887Z",
+  "durationMs": 148437,
+  "durationFormatted": "148.4s",
+  "backupStrategy": "Streaming BSON Archive with Gzip Compression (Level 9) & Metadata Manifest",
+  "targetDirectory": "C:\\Users\\billy\\StudyHub-Backups\\2026-11-13-phase-1-1-baseline",
+  "databaseName": "studyhub",
+  "serverVersion": "8.0.37",
+  "clusterReplicaSet": "atlas-8ql1x9-shard-0",
+  "clusterPrimary": "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+  "clusterHosts": [
+    "ac-2bcical-shard-00-00.rfdlc8z.mongodb.net:27017",
+    "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+    "ac-2bcical-shard-00-02.rfdlc8z.mongodb.net:27017"
+  ],
+  "gitCommit": "16fcfdfc182d3cd5bf5c3dfe150de195243c3e95",
+  "operator": "Antigravity Database Reliability Engineer",
+  "status": "SUCCESS",
+  "summary": {
+    "totalCollections": 12,
+    "totalDocuments": 101862,
+    "totalUncompressedBytes": 84786887,
+    "totalCompressedBytes": 11686813,
+    "totalUncompressedMB": 80.86,
+    "totalCompressedMB": 11.15
+  },
+  "collections": [
+    {
+      "name": "telegramresources",
+      "status": "COMPLETED",
+      "documentCount": 92143,
+      "initialCountAtStart": 92143,
+      "uncompressedBytes": 71568317,
+      "uncompressedMB": 68.25,
+      "compressedBytes": 9319379,
+      "compressedMB": 8.89,
+      "bsonFile": "telegramresources.bson.gz",
+      "bsonSha256": "00052d96a0dbaa4863f4836aaba527b0b892f63e2acca0ddce6e5af2f966b95b",
+      "metadataFile": "telegramresources.metadata.json.gz",
+      "metadataSha256": "ec515d073022aa70fad0cd980118ab7e09a341723c4d06a165fbb80020f40eb1",
+      "indexCount": 6,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tags_1",
+          "key": {
+            "tags": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "channelUsername_1_messageId_1",
+          "key": {
+            "channelUsername": 1,
+            "messageId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "courseCode_1",
+          "key": {
+            "courseCode": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "isExam_1_fileType_1",
+          "key": {
+            "isExam": 1,
+            "fileType": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "fileName_text_caption_text_tags_text_courseCode_text",
+          "key": {
+            "_fts": "text",
+            "_ftsx": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "telegramresourcequarantines",
+      "status": "COMPLETED",
+      "documentCount": 9044,
+      "initialCountAtStart": 9044,
+      "uncompressedBytes": 10838614,
+      "uncompressedMB": 10.34,
+      "compressedBytes": 1923927,
+      "compressedMB": 1.83,
+      "bsonFile": "telegramresourcequarantines.bson.gz",
+      "bsonSha256": "7dffccb70cecde32e23c79834b52fdb9ecb34c487c517b09af3ba4206fc55f7a",
+      "metadataFile": "telegramresourcequarantines.metadata.json.gz",
+      "metadataSha256": "ab070697d62cd1f36f861f49537a744b8f732f5c0f025b7869c55223177d7aa2",
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "originalId_1",
+          "key": {
+            "originalId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "telegramchannels",
+      "status": "COMPLETED",
+      "documentCount": 91,
+      "initialCountAtStart": 91,
+      "uncompressedBytes": 29546,
+      "uncompressedMB": 0.03,
+      "compressedBytes": 4438,
+      "compressedMB": 0,
+      "bsonFile": "telegramchannels.bson.gz",
+      "bsonSha256": "0dde59e724fa732ca18507c52ccfe5f4a827086fc95bd55a99f23dd0c24e60cb",
+      "metadataFile": "telegramchannels.metadata.json.gz",
+      "metadataSha256": "dd695f6a6ba7e0aa1f21f90b0c894333fe0603a54db06c6936983a58c21921e2",
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "username_1",
+          "key": {
+            "username": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "university_1_department_1",
+          "key": {
+            "university": 1,
+            "department": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "healthStatus_1",
+          "key": {
+            "healthStatus": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "status": "COMPLETED",
+      "documentCount": 104,
+      "initialCountAtStart": 104,
+      "uncompressedBytes": 26970,
+      "uncompressedMB": 0.03,
+      "compressedBytes": 6613,
+      "compressedMB": 0.01,
+      "bsonFile": "users.bson.gz",
+      "bsonSha256": "3e5feba09295017b2e8730d576f4a1c6e27f66c8e8626472ee2bd033c6b2effd",
+      "metadataFile": "users.metadata.json.gz",
+      "metadataSha256": "c2fb7b50511af73708013dda488743cc1c4ad7f4812c12920267ee7693d9311c",
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "telegramId_1",
+          "key": {
+            "telegramId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "isBanned_1",
+          "key": {
+            "isBanned": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "searchhistories",
+      "status": "COMPLETED",
+      "documentCount": 290,
+      "initialCountAtStart": 290,
+      "uncompressedBytes": 57560,
+      "uncompressedMB": 0.05,
+      "compressedBytes": 10195,
+      "compressedMB": 0.01,
+      "bsonFile": "searchhistories.bson.gz",
+      "bsonSha256": "f655e871a257bb3209acfd0adc021d3104af947fe0d59085a9606d07c6afa961",
+      "metadataFile": "searchhistories.metadata.json.gz",
+      "metadataSha256": "0bad435e323b4bb3f0ef985f23134657f366c41a2212a386728a454b6a944786",
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "downloadhistories",
+      "status": "COMPLETED",
+      "documentCount": 70,
+      "initialCountAtStart": 70,
+      "uncompressedBytes": 27137,
+      "uncompressedMB": 0.03,
+      "compressedBytes": 7433,
+      "compressedMB": 0.01,
+      "bsonFile": "downloadhistories.bson.gz",
+      "bsonSha256": "a06d4dcebbd339bad2d0474a05ed6651b008007606246b3af491ff651b5e83b2",
+      "metadataFile": "downloadhistories.metadata.json.gz",
+      "metadataSha256": "d4102db254d42af898f36a65174df51af26508a1268cae655666d787667349f9",
+      "indexCount": 5,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1_downloadedAt_-1",
+          "key": {
+            "userId": 1,
+            "downloadedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "telegramId_1_downloadedAt_-1",
+          "key": {
+            "telegramId": 1,
+            "downloadedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "fileId_1",
+          "key": {
+            "fileId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "downloadedAt_-1",
+          "key": {
+            "downloadedAt": -1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "savedresources",
+      "status": "COMPLETED",
+      "documentCount": 17,
+      "initialCountAtStart": 17,
+      "uncompressedBytes": 5497,
+      "uncompressedMB": 0.01,
+      "compressedBytes": 2030,
+      "compressedMB": 0,
+      "bsonFile": "savedresources.bson.gz",
+      "bsonSha256": "50518dc37855be02162b6ba3927d63a0381a7e80a2fd1435a29d2bd63b9b24e5",
+      "metadataFile": "savedresources.metadata.json.gz",
+      "metadataSha256": "8cce05efdb9fe0fe854183c1b0798b9ce2d609478271885651a5b27f047278ff",
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "channelrecommendations",
+      "status": "COMPLETED",
+      "documentCount": 65,
+      "initialCountAtStart": 65,
+      "uncompressedBytes": 13186,
+      "uncompressedMB": 0.01,
+      "compressedBytes": 2551,
+      "compressedMB": 0,
+      "bsonFile": "channelrecommendations.bson.gz",
+      "bsonSha256": "decbad9ae8a0189ebb4146645211ef61f62628cb3b79d0d7da07999a23c144c8",
+      "metadataFile": "channelrecommendations.metadata.json.gz",
+      "metadataSha256": "3b6b3ea7c6076c47308c3131d850d8f035d6cbf3547e8b52d13f9e630d5dc33d",
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "channelUsername_1",
+          "key": {
+            "channelUsername": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "botsessions",
+      "status": "COMPLETED",
+      "documentCount": 12,
+      "initialCountAtStart": 12,
+      "uncompressedBytes": 1476,
+      "uncompressedMB": 0,
+      "compressedBytes": 607,
+      "compressedMB": 0,
+      "bsonFile": "botsessions.bson.gz",
+      "bsonSha256": "871db12c8181f8c5ccd066b0511027b073332af3848c08ccace83a75c6f9ace1",
+      "metadataFile": "botsessions.metadata.json.gz",
+      "metadataSha256": "f72e63b008a5b5f06ab7de5eefc944812d759501ebd01b4bd66cc59e610c954c",
+      "indexCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "key": {
+            "key": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "updatedAt_1",
+          "key": {
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "cachedsearches",
+      "status": "COMPLETED",
+      "documentCount": 24,
+      "initialCountAtStart": 24,
+      "uncompressedBytes": 2215948,
+      "uncompressedMB": 2.11,
+      "compressedBytes": 408111,
+      "compressedMB": 0.39,
+      "bsonFile": "cachedsearches.bson.gz",
+      "bsonSha256": "2e32333bdaedc3025468212e53a403e9547eb9e049ab63994104c4c69401e35d",
+      "metadataFile": "cachedsearches.metadata.json.gz",
+      "metadataSha256": "89622a609b2401b816bda75dbcbcc9e821ee2bdb5fd7a2eed264f3e646fc7f68",
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "query_1",
+          "key": {
+            "query": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "normalizedQuery_1",
+          "key": {
+            "normalizedQuery": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "expiresAt_1",
+          "key": {
+            "expiresAt": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "resourcereports",
+      "status": "COMPLETED",
+      "documentCount": 2,
+      "initialCountAtStart": 2,
+      "uncompressedBytes": 2636,
+      "uncompressedMB": 0,
+      "compressedBytes": 1509,
+      "compressedMB": 0,
+      "bsonFile": "resourcereports.bson.gz",
+      "bsonSha256": "c6bf32eb1fb6cfa53a7591da3ec406013586ebf9b8afd3e8615e8bf87ca5099f",
+      "metadataFile": "resourcereports.metadata.json.gz",
+      "metadataSha256": "5d34b2ce1c3c411a852994d45aede4b47d2b74a02b1c92c0d46fd230358c6e80",
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "resourceId_1",
+          "key": {
+            "resourceId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "querysessions",
+      "status": "COMPLETED",
+      "documentCount": 0,
+      "initialCountAtStart": 0,
+      "uncompressedBytes": 0,
+      "uncompressedMB": 0,
+      "compressedBytes": 20,
+      "compressedMB": 0,
+      "bsonFile": "querysessions.bson.gz",
+      "bsonSha256": "46b50c321b39e89a491b6727a01628c34245605a30beb3e7414c5e01cff90e6e",
+      "metadataFile": "querysessions.metadata.json.gz",
+      "metadataSha256": "a35aeb5b7201980d69c3ad5233b87e485d47044f44d9976e016998ab1d9729c5",
+      "indexCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "queryHash_1",
+          "key": {
+            "queryHash": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "createdAt_1",
+          "key": {
+            "createdAt": 1
+          },
+          "unique": false
+        }
+      ]
+    }
+  ],
+  "ignoredCollections": [
+    "branches",
+    "categories",
+    "assistances",
+    "tables",
+    "restaurants",
+    "orders",
+    "products"
+  ]
+}

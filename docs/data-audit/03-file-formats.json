@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-11-13T05:54:57.289Z",
+  "fileTypeAll": [
+    {
+      "_id": "pdf",
+      "count": 54602
+    },
+    {
+      "_id": "image",
+      "count": 29588
+    },
+    {
+      "_id": "ppt",
+      "count": 4407
+    },
+    {
+      "_id": "doc",
+      "count": 3543
+    }
+  ],
+  "fileTypeAvailable": [
+    {
+      "_id": "pdf",
+      "count": 54520
+    },
+    {
+      "_id": "image",
+      "count": 20608
+    },
+    {
+      "_id": "ppt",
+      "count": 4401
+    },
+    {
+      "_id": "doc",
+      "count": 3541
+    }
+  ],
+  "extDistribution": [
+    {
+      "_id": "pdf",
+      "count": 54520
+    },
+    {
+      "_id": "pptx",
+      "count": 3701
+    },
+    {
+      "_id": "docx",
+      "count": 3038
+    },
+    {
+      "_id": "ppt",
+      "count": 700
+    },
+    {
+      "_id": "doc",
+      "count": 503
+    }
+  ],
+  "mismatches": [],
+  "sizes": {
+    "zeroBytes": 17305,
+    "smallFiles": 20,
+    "largeFiles": 4435
+  },
+  "groupStats": [
+    {
+      "_id": 1,
+      "count": 399
+    },
+    {
+      "_id": 2,
+      "count": 3091
+    },
+    {
+      "_id": 3,
+      "count": 1964
+    },
+    {
+      "_id": 4,
+      "count": 1670
+    },
+    {
+      "_id": 5,
+      "count": 1256
+    },
+    {
+      "_id": 6,
+      "count": 1085
+    },
+    {
+      "_id": 7,
+      "count": 683
+    },
+    {
+      "_id": 8,
+      "count": 640
+    },
+    {
+      "_id": 9,
+      "count": 514
+    },
+    {
+      "_id": 10,
+      "count": 937
+    }
+  ],
+  "groupTypeMix": [
+    {
+      "_id": "pure_image_album",
+      "count": 4491
+    },
+    {
+      "_id": "pure_pdf_bundle",
+      "count": 5929
+    },
+    {
+      "_id": "pure_ppt_bundle",
+      "count": 411
+    },
+    {
+      "_id": "mixed_types_bundle",
+      "count": 1408
+    }
+  ]
+}

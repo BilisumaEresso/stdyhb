@@ -3,9 +3,10 @@ const { Markup } = require("telegraf");
 const userService = require("../../services/user.service");
 const recordSearchService = require("../../services/search.service");
 const orchestrationService = require("../../search/search.service");
-const { sendPaginatedResults } = require("../../telegram/fileDelivery");
+const { sendPaginatedResults, resolveSearchSession } = require("../../telegram/fileDelivery");
 const templates = require("../../telegram/templates");
 const QuerySession = require("../../db/models/QuerySession");
+const trendingCommand = require("./trending");
 
 function escapeHtml(text = "") {
   return String(text)
@@ -183,15 +184,41 @@ async function performSearch(ctx, query) {
 function registerSearchHandlers(bot) {
   bot.action(/qsearch_([a-f0-9]+)/, async (ctx) => {
     const hash = ctx.match[1];
-    const session = await QuerySession.findOne({ queryHash: hash });
-    if (!session || !session.query) {
-      return await ctx.answerCbQuery(
+    let query = null;
+
+    try {
+      const resolved = await resolveSearchSession(ctx, hash);
+      if (resolved && resolved.query) {
+        query = resolved.query;
+      }
+    } catch (_) {}
+
+    if (!query) {
+      const session = await QuerySession.findOne({ queryHash: hash }).catch(() => null);
+      if (session && session.query) {
+        query = session.query;
+      }
+    }
+
+    if (!query) {
+      await ctx.answerCbQuery(
         "❌ Search expired. Please type your query.",
         { show_alert: true }
       );
+      return await showSearchScreen(ctx, true);
     }
-    await ctx.answerCbQuery(`Searching for "${session.query}"...`);
-    await performSearch(ctx, session.query);
+    await ctx.answerCbQuery(`Searching for "${query}"...`);
+    await performSearch(ctx, query);
+  });
+
+  bot.action("open_search_screen", async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    await showSearchScreen(ctx, true);
+  });
+
+  bot.action("nav_trending", async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    await trendingCommand(ctx);
   });
 
   bot.action("clear_search_history", async (ctx) => {

@@ -14,6 +14,8 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   ResourceItem,
@@ -21,6 +23,8 @@ import {
   getTelegramBotDeepLink,
 } from "@/lib/api";
 import BrandEmblem from "@/components/BrandEmblem";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
+import ResourceCard from "@/components/ResourceCard";
 import {
   FilePdfIcon,
   FilePptIcon,
@@ -71,17 +75,17 @@ function ExploreContent() {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchStatus, setSearchStatus] = useState<SearchStatus>("searching");
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Concurrency & Stale Request Safeguards
+  // Concurrency, Stale Request Safeguards & Scroll Anchoring
+  const gridSectionRef = useRef<HTMLElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const searchRequestIdRef = useRef<number>(0);
   const resourcesRef = useRef<ResourceItem[]>([]);
   resourcesRef.current = resources;
 
   const performFetch = useCallback(
-    async (q: string, type: string, isExamOnly: boolean, targetPage = 1, append = false) => {
+    async (q: string, type: string, isExamOnly: boolean, targetPage = 1) => {
       // 1. Invalidate any in-flight requests
       searchRequestIdRef.current += 1;
       const currentRequestId = searchRequestIdRef.current;
@@ -93,9 +97,7 @@ function ExploreContent() {
       abortControllerRef.current = controller;
 
       // 2. Set Appropriate Loading State
-      if (append) {
-        setIsLoadingMore(true);
-      } else if (resourcesRef.current.length > 0) {
+      if (resourcesRef.current.length > 0) {
         // Soft refresh: preserve existing cards while updating
         setSearchStatus("refreshing");
       } else {
@@ -123,38 +125,26 @@ function ExploreContent() {
         }
 
         if (res && res.data) {
-          if (append) {
-            setResources((prev) => {
-              const existingIds = new Set(prev.map((item) => item._id));
-              const newItems = res.data.filter((item: ResourceItem) => !existingIds.has(item._id));
-              return [...prev, ...newItems];
-            });
-            setPage(targetPage);
-            if (res.pagination?.totalPages) {
-              setTotalPages(res.pagination.totalPages);
-            }
-            if (res.pagination?.total) {
-              setTotalCount(res.pagination.total);
-            }
-            setSearchStatus("success");
-          } else {
-            setResources(res.data);
-            setPage(1);
-            setTotalCount(res.pagination?.total || res.data.length);
-            setTotalPages(res.pagination?.totalPages || 1);
+          setResources(res.data);
+          const safePage = res.pagination?.page || targetPage;
+          const safeTotal = res.pagination?.total || res.data.length;
+          const safeTotalPages = res.pagination?.totalPages || 1;
 
-            if (res.data.length === 0) {
-              setSearchStatus("empty");
-            } else {
-              setSearchStatus("success");
-            }
+          setPage(safePage);
+          setTotalCount(safeTotal);
+          setTotalPages(safeTotalPages);
+
+          if (res.data.length === 0) {
+            setSearchStatus("empty");
+          } else {
+            setSearchStatus("success");
           }
         } else {
-          if (!append) {
-            setResources([]);
-            setTotalCount(0);
-            setSearchStatus("empty");
-          }
+          setResources([]);
+          setTotalCount(0);
+          setTotalPages(1);
+          setPage(1);
+          setSearchStatus("empty");
         }
       } catch (err: any) {
         if (err.name === "AbortError") {
@@ -162,21 +152,13 @@ function ExploreContent() {
           return;
         }
         console.error("Explore fetch error:", err);
-        if (!append) {
-          setSearchStatus("error");
-          setErrorMessage(
-            "We could not connect to the academic repository. Please verify your connection and try again."
-          );
-        } else {
-          showToast("Failed to load more resources. Please try again.", "error");
-        }
-      } finally {
-        if (searchRequestIdRef.current === currentRequestId) {
-          setIsLoadingMore(false);
-        }
+        setSearchStatus("error");
+        setErrorMessage(
+          "We could not connect to the academic repository. Please verify your connection and try again."
+        );
       }
     },
-    [showToast]
+    []
   );
 
   // Synchronize on searchParams change
@@ -184,6 +166,7 @@ function ExploreContent() {
     const q = searchParams.get("q") || "";
     const type = searchParams.get("type") || "all";
     const filter = searchParams.get("filter") || "";
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
 
     setQuery(q);
     setFileType(type);
@@ -195,17 +178,27 @@ function ExploreContent() {
       setSelectedChip("All");
     }
 
-    performFetch(q, type, filter === "exam", 1, false);
+    performFetch(q, type, filter === "exam", pageParam);
   }, [searchParams, performFetch]);
+
+  const updateUrl = (q: string, type: string, isExam: boolean, newPage = 1) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (type && type !== "all") params.set("type", type);
+    if (isExam) params.set("filter", "exam");
+    if (newPage > 1) params.set("page", newPage.toString());
+
+    router.replace(`/explore?${params.toString()}`);
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUrl(query, fileType, selectedChip === "Past Exams");
+    updateUrl(query, fileType, selectedChip === "Past Exams", 1);
   };
 
   const handleTypeChange = (newType: string) => {
     setFileType(newType);
-    updateUrl(query, newType, selectedChip === "Past Exams");
+    updateUrl(query, newType, selectedChip === "Past Exams", 1);
   };
 
   const handleChipClick = (chip: { label: string; query: string; filter: string }) => {
@@ -213,22 +206,28 @@ function ExploreContent() {
     const isExam = chip.filter === "exam";
     const nextQuery = chip.label === "All" || chip.filter === "exam" ? "" : chip.query;
     setQuery(nextQuery);
-    updateUrl(nextQuery, fileType, isExam);
+    updateUrl(nextQuery, fileType, isExam, 1);
   };
 
-  const updateUrl = (q: string, type: string, isExam: boolean) => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (type && type !== "all") params.set("type", type);
-    if (isExam) params.set("filter", "exam");
-
-    router.replace(`/explore?${params.toString()}`);
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    updateUrl(query, fileType, selectedChip === "Past Exams", newPage);
+    performFetch(query, fileType, selectedChip === "Past Exams", newPage);
+    gridSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || page >= totalPages) return;
-    performFetch(query, fileType, selectedChip === "Past Exams", page + 1, true);
-  };
+  function getPageNumbers(currentPage: number, total: number): (number | "...")[] {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, "...", total];
+    }
+    if (currentPage >= total - 2) {
+      return [1, "...", total - 3, total - 2, total - 1, total];
+    }
+    return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", total];
+  }
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes || bytes <= 0) return "";
@@ -257,22 +256,16 @@ function ExploreContent() {
 
         {/* Toolbar */}
         <div className="toolbar">
-          <form className="searchbar" onSubmit={handleSearchSubmit}>
-            <span className="search-icon">
-              <Search size={20} />
-            </span>
-            <input
-              id="explore-search"
-              aria-label="Search by title, subject, course code, or topic"
-              placeholder="Search by title, subject, course code, or topic (e.g. DBMS, Calculus)..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button type="submit" className="btn btn-primary">
-              <span>Search</span>
-              <ArrowRight size={15} />
-            </button>
-          </form>
+          <SearchAutocomplete
+            id="explore-search"
+            value={query}
+            onChange={setQuery}
+            onSubmit={(term) => {
+              setQuery(term);
+              updateUrl(term, fileType, selectedChip === "Past Exams");
+            }}
+            placeholder="Search by title, subject, course code, or topic (e.g. DBMS, Calculus)..."
+          />
 
           <select
             id="type-filter"
@@ -304,7 +297,7 @@ function ExploreContent() {
       </section>
 
       {/* ── Resources Grid Section ─────────────────────────────────── */}
-      <section className="container section" style={{ paddingTop: 0 }}>
+      <section ref={gridSectionRef} className="container section" style={{ paddingTop: 0 }}>
         <div className="section-head">
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -315,15 +308,17 @@ function ExploreContent() {
               {isSearching
                 ? "Searching academic repository..."
                 : query
-                ? `Showing results matching "${query}"`
+                ? `Showing page ${page} of ${totalPages} · ${totalCount.toLocaleString()} ranked results for "${query}"`
                 : selectedChip === "Past Exams"
-                ? "Verified past midterm and final examinations"
-                : "Latest academic resources indexed from university channels"}
+                ? `Showing page ${page} of ${totalPages} · Verified past examinations`
+                : `Showing page ${page} of ${totalPages} · ${totalCount.toLocaleString()} learning entities across universities`}
             </p>
           </div>
           <span className="muted" style={{ fontSize: "14px", fontWeight: 600 }}>
             {isSearching ? (
               "Loading..."
+            ) : query ? (
+              `${totalCount.toLocaleString()} ranked results`
             ) : (
               `${totalCount.toLocaleString()} resources available`
             )}
@@ -340,160 +335,13 @@ function ExploreContent() {
 
           {/* Actual Resource Cards */}
           {!isSearching &&
-            resources.map((item) => {
-              const isGroup = Boolean(item.groupId);
-              const groupSize = item.groupTotal || (item as any).groupSize || 1;
-
-              let typeClass = item.fileType || "pdf";
-              let typeBadge = (item.fileType || "PDF").toUpperCase();
-              let bundleBadge = "";
-
-              if (isGroup) {
-                if (item.fileType === "image") {
-                  typeClass = "image";
-                  typeBadge = "ALBUM";
-                  bundleBadge = `${groupSize}-Page Photo Album`;
-                } else if (item.fileType === "pdf") {
-                  typeClass = "pdf";
-                  typeBadge = "BUNDLE";
-                  bundleBadge = `${groupSize}-File PDF Bundle`;
-                } else if (item.fileType === "ppt") {
-                  typeClass = "ppt";
-                  typeBadge = "SLIDES";
-                  bundleBadge = `${groupSize}-Slide PPT Pack`;
-                } else if (item.fileType === "doc") {
-                  typeClass = "doc";
-                  typeBadge = "PACKET";
-                  bundleBadge = `${groupSize}-Doc Packet`;
-                } else {
-                  typeClass = "doc";
-                  typeBadge = "BUNDLE";
-                  bundleBadge = `${groupSize}-Item Bundle`;
-                }
-              }
-
-              const sizeText = formatFileSize(item.fileSize);
-              const sourceName = item.channelUsername
-                ? `@${item.channelUsername}`
-                : item.university
-                ? `${item.university}`
-                : "University Channel";
-
-              const displayTitle =
-                (item as any).cleanTitle ||
-                (item as any).title ||
-                item.fileName ||
-                "Academic Resource";
-
-              return (
-                <article key={item._id} className="resource-card">
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <div className={`file-type ${typeClass}`} title={`${typeBadge} Resource`}>
-                      {typeClass === "ppt" ? (
-                        <FilePptIcon size={22} />
-                      ) : typeClass === "doc" ? (
-                        <FileDocIcon size={22} />
-                      ) : typeClass === "image" ? (
-                        <FileImageIcon size={22} />
-                      ) : (
-                        <FilePdfIcon size={22} />
-                      )}
-                    </div>
-                    {bundleBadge && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: "8px",
-                          background: "var(--primary-soft)",
-                          color: "var(--primary)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                        }}
-                      >
-                        {item.fileType === "image" ? (
-                          <BundleAlbumIcon size={13} />
-                        ) : item.fileType === "ppt" ? (
-                          <BundleSlidesIcon size={13} />
-                        ) : item.fileType === "doc" ? (
-                          <BundleDocIcon size={13} />
-                        ) : (
-                          <BundlePdfIcon size={13} />
-                        )}
-                        <span>{bundleBadge}</span>
-                      </span>
-                    )}
-                    {item.isExam && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: "8px",
-                          background: "var(--gold-soft)",
-                          color: "var(--gold)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <GraduationCap size={12} />
-                        <span>Past Exam</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <h3>
-                    <Link href={`/resource/${item._id}`} style={{ color: "inherit" }}>
-                      {displayTitle}
-                    </Link>
-                  </h3>
-
-                  <div className="resource-meta">
-                    <span>{item.courseCode || item.university || "Academic"}</span>
-                    {sizeText && (
-                      <>
-                        <span>•</span>
-                        <span>{sizeText}</span>
-                      </>
-                    )}
-                    {item.downloadCount > 0 && (
-                      <>
-                        <span>•</span>
-                        <span>{item.downloadCount} downloads</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="resource-bottom">
-                    <span className="source">{sourceName}</span>
-                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                      <Link className="resource-link" href={`/resource/${item._id}`}>
-                        <span>{isGroup ? "View Bundle" : "Details"}</span>
-                        <ArrowRight size={13} />
-                      </Link>
-                      <a
-                        className="resource-link"
-                        style={{ color: "var(--primary)" }}
-                        href={getTelegramBotDeepLink(item._id, Boolean(item.groupId))}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => showToast("Opening Telegram Bot...", "telegram", 2500)}
-                        title={isGroup ? "Get complete bundle via Telegram" : "Deliver file via Telegram Bot"}
-                      >
-                        <Send size={13} />
-                        <span>Bot</span>
-                      </a>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-
-          {/* Skeletons appended during Load More */}
-          {isLoadingMore && <ResourceCardSkeleton count={3} />}
+            resources.map((item) => (
+              <ResourceCard
+                key={item._id}
+                item={item}
+                onToast={(msg, type) => showToast(msg, type, 2500)}
+              />
+            ))}
         </div>
 
         {/* ── Empty State ───────────────────────────────────────────── */}
@@ -522,7 +370,7 @@ function ExploreContent() {
                 setQuery("");
                 setSelectedChip("All");
                 setFileType("all");
-                updateUrl("", "all", false);
+                updateUrl("", "all", false, 1);
               }}
             >
               Clear Filters & Show All
@@ -550,7 +398,7 @@ function ExploreContent() {
             </p>
             <ButtonLoadingState
               variant="primary"
-              onClick={() => performFetch(query, fileType, selectedChip === "Past Exams", 1, false)}
+              onClick={() => performFetch(query, fileType, selectedChip === "Past Exams", 1)}
             >
               <RefreshCw size={14} />
               <span>Retry Search</span>
@@ -558,26 +406,57 @@ function ExploreContent() {
           </div>
         )}
 
-        {/* ── Load More Pagination Controls ─────────────────────────── */}
-        {searchStatus === "success" && page < totalPages && (
-          <div style={{ textAlign: "center", marginTop: "36px" }}>
-            <ButtonLoadingState
-              variant="outline"
-              isLoading={isLoadingMore}
-              loadingText="Loading more resources..."
-              onClick={handleLoadMore}
-              style={{
-                minWidth: "220px",
-                padding: "12px 28px",
-                borderRadius: "14px",
-                fontWeight: 700,
-                fontSize: "14px",
-              }}
+        {/* ── Exploration Pagination Controls ───────────────────────── */}
+        {searchStatus === "success" && totalPages > 1 && (
+          <nav className="explore-pagination" aria-label="Explore Resources Pagination">
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={page <= 1 || isRefreshing}
+              onClick={() => handlePageChange(page - 1)}
+              aria-label="Previous Page"
             >
-              <span>Load More Resources</span>
-              <ArrowRight size={15} />
-            </ButtonLoadingState>
-          </div>
+              <ChevronLeft size={16} />
+              <span>Previous</span>
+            </button>
+
+            <div className="pagination-pages">
+              {getPageNumbers(page, totalPages).map((p, idx) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${idx}`} className="pagination-ellipsis" aria-hidden="true">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={`page-${p}`}
+                    type="button"
+                    className={`pagination-page-btn ${page === p ? "active" : ""}`}
+                    onClick={() => handlePageChange(p as number)}
+                    aria-current={page === p ? "page" : undefined}
+                    aria-label={`Page ${p}`}
+                    disabled={isRefreshing}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={page >= totalPages || isRefreshing}
+              onClick={() => handlePageChange(page + 1)}
+              aria-label="Next Page"
+            >
+              <span>Next</span>
+              <ChevronRight size={16} />
+            </button>
+
+            <span className="pagination-indicator">
+              Page {page} of {totalPages}
+            </span>
+          </nav>
         )}
       </section>
     </main>

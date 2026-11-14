@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-11-13T05:57:42.696Z",
+  "langStats": {
+    "totalScanned": 83070,
+    "latinOnly": {
+      "count": 62039,
+      "pct": "74.68"
+    },
+    "mixedLatinEthiopic": {
+      "count": 21031,
+      "pct": "25.32"
+    },
+    "ethiopicOnly": {
+      "count": 0,
+      "pct": "0.00"
+    },
+    "neither": {
+      "count": 0,
+      "pct": "0.00"
+    }
+  },
+  "textPresenceStats": {
+    "emptyFileName": {
+      "count": 20608,
+      "pct": "24.81"
+    },
+    "emptyCaption": {
+      "count": 21826,
+      "pct": "26.27"
+    },
+    "emptyBoth": {
+      "count": 628,
+      "pct": "0.76"
+    }
+  },
+  "titleQualityStats": {
+    "scannerArtifact": {
+      "count": 62,
+      "pct": "0.07"
+    },
+    "genericChapterWithoutContext": {
+      "count": 197,
+      "pct": "0.24"
+    },
+    "containsCourseCode": {
+      "count": 14239,
+      "pct": "17.14"
+    },
+    "containsYear": {
+      "count": 13495,
+      "pct": "16.25"
+    }
+  }
+}

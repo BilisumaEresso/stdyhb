@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-11-13T06:52:20.861Z",
+  "totalAvailable": 83073,
+  "identifiers": {
+    "missingFileId": 0,
+    "missingFileUniqueId": 0,
+    "missingMessageId": 0,
+    "missingChatId": 0,
+    "missingChannelUsername": 0
+  },
+  "archiveRedundancy": {
+    "withArchiveMsg": 67128,
+    "withoutArchiveMsg": 15945,
+    "archivedPercentage": "80.81"
+  },
+  "albumIntegrity": {
+    "duplicateIndicesInGroupCount": 9,
+    "indexExceedsTotalCount": 0,
+    "multiChannelAlbumsCount": 0
+  }
+}

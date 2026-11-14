@@ -1,0 +1,264 @@
+{
+  "testDatabaseName": "studyhub_isolated_restore_test_20261113",
+  "localMongoUri": "mongodb://127.0.0.1:27017",
+  "startedAt": "2026-11-13T08:46:02.311Z",
+  "completedAt": "2026-11-13T08:46:18.639Z",
+  "totalDurationMs": 16328,
+  "totalDurationFormatted": "16.3s",
+  "overallStatus": "VERIFIED_SUCCESSFUL",
+  "collectionsVerified": [
+    {
+      "name": "telegramresources",
+      "expectedDocuments": 92143,
+      "restoredDocuments": 92143,
+      "countMatches": true,
+      "expectedIndexes": 6,
+      "restoredIndexes": 6,
+      "indexNames": [
+        "_id_",
+        "tags_1",
+        "channelUsername_1_messageId_1",
+        "courseCode_1",
+        "isExam_1_fileType_1",
+        "fileName_text_caption_text_tags_text_courseCode_text"
+      ],
+      "durationMs": 13981,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "telegramresourcequarantines",
+      "expectedDocuments": 9044,
+      "restoredDocuments": 9044,
+      "countMatches": true,
+      "expectedIndexes": 2,
+      "restoredIndexes": 2,
+      "indexNames": [
+        "_id_",
+        "originalId_1"
+      ],
+      "durationMs": 825,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "telegramchannels",
+      "expectedDocuments": 91,
+      "restoredDocuments": 91,
+      "countMatches": true,
+      "expectedIndexes": 4,
+      "restoredIndexes": 4,
+      "indexNames": [
+        "_id_",
+        "username_1",
+        "university_1_department_1",
+        "healthStatus_1"
+      ],
+      "durationMs": 100,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "users",
+      "expectedDocuments": 104,
+      "restoredDocuments": 104,
+      "countMatches": true,
+      "expectedIndexes": 4,
+      "restoredIndexes": 4,
+      "indexNames": [
+        "_id_",
+        "telegramId_1",
+        "restaurantId_1",
+        "isBanned_1"
+      ],
+      "durationMs": 98,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "searchhistories",
+      "expectedDocuments": 290,
+      "restoredDocuments": 290,
+      "countMatches": true,
+      "expectedIndexes": 2,
+      "restoredIndexes": 2,
+      "indexNames": [
+        "_id_",
+        "userId_1"
+      ],
+      "durationMs": 43,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "downloadhistories",
+      "expectedDocuments": 70,
+      "restoredDocuments": 70,
+      "countMatches": true,
+      "expectedIndexes": 5,
+      "restoredIndexes": 5,
+      "indexNames": [
+        "_id_",
+        "userId_1_downloadedAt_-1",
+        "telegramId_1_downloadedAt_-1",
+        "fileId_1",
+        "downloadedAt_-1"
+      ],
+      "durationMs": 106,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "savedresources",
+      "expectedDocuments": 17,
+      "restoredDocuments": 17,
+      "countMatches": true,
+      "expectedIndexes": 2,
+      "restoredIndexes": 2,
+      "indexNames": [
+        "_id_",
+        "userId_1"
+      ],
+      "durationMs": 48,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "channelrecommendations",
+      "expectedDocuments": 65,
+      "restoredDocuments": 65,
+      "countMatches": true,
+      "expectedIndexes": 2,
+      "restoredIndexes": 2,
+      "indexNames": [
+        "_id_",
+        "channelUsername_1"
+      ],
+      "durationMs": 41,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "botsessions",
+      "expectedDocuments": 12,
+      "restoredDocuments": 12,
+      "countMatches": true,
+      "expectedIndexes": 3,
+      "restoredIndexes": 3,
+      "indexNames": [
+        "_id_",
+        "key_1",
+        "updatedAt_1"
+      ],
+      "durationMs": 77,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "cachedsearches",
+      "expectedDocuments": 24,
+      "restoredDocuments": 24,
+      "countMatches": true,
+      "expectedIndexes": 4,
+      "restoredIndexes": 4,
+      "indexNames": [
+        "_id_",
+        "query_1",
+        "normalizedQuery_1",
+        "expiresAt_1"
+      ],
+      "durationMs": 247,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "resourcereports",
+      "expectedDocuments": 2,
+      "restoredDocuments": 2,
+      "countMatches": true,
+      "expectedIndexes": 4,
+      "restoredIndexes": 4,
+      "indexNames": [
+        "_id_",
+        "userId_1",
+        "resourceId_1",
+        "status_1"
+      ],
+      "durationMs": 117,
+      "status": "VERIFIED"
+    },
+    {
+      "name": "querysessions",
+      "expectedDocuments": 0,
+      "restoredDocuments": 0,
+      "countMatches": true,
+      "expectedIndexes": 3,
+      "restoredIndexes": 3,
+      "indexNames": [
+        "_id_",
+        "queryHash_1",
+        "createdAt_1"
+      ],
+      "durationMs": 44,
+      "status": "VERIFIED"
+    }
+  ],
+  "typeFidelityVerification": {
+    "sampleSize": 5,
+    "objectIdValid": true,
+    "datesValid": false,
+    "integersValid": true,
+    "booleansValid": true,
+    "textSearchWorking": true,
+    "samples": [
+      {
+        "_id": "6a38158c81cff0b089b1184a",
+        "_idClass": "ObjectId",
+        "fileName": "",
+        "channelUsername": "moeexitexamofficial",
+        "messageId": 47,
+        "messageIdType": "number",
+        "isAvailable": false,
+        "isAvailableType": "boolean"
+      },
+      {
+        "_id": "6a38158c81cff0b089b1184c",
+        "_idClass": "ObjectId",
+        "fileName": "",
+        "channelUsername": "moeexitexamofficial",
+        "messageId": 48,
+        "messageIdType": "number",
+        "isAvailable": false,
+        "isAvailableType": "boolean"
+      },
+      {
+        "_id": "6a38158d81cff0b089b1184e",
+        "_idClass": "ObjectId",
+        "fileName": "",
+        "channelUsername": "moeexitexamofficial",
+        "messageId": 49,
+        "messageIdType": "number",
+        "isAvailable": true,
+        "isAvailableType": "boolean"
+      },
+      {
+        "_id": "6a38158d81cff0b089b1184f",
+        "_idClass": "ObjectId",
+        "fileName": "",
+        "channelUsername": "moeexitexamofficial",
+        "messageId": 50,
+        "messageIdType": "number",
+        "isAvailable": true,
+        "isAvailableType": "boolean"
+      },
+      {
+        "_id": "6a38158d81cff0b089b11850",
+        "_idClass": "ObjectId",
+        "fileName": "",
+        "channelUsername": "moeexitexamofficial",
+        "messageId": 51,
+        "messageIdType": "number",
+        "isAvailable": true,
+        "isAvailableType": "boolean"
+      }
+    ]
+  },
+  "functionalQueryTests": {
+    "availableResources": 83073,
+    "unavailableResources": 9070,
+    "totalResources": 92143,
+    "telegramChannels": 91,
+    "quarantineSnapshots": 9044,
+    "textSearchWorking": true
+  }
+}

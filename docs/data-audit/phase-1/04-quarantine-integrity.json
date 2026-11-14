@@ -1,0 +1,306 @@
+{
+  "verifiedAt": "2026-11-13T06:48:26.100Z",
+  "totalUnavailable": 9070,
+  "totalQuarantine": 9044,
+  "discrepancy": 26,
+  "reasonBreakdown": [
+    {
+      "_id": "single_image_non_resource",
+      "count": 8651
+    },
+    {
+      "_id": "commercial_ad",
+      "count": 138
+    },
+    {
+      "_id": "admin_notice",
+      "count": 123
+    },
+    {
+      "_id": "non_academic_announcement",
+      "count": 96
+    },
+    {
+      "_id": "schedule_announcement",
+      "count": 35
+    },
+    {
+      "_id": "corrupt_stub",
+      "count": 1
+    }
+  ],
+  "reasonsReconciled": true,
+  "restorableBreakdown": [
+    {
+      "_id": true,
+      "count": 9044
+    }
+  ],
+  "distinctOriginalIdsInQuarantine": 9044,
+  "duplicateOriginalIdsInQuarantine": 0,
+  "orphanedQuarantineSnapshots": 0,
+  "missingFromQuarantineCount": 26,
+  "missingFromQuarantineSamples": [
+    {
+      "_id": "6a38159681cff0b089b11879",
+      "messageId": 125,
+      "channelUsername": "astusoftware2023",
+      "fileName": "",
+      "caption": "Object Oriented Programming\n#OOP\nCourse Outline\n\n@astusoftware2015\n@astusoftware2015",
+      "fileType": "image",
+      "isExam": false,
+      "indexedAt": "2026-06-21T16:47:18.390Z"
+    },
+    {
+      "_id": "6a38159781cff0b089b11886",
+      "messageId": 136,
+      "channelUsername": "astusoftware2023",
+      "fileName": "Chapter -1-OOP concepts.pptx",
+      "caption": "#OOP lecture slides\n\n@astu_software",
+      "fileType": "ppt",
+      "isExam": false,
+      "indexedAt": "2026-06-21T16:47:19.762Z"
+    },
+    {
+      "_id": "6a38159f81cff0b089b118da",
+      "messageId": 184,
+      "channelUsername": "astusoftware2023",
+      "fileName": "chapter 2 Data Modeling Using the Entity-Relationship-1.pdf",
+      "caption": "",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-21T16:47:27.899Z"
+    },
+    {
+      "_id": "6a3815be81cff0b089b11988",
+      "messageId": 334,
+      "channelUsername": "astusoftware2023",
+      "fileName": "OOP final.pdf",
+      "caption": "Mid exam and tutorial questions 🌟",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T16:47:58.413Z"
+    },
+    {
+      "_id": "6a3815be81cff0b089b11989",
+      "messageId": 335,
+      "channelUsername": "astusoftware2023",
+      "fileName": "OOP Worksheet.pdf",
+      "caption": "Mid exam and tutorial questions 🌟",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T16:47:58.413Z"
+    },
+    {
+      "_id": "6a3815d181cff0b089b11a3c",
+      "messageId": 452,
+      "channelUsername": "astusoftware2023",
+      "fileName": "OOP final 2.pdf",
+      "caption": "#OOP FINALS",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T16:48:17.624Z"
+    },
+    {
+      "_id": "6a3815d181cff0b089b11a3d",
+      "messageId": 453,
+      "channelUsername": "astusoftware2023",
+      "fileName": "OOP final.pdf",
+      "caption": "#OOP FINALS",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T16:48:17.624Z"
+    },
+    {
+      "_id": "6a3815de81cff0b089b11a9c",
+      "messageId": 525,
+      "channelUsername": "astusoftware2023",
+      "fileName": "Lecture 1- Introduction to Operating Systems.pdf",
+      "caption": "#OS #Slides #3RDYEAR  #1STSEM \n\nOPREATING SYSTEM",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-21T16:48:30.757Z"
+    },
+    {
+      "_id": "6a38160e81cff0b089b11be3",
+      "messageId": 808,
+      "channelUsername": "astusoftware2023",
+      "fileName": "chapter 5 -  PHP Fundamentals.pptx",
+      "caption": "Engineering web based systems \n\n#WEB #Slides",
+      "fileType": "ppt",
+      "isExam": false,
+      "indexedAt": "2026-06-21T16:49:18.318Z"
+    },
+    {
+      "_id": "6a381d7b81cff0b089b1356e",
+      "messageId": 1573,
+      "channelUsername": "Exit_Exam_Questions",
+      "fileName": "BUSINESS MANAGEMENT- MODEL EXIT EXAM.pdf",
+      "caption": "For all exit exam questions👇👇\n@Exit_Exam_Questions\n@Exit_Exam_Questions",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T17:20:59.532Z"
+    },
+    {
+      "_id": "6a381d9981cff0b089b136f4",
+      "messageId": 1778,
+      "channelUsername": "Exit_Exam_Questions",
+      "fileName": "Highway-II-1-Overview of Pavement Structure.pdf",
+      "caption": "highway22",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-21T17:21:29.100Z"
+    },
+    {
+      "_id": "6a38203981cff0b089b14bff",
+      "messageId": 4930,
+      "channelUsername": "Exit_Exam_Questions",
+      "fileName": "Management Exit Exam Analysis.pdf",
+      "caption": "💊Pharmacy Exit Exam Analysis\n\n📌ዳሰሳው የተዘጋጀው እስከ ዛሬ በተሰጡት Exit እና Model ጥያቄዎች ብቻ በመመስረት ነው!\n\n💬@Health_Exit_and_COC_Exams\n     @Health_Exit_and_COC_Exams",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T17:32:41.921Z"
+    },
+    {
+      "_id": "6a382af281cff0b089b15bc4",
+      "messageId": 2071,
+      "channelUsername": "AplusEthiopian",
+      "fileName": "MATH SOCIAL 2015 SOCIAL (1).pdf",
+      "caption": "📃ADDIS ABABA UNIVERSITY\n\n🔋 2015\n\n 🚧SOCIAL MATHS FINAL EXAM \n\n© A +\n\n📝 Join here\n\nhttps://t.me/tikvah_education",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-21T18:18:26.719Z"
+    },
+    {
+      "_id": "6a3aca30470448ae5ec58371",
+      "messageId": 8968,
+      "channelUsername": "qubeeacademy",
+      "fileName": "Biology Entrance Exam.pdf",
+      "caption": "Aptitude Entrance 2013/14\n\nMathematical part Solved Questions\n\nhttps://t.me/qubeeacademy\nhttps://t.me/qubeeacademy",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-23T18:02:24.431Z"
+    },
+    {
+      "_id": "6a3acf5952caf8d232a1da74",
+      "messageId": 18865,
+      "channelUsername": "qubeeacademy",
+      "fileName": "Mathematics for Natural Sciences.pdf",
+      "caption": "AAU 1st semester freshman courses for natural science stream students:\n✍ Freshman mathematics for natural science students \n✍ Logic and critical thinking \n✍ Psychology \n✍ English skill I\n✍ Geography of Ethiopia and the horn of Africa \n✍ Physics \n✍ Physical fitness \n\nhttps://t.me/OromiaStudent_s\nhttps://t.me/OromiaStudent_s",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-23T18:24:25.269Z"
+    },
+    {
+      "_id": "6a3acff652caf8d232a1e008",
+      "messageId": 21739,
+      "channelUsername": "qubeeacademy",
+      "fileName": "",
+      "caption": "🚨 ❗️❗️❗️❗️❗️❗️❗️❗️ ⭕️\n\n✅ Gammachuu Guddaa \n🟥Tiwtooriyaaliin keenya kan hawwiin eegamaa ture, kan abjuu barattoota baay'ee dhugoomse, kan milkaa'inaaf bu'uura ta'e, ammas akkuma barame abjuu keessan dhugoomsuuf, barattoota qabxii seensaa 2018 fidanii fi warra Remedial irraa gara Freshman tti ce'an galmeessuu fi barsiisuu jalqabuu keenya gammachuun isin beeksisna!\n\n🟥Karaalee Barnoota Ittiin Kenninu :-\n🟢Boqonnaawwan hunda hawwataa fi bareedaa ta'een, qindaa'aa fi ifa ta'een Afaan Oromoo fi Ingiliffaan [Oromiffa +English]  kan Ministeera Barnootaa Moojulii bu'uura godhateen :-\n✅ Quality Video Lectures:\n✅ [Afaan Oromoo +English ] Full &Short Notes\n✅Diverse Digital Notes: PDFs, photos, documents, and PPTs for flexible learning.\n✅ Extensive Exam Prep: Weekly practices, past exams, and COC readiness.\n✅ Interactive Live Sessions: Webinars, discussions, and experience sharing.\n✅Personalized Mentorship: One-to-one academic and career guidance.\n✅ Regular Online Quizzes: Chapter-wise and weekly online exams.\n✅Full Revision Hub\n✅ Mid & Final Exam Solutions:\n✅ Summary & Concise Notes:  dhiyateera\n✅Hulu Academy maaliif Adda Ta'e ?\n➡️Karaan barnoota ittiin kenninu fi ibsinu barattoota hunda biratti jaalala argachuun isaa, dursaa fi dorgomaa kan hin qabne, balbala milkaa'inaa ta'uu isaati.\n\n✅Hulu Academy koorsiiwwan akkamii kenna ?\n➡️Walumaagalatti koorsiiwwan (Subject) Yuunivarsiitiiwwan Itoophiyaa hundatti kennaman haala ajaa'ibaa fi hawwataa ta'een ni kennina.\n🕕 Well Come Deal 👏\n✅Barattoota dura galmaa'aniif Fulbaana (8-15) qofaaf bot irraa 50 Birr (hir'ina) Discount argachuun galmaa'uu dandeessu!\n✅Milkaa'inawwan keenya bara kana duraa muraasni \n@HuluAcademyTutorial\n💿 Koorsiiwwan hunda kan Boqonnaa 1 Free chaanaalii keenya irratti waan maxxansineef hanga galmooftanitti hordofuu dandeessu! \n➡️ Chaanaalii keenya isa  guddaa kanatti makamaa  @HuluAcademy\n\n✅1️⃣0️⃣0️⃣🔣 Your Success is guaranteed with @HuluAcademy",
+      "fileType": "image",
+      "isExam": true,
+      "indexedAt": "2026-06-23T18:27:02.963Z",
+      "cleanTitle": "Gammachuu Guddaa - [Afaan Oromoo +English ] Full &Short Notes"
+    },
+    {
+      "_id": "6a3ad78552caf8d232a1f468",
+      "messageId": 29,
+      "channelUsername": "managementexitexam",
+      "fileName": "Ob ch -2.pptx",
+      "caption": "",
+      "fileType": "ppt",
+      "isExam": false,
+      "indexedAt": "2026-06-23T18:59:17.637Z"
+    },
+    {
+      "_id": "6a3b7cbb36ec1aec7217abb0",
+      "messageId": 2942,
+      "channelUsername": "ethioacadamic",
+      "fileName": "GENERAL PSYCHOLOGY.pdf",
+      "caption": "#for freshman student\n\n\nPlease share & subscribe 🙏\n                ▬▬▬▬▬▬▬▬▬▬▬  \n\nhttps://t.me/ethioacadamic",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-24T06:44:11.595Z"
+    },
+    {
+      "_id": "6a3b7d8536ec1aec7217b216",
+      "messageId": 4307,
+      "channelUsername": "ethioacadamic",
+      "fileName": "Civic final exam @keleme_2013.pdf",
+      "caption": "📖Civic final exam \n\n🏢Hawassa\n\n⏰ 2013/14\n━━━━━━━━━━━━━━━━━\n🍁••𝐉𝐨𝐢𝐧 𝐮𝐬,  | @Keleme_2013\n                       @Keleme_2013",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-24T06:47:33.340Z"
+    },
+    {
+      "_id": "6a3b7ddc36ec1aec7217b494",
+      "messageId": 4803,
+      "channelUsername": "ethioacadamic",
+      "fileName": "Basic programming.pdf",
+      "caption": "❇️ይህ መጽሃፍ መሰረታዊ የፕሮግራሚንግ እውቀት ለምትፈልጉና ለጀማሪዎች የሚሆን ነው። በቀላል አገላለጽ የተጻፈ ሲሆን በ4 ክፍል የተከፈለ ነው።\n\n✅ Programming basics, Conditions, Loops, Functions, String, Recursion,GUI....\n\n✅ C programming language\n\n✅ java programming language\n\n✅  php programming language\n\n🔎Please Share \n▬▬▬▬▬▬▬▬▬▬\n              ቻናላችን ይቀላቀሉ ‼️\n╔════\n\nhttps://t.me/ethioacadamic",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-24T06:49:00.696Z"
+    },
+    {
+      "_id": "6a3b876236ec1aec7217cf96",
+      "messageId": 5031,
+      "channelUsername": "keleme_2013",
+      "fileName": "Data structure and Algorithm in C++.pdf",
+      "caption": "Data structure and Algorithm in C++",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-24T07:29:38.770Z"
+    },
+    {
+      "_id": "6a3b87ea36ec1aec7217d7c0",
+      "messageId": 7552,
+      "channelUsername": "keleme_2013",
+      "fileName": "Aau physics  final exam july 25 pdf by all u exams.pdf",
+      "caption": "🔰Physics  final exam\n\n🏢 University :- Adiss ababa\n\n⏳:-2014\n\n━━━━━━━━━━━━━━━━━\n📚••𝐉𝐨𝐢𝐧 𝐮𝐬, | @Keleme_2013\n                      @Keleme_2013",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-24T07:31:54.333Z"
+    },
+    {
+      "_id": "6a3bd3eb8a01628c85785625",
+      "messageId": 13680,
+      "channelUsername": "keleme_2013",
+      "fileName": "Data structure and Algorithm in C++.pdf",
+      "caption": "Data structure and Algorithm in C++",
+      "fileType": "pdf",
+      "isExam": false,
+      "indexedAt": "2026-06-24T12:56:11.229Z"
+    },
+    {
+      "_id": "6a3bdb958a01628c857867c7",
+      "messageId": 1359,
+      "channelUsername": "havanacademyofficial",
+      "fileName": "Aau physics  final exam july 25 pdf by all u exams.pdf",
+      "caption": "AAU\n\nPhysics  final exam 2014\n\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n⚡️የትምህርት ሕይወታችሁ ከእኛ ጋር ብሩህ ነወ።⚡️\n                ▬▬▬▬▬▬▬▬▬▬▬\n               👀 @freshmanexams   ✅\n               👀 @freshmanexams1  ✅\n                ▬▬▬▬▬▬▬▬▬▬▬\n✔️For Comment @freshmanexams12_bot",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-24T13:28:53.288Z"
+    },
+    {
+      "_id": "6a3bdc198a01628c85786c7c",
+      "messageId": 4439,
+      "channelUsername": "havanacademyofficial",
+      "fileName": "Psychology MidExam Haramaya Univ.pdf",
+      "caption": "#Psychology #Mid_Exam #HRU\n📖 Psychology mid Exam 1\n\n🏢 University: Haramaya",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-24T13:31:05.869Z"
+    },
+    {
+      "_id": "6a3bdc198a01628c85786c7d",
+      "messageId": 4440,
+      "channelUsername": "havanacademyofficial",
+      "fileName": "Psychology MidExam Haremaya.pdf",
+      "caption": "#Psychology #Mid_Exam #HRU\n📖 Psychology mid Exam 1\n\n🏢 University: Haramaya",
+      "fileType": "pdf",
+      "isExam": true,
+      "indexedAt": "2026-06-24T13:31:05.869Z"
+    }
+  ]
+}

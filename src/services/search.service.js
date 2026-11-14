@@ -194,13 +194,15 @@ class SearchService {
         }
       }
 
-      // 3. Fallback if database is fresh
-      const fallbacks = ["DBMS Exam", "Physics Exam", "Logic", "OOP"];
-      for (const fb of fallbacks) {
+      // 3. Smart academic curriculum suggestions from suggestion.service
+      const suggestionService = require("../search/suggestion.service");
+      const smartSuggestions = suggestionService.getPopularSuggestions(limit * 2);
+      for (const item of smartSuggestions) {
         if (suggestions.length >= limit) break;
-        if (!seen.has(fb.toLowerCase())) {
-          seen.add(fb.toLowerCase());
-          suggestions.push(fb);
+        const norm = item.text.toLowerCase();
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          suggestions.push(item.text);
         }
       }
 
@@ -210,7 +212,12 @@ class SearchService {
       return this._globalSuggestionsCache;
     } catch (error) {
       console.error("Error getting global suggestions:", error);
-      return ["DBMS Exam", "Physics Exam", "Logic", "OOP"];
+      try {
+        const suggestionService = require("../search/suggestion.service");
+        return suggestionService.getPopularSuggestions(limit).map(s => s.text);
+      } catch (_) {
+        return ["DBMS Exam", "DSA Final Exam", "Operating Systems", "Calculus I Past Exam"];
+      }
     }
   }
 

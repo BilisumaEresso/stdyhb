@@ -1,0 +1,698 @@
+{
+  "timestamp": "2026-11-13T05:52:10.564Z",
+  "database": "studyhub",
+  "mongoVersion": "8.0.37",
+  "counts": {
+    "assistances": {
+      "count": 0,
+      "indexCount": 5,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "branchId_1",
+          "key": {
+            "branchId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tableId_1",
+          "key": {
+            "tableId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "botsessions": {
+      "count": 12,
+      "indexCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "key": {
+            "key": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "updatedAt_1",
+          "key": {
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "branches": {
+      "count": 1,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "cachedsearches": {
+      "count": 5,
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "query_1",
+          "key": {
+            "query": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "normalizedQuery_1",
+          "key": {
+            "normalizedQuery": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "expiresAt_1",
+          "key": {
+            "expiresAt": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "categories": {
+      "count": 0,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "channelrecommendations": {
+      "count": 65,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "channelUsername_1",
+          "key": {
+            "channelUsername": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "downloadhistories": {
+      "count": 70,
+      "indexCount": 5,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1_downloadedAt_-1",
+          "key": {
+            "userId": 1,
+            "downloadedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "telegramId_1_downloadedAt_-1",
+          "key": {
+            "telegramId": 1,
+            "downloadedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "fileId_1",
+          "key": {
+            "fileId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "downloadedAt_-1",
+          "key": {
+            "downloadedAt": -1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "orders": {
+      "count": 0,
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "branchId_1",
+          "key": {
+            "branchId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tableId_1",
+          "key": {
+            "tableId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "products": {
+      "count": 0,
+      "indexCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "categoryId_1",
+          "key": {
+            "categoryId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "querysessions": {
+      "count": 0,
+      "indexCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "queryHash_1",
+          "key": {
+            "queryHash": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "createdAt_1",
+          "key": {
+            "createdAt": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "resourcereports": {
+      "count": 2,
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "resourceId_1",
+          "key": {
+            "resourceId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "restaurants": {
+      "count": 1,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "slug_1",
+          "key": {
+            "slug": 1
+          },
+          "unique": true
+        }
+      ]
+    },
+    "savedresources": {
+      "count": 17,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "searchhistories": {
+      "count": 290,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "tables": {
+      "count": 0,
+      "indexCount": 6,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "branchId_1",
+          "key": {
+            "branchId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "qrToken_1",
+          "key": {
+            "qrToken": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "activeSessionToken_1",
+          "key": {
+            "activeSessionToken": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "telegramchannels": {
+      "count": 91,
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "username_1",
+          "key": {
+            "username": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "university_1_department_1",
+          "key": {
+            "university": 1,
+            "department": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "healthStatus_1",
+          "key": {
+            "healthStatus": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "telegramresourcequarantines": {
+      "count": 9044,
+      "indexCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "originalId_1",
+          "key": {
+            "originalId": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "telegramresources": {
+      "count": 92140,
+      "indexCount": 6,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tags_1",
+          "key": {
+            "tags": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "channelUsername_1_messageId_1",
+          "key": {
+            "channelUsername": 1,
+            "messageId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "courseCode_1",
+          "key": {
+            "courseCode": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "isExam_1_fileType_1",
+          "key": {
+            "isExam": 1,
+            "fileType": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "fileName_text_caption_text_tags_text_courseCode_text",
+          "key": {
+            "_fts": "text",
+            "_ftsx": 1
+          },
+          "unique": false
+        }
+      ]
+    },
+    "users": {
+      "count": 104,
+      "indexCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "telegramId_1",
+          "key": {
+            "telegramId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "restaurantId_1",
+          "key": {
+            "restaurantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "isBanned_1",
+          "key": {
+            "isBanned": 1
+          },
+          "unique": false
+        }
+      ]
+    }
+  },
+  "telegramresources": {
+    "total": 92140,
+    "available": 83070,
+    "unavailable": 9070,
+    "exams": 42354,
+    "withGroupId": 55970,
+    "distinctGroups": 12271,
+    "withoutGroupId": 36170,
+    "withArchiveMsg": 74946
+  },
+  "quarantine": {
+    "total": 9044,
+    "reasons": [
+      {
+        "_id": "single_image_non_resource",
+        "count": 8651
+      },
+      {
+        "_id": "commercial_ad",
+        "count": 138
+      },
+      {
+        "_id": "admin_notice",
+        "count": 123
+      },
+      {
+        "_id": "non_academic_announcement",
+        "count": 96
+      },
+      {
+        "_id": "schedule_announcement",
+        "count": 35
+      },
+      {
+        "_id": "corrupt_stub",
+        "count": 1
+      }
+    ]
+  },
+  "channels": {
+    "total": 91,
+    "health": [
+      {
+        "_id": "DEGRADED",
+        "count": 32
+      },
+      {
+        "_id": "ACTIVE",
+        "count": 59
+      }
+    ],
+    "types": [
+      {
+        "_id": "lecture_notes",
+        "count": 5
+      },
+      {
+        "_id": "1",
+        "count": 1
+      },
+      {
+        "_id": "exam_archive",
+        "count": 15
+      },
+      {
+        "_id": "general",
+        "count": 70
+      }
+    ],
+    "universities": [
+      {
+        "_id": "",
+        "count": 58
+      },
+      {
+        "_id": "ALL",
+        "count": 24
+      },
+      {
+        "_id": "ASTU",
+        "count": 2
+      },
+      {
+        "_id": "Other",
+        "count": 2
+      },
+      {
+        "_id": "AAU",
+        "count": 1
+      },
+      {
+        "_id": "All",
+        "count": 1
+      },
+      {
+        "_id": "HU",
+        "count": 1
+      },
+      {
+        "_id": "UOG",
+        "count": 1
+      },
+      {
+        "_id": "Hawassa",
+        "count": 1
+      }
+    ]
+  },
+  "activity": {
+    "users": 104,
+    "usersWithUni": 65,
+    "searches": 290,
+    "downloads": 70,
+    "saves": 17,
+    "reports": 2
+  }
+}

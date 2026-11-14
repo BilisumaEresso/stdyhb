@@ -1133,6 +1133,68 @@ function ResourceDetailContent() {
                   {resource?.channelUsername ? `@${resource.channelUsername}` : "Verified Student Channel"}
                 </strong>
               </div>
+
+              {/* Cross-Channel Alternative Sources */}
+              {resource?.alternativeSources && resource.alternativeSources.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    padding: "10px 12px",
+                    background: "var(--surface-2)",
+                    borderRadius: "10px",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "var(--primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      marginBottom: "6px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    <span>
+                      Also in {resource.alternativeSources.length} other{" "}
+                      {resource.alternativeSources.length === 1 ? "channel" : "channels"}
+                    </span>
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    {resource.alternativeSources.map((alt, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "11.5px",
+                        }}
+                      >
+                        <span style={{ fontFamily: "monospace", color: "var(--text)" }}>
+                          @{alt.channelUsername}
+                        </span>
+                        {alt.university && (
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              color: "var(--muted)",
+                              background: "var(--surface-3)",
+                              padding: "1px 5px",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            {alt.university}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

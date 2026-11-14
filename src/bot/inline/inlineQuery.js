@@ -1,6 +1,7 @@
 const orchestrationService = require("../../search/search.service");
 const userService = require("../../services/user.service");
 const searchService = require("../../services/search.service");
+const suggestionService = require("../../search/suggestion.service");
 const templates = require("../../telegram/templates");
 
 /**
@@ -45,21 +46,36 @@ async function handleInlineQuery(ctx) {
     const searchResults = await orchestrationService.searchResources(query, user);
 
     if (!searchResults || searchResults.length === 0) {
-      return await ctx.answerInlineQuery(
-        [
-          {
-            type: "article",
-            id: "no_results",
-            title: `❌ No materials found for "${query}"`,
-            description: "Tap to see search tips and recommendations",
-            input_message_content: {
-              message_text: templates.renderNoResults(query),
-              parse_mode: "HTML",
-            },
+      const suggestions = suggestionService.getSuggestions(query, { limit: 3 });
+      const articles = [
+        {
+          type: "article",
+          id: "no_results",
+          title: `❌ No materials found for "${query}"`,
+          description: "Tap to see search tips and recommendations",
+          input_message_content: {
+            message_text: templates.renderNoResults(query),
+            parse_mode: "HTML",
           },
-        ],
-        { cache_time: 60, is_personal: false }
-      );
+        },
+        ...suggestions.map((sug, idx) => ({
+          type: "article",
+          id: `sug_fallback_${idx}`,
+          title: `💡 Try searching: ${sug.text}`,
+          description: `Tap to search "${sug.text}" instead`,
+          input_message_content: {
+            message_text:
+              `🔍 <b>Searching for:</b> <i>${templates.escapeHTML(sug.text)}</i>\n\n` +
+              `Type <code>@${botUsername} ${templates.escapeHTML(sug.text)}</code> to browse exams & slides!`,
+            parse_mode: "HTML",
+          },
+        }))
+      ];
+
+      return await ctx.answerInlineQuery(articles, {
+        cache_time: 60,
+        is_personal: false,
+      });
     }
 
     const currentBatch = searchResults.slice(offset, offset + PAGE_SIZE);
@@ -87,8 +103,17 @@ async function handleInlineQuery(ctx) {
       descParts.push(`📁 ${label}`);
       const sizeStr = templates.formatSize(resource.fileSize);
       if (sizeStr) descParts.push(`💾 ${sizeStr}`);
+      if (resource.university) {
+        descParts.push(`🏛️ ${resource.university}`);
+      }
       if (resource.channelUsername) {
         descParts.push(`@${resource.channelUsername}`);
+      }
+      const totalChannels =
+        resource.channelCount ||
+        (resource.alternativeSources?.length ? resource.alternativeSources.length + 1 : 1);
+      if (totalChannels > 1) {
+        descParts.push(`🔄 ${totalChannels} channels`);
       }
 
       const cardText = resource._telegramResource

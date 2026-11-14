@@ -1,0 +1,1127 @@
+{
+  "timestamp": "2026-11-13T06:00:48.830Z",
+  "queriesCount": 19,
+  "results": [
+    {
+      "query": "DBMS",
+      "latencyMs": 2122,
+      "totalReturned": 97,
+      "relevantInTop5": 1,
+      "duplicateTitles": 34,
+      "top5": [
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 372.5869565217391,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "ጥቆማ - ኬትኛው ግቢ እንደሆነ ባላውቅም ይሄ የ Management, Business Management, Busin…",
+          "type": "notes",
+          "fileType": "image",
+          "score": 369.05172413793105,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 5,
+          "source": "telegram"
+        },
+        {
+          "title": "Mid - exam - dbms - questions",
+          "type": "document",
+          "fileType": "doc",
+          "score": 343.6666666666667,
+          "channel": "astusoftware2023",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Chapter One - Introduction to Database Management System",
+          "type": "ppt",
+          "fileType": "ppt",
+          "score": 339.73214285714283,
+          "channel": "astusoftware2023",
+          "isGrouped": true,
+          "groupSize": 5,
+          "source": "telegram"
+        },
+        {
+          "title": "Database Systems and Information Management Theme",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 327.5,
+          "channel": "exit_exams",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "DSA",
+      "latencyMs": 2848,
+      "totalReturned": 105,
+      "relevantInTop5": 0,
+      "duplicateTitles": 28,
+      "top5": [
+        {
+          "title": "Python Data Structures and Algorithms",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 378.75,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 8,
+          "source": "telegram"
+        },
+        {
+          "title": "Learn from 100+ Free Courses on Latest Cutting Edge Technologies",
+          "type": "notes",
+          "fileType": "image",
+          "score": 377.8968253968254,
+          "channel": "codewithrandom",
+          "isGrouped": true,
+          "groupSize": 6,
+          "source": "telegram"
+        },
+        {
+          "title": "Data - structures - and - algorithms",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 308.75,
+          "channel": "exit_exams",
+          "isGrouped": true,
+          "groupSize": 4,
+          "source": "telegram"
+        },
+        {
+          "title": "Algorithms in Pediatric Neurology 2011 Jaypee",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 304.1666666666667,
+          "channel": "medallbooks",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Data Structure and Algorithms Handwritten Notes",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 302.5,
+          "channel": "leadcoding",
+          "isGrouped": true,
+          "groupSize": 4,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "General Mathematics",
+      "latencyMs": 1377,
+      "totalReturned": 114,
+      "relevantInTop5": 1,
+      "duplicateTitles": 65,
+      "top5": [
+        {
+          "title": "General Physics",
+          "type": "ppt",
+          "fileType": "ppt",
+          "score": 258.6458333333333,
+          "channel": "ethioacadamic",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Chapter 1: Future Tense",
+          "type": "notes",
+          "fileType": "image",
+          "score": 257.64084507042253,
+          "channel": "keleme_2013",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 254.08227848101265,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Bexam Betam Thank You! 🙏 I Got 95 (a+) in Mathematics and 90…",
+          "type": "notes",
+          "fileType": "image",
+          "score": 223.24074074074073,
+          "channel": "freshman_materials",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "General Mathematics Mid Exam",
+          "type": "notes",
+          "fileType": "image",
+          "score": 221.25,
+          "channel": "exambankfreshman",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Mathematics for Natural Sciences",
+      "latencyMs": 1374,
+      "totalReturned": 122,
+      "relevantInTop5": 4,
+      "duplicateTitles": 78,
+      "top5": [
+        {
+          "title": "Final Exam of Natural Science",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 295.2173913043478,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Sciences",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 286.3602941176471,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Sciences",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 284.9568965517241,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Science",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 273.75,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Science",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 273.75,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Mathematics for Social Sciences",
+      "latencyMs": 1314,
+      "totalReturned": 115,
+      "relevantInTop5": 1,
+      "duplicateTitles": 83,
+      "top5": [
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 314.91983695652175,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 259.1455696202531,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Social Science Extension",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 254.5,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Maths for Social Sciences",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 253.16666666666666,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Main Campass Social Science Regular",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 250.33333333333334,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "General Physics",
+      "latencyMs": 1448,
+      "totalReturned": 126,
+      "relevantInTop5": 2,
+      "duplicateTitles": 73,
+      "top5": [
+        {
+          "title": "General Physics Mid Exam",
+          "type": "notes",
+          "fileType": "image",
+          "score": 434.3181818181818,
+          "channel": "Ethiel_Academy",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "G12 Physics Unit 1",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 404.25925925925924,
+          "channel": "ethio_new_curriculum",
+          "isGrouped": true,
+          "groupSize": 9,
+          "source": "telegram"
+        },
+        {
+          "title": "Workbook Grade 11&12 Physics 1 - 1",
+          "type": "document",
+          "fileType": "doc",
+          "score": 395,
+          "channel": "qubeeacademy",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "Physics Sbk9 - 1 - 1",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 382.5,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "General Physics",
+          "type": "ppt",
+          "fileType": "ppt",
+          "score": 357.29166666666663,
+          "channel": "ethioacadamic",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Grade 8 Mathematics",
+      "latencyMs": 1230,
+      "totalReturned": 99,
+      "relevantInTop5": 4,
+      "duplicateTitles": 38,
+      "top5": [
+        {
+          "title": "Grade 11 Mathematics - Lesson Note April 8,2020",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.9583333333333,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Grade 8 Mathematics (2015 Ministry Exam)",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 266.96428571428567,
+          "channel": "ethio_new_curriculum",
+          "isGrouped": true,
+          "groupSize": 8,
+          "source": "telegram"
+        },
+        {
+          "title": "Grade 8 Mathematics (2015 Ministry Exam)",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 266.96428571428567,
+          "channel": "ethio_new_curriculum",
+          "isGrouped": true,
+          "groupSize": 8,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics Grade 8",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 263.75,
+          "channel": "Marvel_Educations",
+          "isGrouped": true,
+          "groupSize": 6,
+          "source": "telegram"
+        },
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 259.1455696202531,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Grade 10 Biology",
+      "latencyMs": 1493,
+      "totalReturned": 124,
+      "relevantInTop5": 2,
+      "duplicateTitles": 63,
+      "top5": [
+        {
+          "title": "Hawassa University - General Biology Test 2016 E.c",
+          "type": "notes",
+          "fileType": "image",
+          "score": 430.4761904761905,
+          "channel": "keleme_2013",
+          "isGrouped": true,
+          "groupSize": 4,
+          "source": "telegram"
+        },
+        {
+          "title": "General Biology Final Exams",
+          "type": "notes",
+          "fileType": "image",
+          "score": 400.4,
+          "channel": "eethio7",
+          "isGrouped": true,
+          "groupSize": 4,
+          "source": "telegram"
+        },
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 367.5652173913044,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Biology Grade 10 Short Note With Worksheet - 1",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 341.04166666666663,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Ethiopian Grade 10 Biology Student Textbook",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 338.21428571428567,
+          "channel": "ethio_pdf_books",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Grade 12 Chemistry",
+      "latencyMs": 1634,
+      "totalReturned": 129,
+      "relevantInTop5": 5,
+      "duplicateTitles": 73,
+      "top5": [
+        {
+          "title": "Chemistry Mock Exam for Grade 12 Tyk Re",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 351.6111111111111,
+          "channel": "ethio_new_curriculum",
+          "isGrouped": true,
+          "groupSize": 9,
+          "source": "telegram"
+        },
+        {
+          "title": "Workbook Grade 11&12 Chemistry - 1",
+          "type": "document",
+          "fileType": "doc",
+          "score": 349.6190476190476,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 6,
+          "source": "telegram"
+        },
+        {
+          "title": "Workbook Grade 11&12 Chemistry - 1",
+          "type": "document",
+          "fileType": "doc",
+          "score": 349.6190476190476,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 6,
+          "source": "telegram"
+        },
+        {
+          "title": "Workbook Grade 11&12 Chemistry - 1",
+          "type": "document",
+          "fileType": "doc",
+          "score": 349.5488721804511,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 5,
+          "source": "telegram"
+        },
+        {
+          "title": "Grade 12 Chemistry Note",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 346.875,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Communicative English",
+      "latencyMs": 1340,
+      "totalReturned": 116,
+      "relevantInTop5": 4,
+      "duplicateTitles": 97,
+      "top5": [
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 314.91983695652175,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Communicative English Language Skills I",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 300.1470588235294,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Communicative English Language Skills Ii Merged",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 276.8253968253968,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Communicative English Language Skills I",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 272.9545454545455,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Communicative English Language Skills Ii Merged",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 265.71428571428567,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Logic and Critical Thinking",
+      "latencyMs": 1269,
+      "totalReturned": 141,
+      "relevantInTop5": 5,
+      "duplicateTitles": 108,
+      "top5": [
+        {
+          "title": "Logic and Critical Thinking %28Final%29 %281%29 Final - 1 - 1 - 1",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 375.25,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Logic and Critical Thinking Jr",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 351.1428571428571,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Logic and Critical Thinking",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 343.26724137931035,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Logic and Critical Thinking",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 343.19117647058823,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Logic and Critical Thinking (Final) 281019125429",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 321.5,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Geography of Ethiopia and the Horn",
+      "latencyMs": 1086,
+      "totalReturned": 111,
+      "relevantInTop5": 4,
+      "duplicateTitles": 58,
+      "top5": [
+        {
+          "title": "Geography of Ethiopia and the Horn",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 279.26724137931035,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Geography of Ethiopia and the Horn",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 279.19117647058823,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Geography 2010",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.75,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Lecture Notes for Geography of Ethiopia and the Horn",
+          "type": "ppt",
+          "fileType": "ppt",
+          "score": 257.5,
+          "channel": "eethio7",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "Lecture Notes for Geography of Ethiopia and the Horn",
+          "type": "ppt",
+          "fileType": "ppt",
+          "score": 257.5,
+          "channel": "freshman_materials",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Social Anthropology",
+      "latencyMs": 1325,
+      "totalReturned": 105,
+      "relevantInTop5": 0,
+      "duplicateTitles": 63,
+      "top5": [
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 310.04347826086956,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Anthropology Final Exam AAU",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 270.4,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 255.126582278481,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "AASTU 2014 Final Exam",
+          "type": "notes",
+          "fileType": "image",
+          "score": 234.23491379310346,
+          "channel": "freshman_materials",
+          "isGrouped": true,
+          "groupSize": 8,
+          "source": "telegram"
+        },
+        {
+          "title": "The Anthropology Book by Dk",
+          "type": "notes",
+          "fileType": "image",
+          "score": 229.80307667525773,
+          "channel": "muscatnonfiction",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Amharic fiction",
+      "latencyMs": 1458,
+      "totalReturned": 140,
+      "relevantInTop5": 0,
+      "duplicateTitles": 68,
+      "top5": [
+        {
+          "title": "Sample] Logic Study Book Chapter 5",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 269.0178571428571,
+          "channel": "campus_handout",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Sample] Anthropology Study Book Chapter 1",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.87660435267856,
+          "channel": "campus_handout",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Sample [ Global Chapter 3 Study Book",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.8660373500545,
+          "channel": "campus_handout",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Sample [ Global Chapter 3 Study Book",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.8660373500545,
+          "channel": "campus_handout",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Sample] Logic Study Book Chapter 4",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 268.68757901390643,
+          "channel": "campus_handout",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Afaan Oromo literature",
+      "latencyMs": 2326,
+      "totalReturned": 95,
+      "relevantInTop5": 4,
+      "duplicateTitles": 36,
+      "top5": [
+        {
+          "title": "Afan Oromo and Literature",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 297.91666666666663,
+          "channel": "ethioacadamic",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "History Grade 12 Unit 2 by Afaan Oromoo",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 263.02777777777777,
+          "channel": "Marvel_Educations",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Afan Oromo As Second Language Model Exam 2018",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 258.125,
+          "channel": "ethio_new_curriculum",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Afaan Oromo Grade 10 Student TextBook Final Version",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 236.32478632478632,
+          "channel": "Marvel_Educations",
+          "isGrouped": true,
+          "groupSize": 4,
+          "source": "telegram"
+        },
+        {
+          "title": "Afan Oromo and Literature",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 232.5,
+          "channel": "keleme_2013",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "AAU Nursing",
+      "latencyMs": 1738,
+      "totalReturned": 132,
+      "relevantInTop5": 0,
+      "duplicateTitles": 51,
+      "top5": [
+        {
+          "title": "በአገር አቀፍ ደረጃ ሲሰጥ የነበረው የጤና ባለሙያዎች የሙያ ብቃት ማረጋገጫ ፈተና ተጠናቋል",
+          "type": "notes",
+          "fileType": "image",
+          "score": 314.7355769230769,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Nursing Aspirants Attention - Quick Revision Notes",
+          "type": "notes",
+          "fileType": "image",
+          "score": 280.9422097994587,
+          "channel": "nursingnoteshub_in",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Coupon Code👉 - Abhi100 - Single Access to Multiple Exam…",
+          "type": "notes",
+          "fileType": "image",
+          "score": 280.53013392857144,
+          "channel": "nursingnoteshub_in",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "Adult Health Nursing - 1 Bsc Nursing 3rd Semester Main Exam Jan.…",
+          "type": "notes",
+          "fileType": "image",
+          "score": 278.65384615384613,
+          "channel": "nursingnoteshub_in",
+          "isGrouped": true,
+          "groupSize": 2,
+          "source": "telegram"
+        },
+        {
+          "title": "For Nursing Exit Exam",
+          "type": "notes",
+          "fileType": "image",
+          "score": 276.6666666666667,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 6,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Jimma University Psychology",
+      "latencyMs": 1286,
+      "totalReturned": 121,
+      "relevantInTop5": 2,
+      "duplicateTitles": 83,
+      "top5": [
+        {
+          "title": "Hawasa - university - psychology - final - exam - 2012 - e.c",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 296.1111111111111,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Psychology Final Exam 5 Jimma",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 274.33333333333337,
+          "channel": "havanacademyofficial",
+          "isGrouped": true,
+          "groupSize": 5,
+          "source": "telegram"
+        },
+        {
+          "title": "General Psychology - Baron",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 242.5,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "General Psychology - Baron",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 242.5,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "General Psychology - Baron",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 242.5,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Freshman Natural Science",
+      "latencyMs": 1492,
+      "totalReturned": 123,
+      "relevantInTop5": 4,
+      "duplicateTitles": 87,
+      "top5": [
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 259.1455696202531,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Sciences",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 257.90441176470586,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Sciences",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 256.55172413793105,
+          "channel": "aau_exam_collection",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Natural Science Extension",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 248.5,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Mathematics for Natural Science",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 247.72727272727272,
+          "channel": "freshmanebook",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    },
+    {
+      "query": "Freshman Social Science",
+      "latencyMs": 1643,
+      "totalReturned": 116,
+      "relevantInTop5": 3,
+      "duplicateTitles": 69,
+      "top5": [
+        {
+          "title": "Jimma University",
+          "type": "notes",
+          "fileType": "image",
+          "score": 314.91983695652175,
+          "channel": "ethioacadamic",
+          "isGrouped": true,
+          "groupSize": 7,
+          "source": "telegram"
+        },
+        {
+          "title": "Atc Tube Tutorials - Entrance Exam\" on YouTube",
+          "type": "notes",
+          "fileType": "image",
+          "score": 259.1455696202531,
+          "channel": "ethiouniversity1",
+          "isGrouped": true,
+          "groupSize": 3,
+          "source": "telegram"
+        },
+        {
+          "title": "Social Science Extension",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 254.5,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Main Campass Social Science Regular",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 250.33333333333334,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        },
+        {
+          "title": "Health Campass Social Science Regular",
+          "type": "pdf",
+          "fileType": "pdf",
+          "score": 250.33333333333334,
+          "channel": "Best_book_for_students",
+          "isGrouped": false,
+          "groupSize": 1,
+          "source": "telegram"
+        }
+      ]
+    }
+  ]
+}

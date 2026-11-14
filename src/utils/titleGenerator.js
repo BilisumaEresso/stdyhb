@@ -67,6 +67,8 @@ function cleanRawText(str) {
     .replace(/#([\w_]+)/g, " $1 ")
     // Remove file extensions
     .replace(/\.(pdf|pptx?|docx?|xlsx?|jpe?g|png|zip|rar)\b/gi, "")
+    // Remove commercial promo suffixes/tags like "ExamClass", "Freshman Master Class"
+    .replace(/\b(ExamClass|Freshman\s*Master\s*Class|Malefia|Qubeeac)\b/gi, "")
     // Remove duplicate copy indicators like (1), (2), _copy
     .replace(/\s*\(\d+\)\s*/g, " ")
     .replace(/_copy\b/gi, "")

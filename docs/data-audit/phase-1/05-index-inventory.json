@@ -1,0 +1,399 @@
+{
+  "telegramresources": {
+    "count": 92143,
+    "storageSizeMB": "19.92",
+    "totalIndexSizeMB": "41.15",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "tags_1",
+        "key": {
+          "tags": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "channelUsername_1_messageId_1",
+        "key": {
+          "channelUsername": 1,
+          "messageId": 1
+        },
+        "unique": true,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "courseCode_1",
+        "key": {
+          "courseCode": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "isExam_1_fileType_1",
+        "key": {
+          "isExam": 1,
+          "fileType": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "fileName_text_caption_text_tags_text_courseCode_text",
+        "key": {
+          "_fts": "text",
+          "_ftsx": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": {
+          "caption": 1,
+          "courseCode": 3,
+          "fileName": 5,
+          "tags": 4
+        },
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "telegramresourcequarantines": {
+    "count": 9044,
+    "storageSizeMB": "5.74",
+    "totalIndexSizeMB": "0.87",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "originalId_1",
+        "key": {
+          "originalId": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "telegramchannels": {
+    "count": 91,
+    "storageSizeMB": "0.04",
+    "totalIndexSizeMB": "0.14",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "username_1",
+        "key": {
+          "username": 1
+        },
+        "unique": true,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "university_1_department_1",
+        "key": {
+          "university": 1,
+          "department": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "healthStatus_1",
+        "key": {
+          "healthStatus": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "cachedsearches": {
+    "count": 24,
+    "storageSizeMB": "1.20",
+    "totalIndexSizeMB": "0.14",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "query_1",
+        "key": {
+          "query": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "normalizedQuery_1",
+        "key": {
+          "normalizedQuery": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "expiresAt_1",
+        "key": {
+          "expiresAt": 1
+        },
+        "unique": false,
+        "isTTL": true,
+        "expireAfterSeconds": 0,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "querysessions": {
+    "count": 0,
+    "storageSizeMB": "0.02",
+    "totalIndexSizeMB": "0.08",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "queryHash_1",
+        "key": {
+          "queryHash": 1
+        },
+        "unique": true,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "createdAt_1",
+        "key": {
+          "createdAt": 1
+        },
+        "unique": false,
+        "isTTL": true,
+        "expireAfterSeconds": 3600,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "users": {
+    "count": 104,
+    "storageSizeMB": "0.05",
+    "totalIndexSizeMB": "0.14",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "telegramId_1",
+        "key": {
+          "telegramId": 1
+        },
+        "unique": true,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "restaurantId_1",
+        "key": {
+          "restaurantId": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "isBanned_1",
+        "key": {
+          "isBanned": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "searchhistories": {
+    "count": 290,
+    "storageSizeMB": "0.06",
+    "totalIndexSizeMB": "0.08",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "userId_1",
+        "key": {
+          "userId": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  },
+  "downloadhistories": {
+    "count": 70,
+    "storageSizeMB": "0.05",
+    "totalIndexSizeMB": "0.18",
+    "indexes": [
+      {
+        "name": "_id_",
+        "key": {
+          "_id": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "userId_1_downloadedAt_-1",
+        "key": {
+          "userId": 1,
+          "downloadedAt": -1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "telegramId_1_downloadedAt_-1",
+        "key": {
+          "telegramId": 1,
+          "downloadedAt": -1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "fileId_1",
+        "key": {
+          "fileId": 1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      },
+      {
+        "name": "downloadedAt_-1",
+        "key": {
+          "downloadedAt": -1
+        },
+        "unique": false,
+        "isTTL": false,
+        "expireAfterSeconds": null,
+        "weights": null,
+        "partialFilterExpression": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "verifiedAt": "2026-11-13T06:47:15.909Z",
+  "albumMetrics": {
+    "availWithGroup": 55843,
+    "unavailWithGroup": 130,
+    "totalDistinctGroups": 12272,
+    "availDistinctGroups": 12240,
+    "unavailDistinctGroups": 52,
+    "standaloneAvail": 27230,
+    "standaloneUnavail": 8940,
+    "invalidGroupIndex": 0,
+    "invalidGroupTotal": 0,
+    "mismatchedGroupTotalCount": 27,
+    "distinctSearchableEntitiesFormula": "standaloneAvail + availDistinctGroups",
+    "distinctSearchableEntities": 39470
+  },
+  "duplicateMetrics": {
+    "totalAvailableDocuments": 83073,
+    "distinctFileUniqueIds": 52670,
+    "missingFileUniqueId": 0,
+    "duplicateClustersCount": 13133,
+    "documentsInDuplicateClusters": 43536,
+    "duplicateSurplusInstances": 30403,
+    "crossChannelClustersCount": 5972,
+    "maxCopies": {
+      "fileUniqueId": "4453692629696188461",
+      "count": 37,
+      "channelsCount": 8,
+      "channels": [
+        "Marvel_Educations",
+        "qubeeacademy",
+        "Ethio_Students_only",
+        "ethioacadamic",
+        "keleme_2013",
+        "Best_book_for_students",
+        "Ethiel_Academy",
+        "QesemAcademy"
+      ],
+      "fileName": "WORK BOOK-GEOGRAPHY-GRADE-11&12.pdf"
+    }
+  }
+}

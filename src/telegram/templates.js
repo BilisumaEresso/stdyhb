@@ -126,16 +126,25 @@ function renderListTemplate(
       const num = numberEmojis[idx] || `${idx + 1}.`;
       const title = getTitle(resource);
       const emoji = getFileEmoji(resource.fileType, resource._isGrouped);
-      const bundleBadge = resource._isGrouped
-        ? ` <b>[${getFileLabel(resource.fileType, true, resource.groupSize)}]</b>`
-        : "";
-      const exam = resource.isExam ? " 🎓" : "";
-      const size = !resource._isGrouped ? formatSize(resource.fileSize) : "";
-      const sizeTxt = size ? ` · <i>${size}</i>` : "";
+      const label = getFileLabel(resource.fileType, resource._isGrouped, resource.groupSize);
+      const examBadge = resource.isExam ? " 🎓" : "";
       const campusBadge = isCampusResource(resource, user)
         ? ` 🏛️ <b>[${escapeHTML(user.university.toUpperCase())}]</b>`
+        : resource.university
+        ? ` 🏛️ [${escapeHTML(resource.university)}]`
         : "";
-      msg += `${num} ${emoji} ${title}${bundleBadge}${campusBadge}${exam}${sizeTxt}\n`;
+
+      const size = !resource._isGrouped ? formatSize(resource.fileSize) : "";
+      const sizeTxt = size ? ` · ${size}` : "";
+
+      const totalChannels =
+        resource.channelCount ||
+        (resource.alternativeSources?.length ? resource.alternativeSources.length + 1 : 1);
+      const altTxt = totalChannels > 1 ? ` · 🔄 <i>${totalChannels} ch</i>` : "";
+      const sourceTxt = resource.channelUsername ? ` · @${escapeHTML(resource.channelUsername)}` : "";
+
+      msg += `${num} ${emoji} <b>${title}</b>${examBadge}\n`;
+      msg += `   └ <i>${label}</i>${sizeTxt}${campusBadge}${sourceTxt}${altTxt}\n`;
     });
   }
 
@@ -239,13 +248,38 @@ function renderDetailCard(resource, user = null) {
     msg += `\n${tagStr}\n`;
   }
 
-  // source channel
+  // source channel & alternatives
+  const altSources = Array.isArray(resource.alternativeSources) ? resource.alternativeSources : [];
+  const totalChannels =
+    resource.channelCount ||
+    (altSources.length > 0 ? altSources.length + 1 : 1);
+
   if (resource.channelUsername) {
     const ch = escapeHTML(resource.channelUsername);
     const postUrl = resource.messageId
       ? `https://t.me/${resource.channelUsername}/${resource.messageId}`
       : `https://t.me/${resource.channelUsername}`;
-    msg += `\n📡 Source: <a href="${postUrl}">@${ch}</a>\n`;
+    msg += `\n📡 <b>Source:</b> <a href="${postUrl}">@${ch}</a>`;
+    if (resource.university) {
+      msg += ` · <i>${escapeHTML(resource.university)}</i>`;
+    }
+    msg += `\n`;
+  }
+
+  // Cross-channel transparency
+  if (altSources.length > 0) {
+    msg += `🔄 <b>Available from ${totalChannels} channels:</b>\n`;
+    altSources.slice(0, 3).forEach((alt) => {
+      const altPost =
+        alt.messageId && alt.channelUsername
+          ? ` · <a href="https://t.me/${alt.channelUsername}/${alt.messageId}">post</a>`
+          : "";
+      const altUni = alt.university ? ` [${escapeHTML(alt.university)}]` : "";
+      msg += `  • @${escapeHTML(alt.channelUsername || "channel")}${altUni}${altPost}\n`;
+    });
+    if (altSources.length > 3) {
+      msg += `  <i>+${altSources.length - 3} more channels</i>\n`;
+    }
   }
 
   // caption (expandable if long)
@@ -357,14 +391,63 @@ function renderNoResults(query, suggestionItems = []) {
   return result;
 }
 
-// ─── resource unavailable error ───────────────────────────────────────────────
-function renderError() {
+// ─── delivery failure handler ───────────────────────────────────────────────
+function renderDeliveryError(errorType = "TEMPORARY_FAILURE", resource = null) {
   let msg = `<code>─────────────────────</code>\n`;
-  msg += `⚠️ <b>File unavailable</b>\n\n`;
-  msg += `This file may have been removed from its source channel.\n\n`;
-  msg += `<i>Try searching again — there may be another copy available.</i>\n`;
+  const keyboard = [];
+
+  if (errorType === "PERMANENT_FAILURE") {
+    msg += `⚠️ <b>Resource Unavailable</b>\n\n`;
+    msg += `This resource is currently unavailable from its original source.\n\n`;
+    msg += `<i>Try searching again — there may be another copy available in another channel.</i>\n`;
+    msg += `<code>─────────────────────</code>`;
+
+    keyboard.push([
+      Markup.button.callback("🔍 Search Again", "open_search_screen"),
+      Markup.button.callback("🔥 Trending", "nav_trending"),
+    ]);
+  } else {
+    // TEMPORARY_FAILURE or UNKNOWN_FAILURE
+    msg += `⏳ <b>Couldn't retrieve this file right now</b>\n\n`;
+    msg += `Telegram was momentarily busy or the network timed out.\n\n`;
+    msg += `<i>Please tap below to try again in a few moments.</i>\n`;
+    msg += `<code>─────────────────────</code>`;
+
+    if (resource && resource._id) {
+      const retryAction = resource.groupId ? `grp_${resource._id}` : `get_${resource._id}`;
+      keyboard.push([Markup.button.callback("🔄 Try Again", retryAction)]);
+    }
+    keyboard.push([
+      Markup.button.callback("🔍 New Search", "open_search_screen"),
+      Markup.button.callback("🔥 Trending", "nav_trending"),
+    ]);
+  }
+
+  return { text: msg, keyboard };
+}
+
+// ─── legacy resource unavailable error ───────────────────────────────────────
+function renderError() {
+  return renderDeliveryError("PERMANENT_FAILURE").text;
+}
+
+// ─── search session expired recovery ─────────────────────────────────────────
+function renderExpiredSession() {
+  let msg = `<code>─────────────────────</code>\n`;
+  msg += `⏰ <b>Search Session Expired</b>\n\n`;
+  msg += `This search session has expired from memory.\n\n`;
+  msg += `<i>Tap <b>Search Again</b> to start a new search or explore popular topics below.</i>\n`;
   msg += `<code>─────────────────────</code>`;
-  return msg;
+
+  const keyboard = [
+    [Markup.button.callback("🔍 Search Again", "open_search_screen")],
+    [
+      Markup.button.callback("🔥 Trending", "nav_trending"),
+      Markup.button.callback("💡 New Search", "open_search_screen"),
+    ],
+  ];
+
+  return { text: msg, keyboard };
 }
 
 // ─── welcome: new user ────────────────────────────────────────────────────────
@@ -486,6 +569,8 @@ module.exports = {
   renderFileDelivered,
   renderNoResults,
   renderError,
+  renderDeliveryError,
+  renderExpiredSession,
   renderSearchPrompt,
   renderReportPrompt,
   renderReportSubmitted,

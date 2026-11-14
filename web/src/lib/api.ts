@@ -1,5 +1,17 @@
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/+$/, "");
 
+export interface AlternativeSource {
+  channelUsername?: string;
+  messageId?: number;
+  url?: string;
+  fileId?: string;
+  archiveMessageId?: number;
+  university?: string;
+  downloadCount?: number;
+  score?: number;
+  _id?: string;
+}
+
 export interface ResourceItem {
   _id: string;
   fileName: string;
@@ -18,9 +30,13 @@ export interface ResourceItem {
   isExam?: boolean;
   courseCode?: string;
   university?: string;
+  universities?: string[];
   downloadCount: number;
   indexedAt: string;
   groupItems?: ResourceItem[];
+  alternativeSources?: AlternativeSource[];
+  channelCount?: number;
+  duplicateCount?: number;
 }
 
 export interface SearchResponse {
@@ -83,6 +99,35 @@ export async function searchResources(
     }
     console.warn("Search request failed:", err);
     return null;
+  }
+}
+
+export interface SuggestionsResponse {
+  success: boolean;
+  data: SuggestionItem[];
+}
+
+export interface SuggestionItem {
+  text: string;
+  type: "subject" | "course" | "popular" | "recent";
+  subjectKey?: string;
+}
+
+export async function fetchSearchSuggestions(
+  query: string,
+  signal?: AbortSignal
+): Promise<SuggestionItem[]> {
+  try {
+    const q = encodeURIComponent(query.trim());
+    const res = await fetch(`${API_BASE}/search/suggestions?q=${q}&limit=6`, { signal });
+    if (!res.ok) return [];
+    const json: SuggestionsResponse = await res.json();
+    return json.success && Array.isArray(json.data) ? json.data : [];
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw err;
+    }
+    return [];
   }
 }
 

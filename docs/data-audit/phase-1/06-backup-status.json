@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-11-13T06:49:44.128Z",
+  "databaseName": "studyhub",
+  "clusterDomain": "cluster0.rfdlc8z.mongodb.net",
+  "replicaSetName": "atlas-8ql1x9-shard-0",
+  "hosts": [
+    "ac-2bcical-shard-00-00.rfdlc8z.mongodb.net:27017",
+    "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+    "ac-2bcical-shard-00-02.rfdlc8z.mongodb.net:27017"
+  ],
+  "primary": "ac-2bcical-shard-00-01.rfdlc8z.mongodb.net:27017",
+  "localDbAccess": "Accessible (oplog.rs)",
+  "adminAccess": "Authorized for basic admin ping",
+  "localBackupFiles": [
+    {
+      "path": "C:\\Users\\billy\\Desktop\\StudyHub\\docs\\data-audit\\phase-1\\06-backup-status-check.js",
+      "size": 4526,
+      "modified": "2026-11-13T06:49:31.136Z"
+    }
+  ]
+}

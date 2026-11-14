@@ -1,5 +1,6 @@
 const { Markup } = require("telegraf");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const { getClient } = require("../search/telegramIndexer");
 const TelegramResource = require("../db/models/TelegramResource");
 const orchestrationService = require("../search/search.service");
@@ -45,8 +46,108 @@ async function recordSuccessfulDelivery(userId, resource, action = "download") {
   }
 }
 
+// ─── Error Classification & Availability Protection (Phase 2.8) ─────────────
+
+const DELIVERY_ERROR_TYPES = {
+  PERMANENT_FAILURE: "PERMANENT_FAILURE",
+  TEMPORARY_FAILURE: "TEMPORARY_FAILURE",
+  UNKNOWN_FAILURE: "UNKNOWN_FAILURE",
+};
+
+const PERMANENT_ERROR_CODES = new Set([
+  "MESSAGE_ID_INVALID",
+  "MESSAGE_EMPTY",
+  "MSG_ID_INVALID",
+  "CHANNEL_PRIVATE",
+  "CHANNEL_INVALID",
+  "CHAT_INVALID",
+  "USER_BANNED_IN_CHANNEL",
+  "CHAT_ADMIN_REQUIRED",
+  "INPUT_USER_DEACTIVATED",
+  "PEER_ID_INVALID",
+]);
+
+const TEMPORARY_ERROR_CODES = new Set([
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ESOCKETTIMEDOUT",
+  "EHOSTUNREACH",
+  "EPIPE",
+  "RELAY_TIMEOUT",
+  "TIMEOUT",
+]);
+
+/**
+ * Classifies Telegram/GramJS delivery errors:
+ * - PERMANENT_FAILURE: source message deleted, channel closed/private, peer invalid
+ * - TEMPORARY_FAILURE: flood wait, rate limits, timeouts, connection drops, 5xx server errors, relay timeouts
+ * - UNKNOWN_FAILURE: unverified errors (protected from permanent deactivation)
+ */
+function classifyDeliveryError(error) {
+  if (!error) return DELIVERY_ERROR_TYPES.UNKNOWN_FAILURE;
+
+  const rawMsg = String(error.errorMessage || error.message || "").toUpperCase();
+  const code = error.code;
+  const errCode = error.response?.error_code || (typeof code === "number" ? code : null);
+
+  // 1. Flood Wait & Rate Limiting (GramJS FloodWaitError, HTTP 420/429)
+  if (
+    error.name === "FloodWaitError" ||
+    errCode === 420 ||
+    errCode === 429 ||
+    rawMsg.startsWith("FLOOD_WAIT") ||
+    rawMsg.startsWith("FLOOD_PREMIUM_WAIT") ||
+    rawMsg.includes("TOO MANY REQUESTS") ||
+    rawMsg.includes("SLOWMODE_WAIT")
+  ) {
+    return DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE;
+  }
+
+  // 2. Network, Socket & Timeout errors
+  if (
+    error.name === "TimeoutError" ||
+    error.name === "ConnectionError" ||
+    error.name === "RelayTimeoutError" ||
+    (typeof code === "string" && TEMPORARY_ERROR_CODES.has(code.toUpperCase())) ||
+    rawMsg.includes("TIMEOUT") ||
+    rawMsg.includes("ETIMEDOUT") ||
+    rawMsg.includes("ECONNRESET") ||
+    rawMsg.includes("ECONNREFUSED") ||
+    rawMsg.includes("RELAY_TIMEOUT") ||
+    rawMsg.includes("CONNECTION CLOSED") ||
+    rawMsg.includes("CONNECTION_LOST") ||
+    rawMsg.includes("INTERNET_DISCONNECTED")
+  ) {
+    return DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE;
+  }
+
+  // 3. Telegram Server / Gateway errors (5xx)
+  if (errCode && errCode >= 500 && errCode < 600) {
+    return DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE;
+  }
+  if (rawMsg.includes("RPC_CALL_FAIL") || rawMsg.includes("WORKER_BUSY")) {
+    return DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE;
+  }
+
+  // 4. Positive Permanent Failures (deleted messages, inaccessible private channels)
+  for (const permCode of PERMANENT_ERROR_CODES) {
+    if (rawMsg.includes(permCode)) {
+      return DELIVERY_ERROR_TYPES.PERMANENT_FAILURE;
+    }
+  }
+
+  return DELIVERY_ERROR_TYPES.UNKNOWN_FAILURE;
+}
+
 async function markResourceUnavailable(resourceId, groupId = null) {
   try {
+    if (!resourceId && !groupId) return;
+    if (!mongoose.connection || mongoose.connection.readyState !== 1) {
+      return;
+    }
     if (groupId) {
       await TelegramResource.updateMany({ groupId }, { $set: { isAvailable: false } });
       await CachedSearch.updateMany(
@@ -60,6 +161,7 @@ async function markResourceUnavailable(resourceId, groupId = null) {
         { $pull: { resources: { _id: resourceId } } }
       );
     }
+    console.log(`[DELIVERY] Resource marked unavailable: ${resourceId} (groupId: ${groupId})`);
   } catch (err) {
     console.error("Error marking resource unavailable:", err);
   }
@@ -113,6 +215,154 @@ function applyResultFilter(results, filter = "all", user = null) {
   });
 }
 
+// ─── Search Session Recovery Helpers (Phase 2.6) ───────────────────────────
+
+/**
+ * Safely extracts query string from a Telegram search list message
+ * Format: "🔍 <query>" or "🔍 <query> · 🎓 Exams"
+ */
+function extractQueryFromMessage(messageText) {
+  if (!messageText || typeof messageText !== "string") return null;
+  const firstLine = messageText.split("\n")[0].trim();
+  if (firstLine.startsWith("🔍")) {
+    const raw = firstLine.replace(/^🔍\s*/, "");
+    // Strip trailing category/filter pills if present
+    const cleaned = raw.split(/\s*·\s*[🎓📙📕🏛️]/)[0].trim();
+    return cleaned.length > 0 ? cleaned : null;
+  }
+  return null;
+}
+
+/**
+ * Persists search session into Telegraf session and updates MongoDB QuerySession
+ */
+async function saveSearchSession(ctx, query, queryHash, page = 1, activeFilter = "all") {
+  if (!query || !queryHash) return;
+  const now = new Date();
+
+  // 1. Update/upsert QuerySession with refreshed createdAt (resets 1-hour TTL sliding window)
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    await QuerySession.findOneAndUpdate(
+      { queryHash },
+      { queryHash, query, createdAt: now },
+      { upsert: true }
+    ).catch(() => {});
+  }
+
+  // 2. Persist in Telegraf user session (7-day persistence in BotSession)
+  if (ctx && ctx.session) {
+    if (!ctx.session.searches || typeof ctx.session.searches !== "object") {
+      ctx.session.searches = {};
+    }
+    ctx.session.searches[queryHash] = {
+      query,
+      queryHash,
+      page,
+      activeFilter,
+      ownerId: ctx.from?.id,
+      updatedAt: Date.now()
+    };
+
+    // Cap to 15 recent searches per user to keep session compact
+    const keys = Object.keys(ctx.session.searches);
+    if (keys.length > 15) {
+      const oldestKey = keys.sort((a, b) =>
+        (ctx.session.searches[a].updatedAt || 0) - (ctx.session.searches[b].updatedAt || 0)
+      )[0];
+      delete ctx.session.searches[oldestKey];
+    }
+  }
+}
+
+/**
+ * Resilient search session resolver:
+ * 1. Validates queryHash format.
+ * 2. Checks MongoDB QuerySession and refreshes timestamp.
+ * 3. Checks Telegraf persistent user session (ctx.session.searches).
+ * 4. Inspects message text and cryptographically verifies MD5 hash.
+ */
+async function resolveSearchSession(ctx, queryHash) {
+  if (!queryHash || typeof queryHash !== "string") return null;
+  const safeHash = queryHash.trim().toLowerCase();
+  if (!/^[a-f0-9]{8,32}$/.test(safeHash)) return null;
+
+  // 1. Check MongoDB QuerySession
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    const session = await QuerySession.findOne({ queryHash: safeHash }).catch(() => null);
+    if (session && session.query) {
+      // Sliding window touch
+      QuerySession.updateOne({ queryHash: safeHash }, { $set: { createdAt: new Date() } }).catch(() => {});
+      return { query: session.query, queryHash: safeHash, source: "db" };
+    }
+  }
+
+  // 2. Check Telegraf user session
+  if (ctx && ctx.session?.searches?.[safeHash]?.query) {
+    const saved = ctx.session.searches[safeHash];
+    // Re-seed QuerySession in MongoDB
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      await QuerySession.findOneAndUpdate(
+        { queryHash: safeHash },
+        { queryHash: safeHash, query: saved.query, createdAt: new Date() },
+        { upsert: true }
+      ).catch(() => {});
+    }
+    return {
+      query: saved.query,
+      queryHash: safeHash,
+      activeFilter: saved.activeFilter,
+      source: "user_session"
+    };
+  }
+
+  // 3. Inspect message text if available and verify hash
+  const messageText = ctx.callbackQuery?.message?.text;
+  if (messageText) {
+    const extracted = extractQueryFromMessage(messageText);
+    if (extracted) {
+      const computedHash = crypto
+        .createHash("md5")
+        .update(extracted)
+        .digest("hex")
+        .substring(0, safeHash.length);
+
+      if (computedHash === safeHash) {
+        // 100% cryptographic match! Re-save to DB and session
+        await saveSearchSession(ctx, extracted, safeHash, 1, "all");
+        return { query: extracted, queryHash: safeHash, source: "message_hash_match" };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Renders user-friendly expiration message when session cannot be recovered
+ */
+async function handleExpiredSession(ctx, queryHash) {
+  try {
+    await ctx.answerCbQuery("⏰ Search session expired.", { show_alert: false });
+  } catch (_) {}
+
+  const { text, keyboard } = templates.renderExpiredSession();
+  const replyMarkup = Markup.inlineKeyboard(keyboard).reply_markup;
+
+  if (ctx.callbackQuery?.message) {
+    await ctx
+      .editMessageText(text, {
+        parse_mode: "HTML",
+        reply_markup: replyMarkup
+      })
+      .catch(() => {});
+  } else {
+    await ctx.reply(text, {
+      parse_mode: "HTML",
+      reply_markup: replyMarkup
+    });
+  }
+}
+
 async function sendPaginatedResults(
   ctx,
   results,
@@ -153,11 +403,7 @@ async function sendPaginatedResults(
     return await ctx.reply(text, { parse_mode: "HTML", reply_markup: replyMarkup });
   }
 
-  await QuerySession.findOneAndUpdate(
-    { queryHash },
-    { queryHash, query },
-    { upsert: true }
-  );
+  await saveSearchSession(ctx, query, queryHash, page, activeFilter);
 
   const filteredResults = applyResultFilter(results, activeFilter, user);
 
@@ -206,6 +452,11 @@ async function sendPaginatedResults(
     );
     keyboard.push(navButtons);
   }
+
+  // Actionable Search Again button
+  keyboard.push([
+    Markup.button.callback("🔍 Search Again", "open_search_screen"),
+  ]);
 
   const buttons = Markup.inlineKeyboard(keyboard);
 
@@ -287,19 +538,26 @@ async function renderDetailCardHandler(
     }
     let actionPrefix = isGroup ? "grp" : "get";
 
+    // Row 1: Prominent Primary Action (Full-width for instant 1-tap download)
     buttons.push([
-      Markup.button.callback(buttonText, `${actionPrefix}_${resource._id.toString()}`),
-      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`),
+      Markup.button.callback(buttonText, `${actionPrefix}_${resource._id.toString()}`)
+    ]);
+
+    // Row 2: Secondary Utilities (Save, Source Channel, Report)
+    const utilRow = [
+      Markup.button.callback("💾 Save", `save_${resource._id.toString()}`)
+    ];
+    const channelUrl = formatChannelUrl(null, resource.channelUsername, resource.messageId);
+    if (channelUrl) {
+      utilRow.push(Markup.button.url("🔗 Channel", channelUrl));
+    }
+    utilRow.push(
       Markup.button.callback(
         "⚠️ Report",
         `rep_${queryHash}_${page}_${resultIndex}_${activeFilter}`
-      ),
-    ]);
-
-    const channelUrl = formatChannelUrl(null, resource.channelUsername, resource.messageId);
-    if (channelUrl) {
-      buttons.push([Markup.button.url("🔗 View in Channel", channelUrl)]);
-    }
+      )
+    );
+    buttons.push(utilRow);
   } else {
     let title = resource.title || "GitHub Repository";
     cardText += `💻 <b>${templates.escapeHTML(title)}</b>\n📌 Source: GitHub\n`;
@@ -529,6 +787,7 @@ async function handleDownload(ctx, resourceId) {
     let forwardedMessages;
     let usedArchive = false;
     let tg = null;
+    let deliveryError = null;
     const archiveChatId = process.env.ARCHIVE_CHAT_ID ? parseInt(process.env.ARCHIVE_CHAT_ID) : null;
 
     try {
@@ -564,6 +823,7 @@ async function handleDownload(ctx, resourceId) {
         }
       }
     } catch (gramError) {
+      deliveryError = gramError;
       console.warn(`[DELIVERY] Primary forward failed: ${gramError.message}`);
       // 3. Fallback to archive if not yet tried
       if (!usedArchive && resource.archiveMessageId && archiveChatId && tg) {
@@ -573,6 +833,7 @@ async function handleDownload(ctx, resourceId) {
             fromPeer: archiveChatId
           }));
           usedArchive = true;
+          deliveryError = null;
         } catch (archiveErr) {
           console.warn('[ARCHIVE FALLBACK FAIL]', archiveErr.message);
         }
@@ -581,7 +842,25 @@ async function handleDownload(ctx, resourceId) {
       if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+
+        const errorClass = classifyDeliveryError(deliveryError);
+        console.log(`[DELIVERY] Forward error classified as: ${errorClass} for resource ${resourceId}`);
+
+        if (errorClass === DELIVERY_ERROR_TYPES.PERMANENT_FAILURE) {
+          await markResourceUnavailable(resource._id, resource.groupId);
+        }
+
+        const errPrompt = templates.renderDeliveryError(errorClass, resource);
+        await ctx.telegram.editMessageText(
+          targetChatId,
+          statusMsg.message_id,
+          null,
+          errPrompt.text,
+          {
+            parse_mode: "HTML",
+            reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+          }
+        ).catch(() => {});
         return;
       }
     }
@@ -589,7 +868,21 @@ async function handleDownload(ctx, resourceId) {
     if (!forwardedMessages || forwardedMessages.length === 0 || !forwardedMessages[0].id) {
        clearInterval(actionInterval);
        activeUserRequests.delete(requestKey);
-       await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+       const errorClass = classifyDeliveryError(deliveryError);
+       if (errorClass === DELIVERY_ERROR_TYPES.PERMANENT_FAILURE) {
+         await markResourceUnavailable(resource._id, resource.groupId);
+       }
+       const errPrompt = templates.renderDeliveryError(errorClass, resource);
+       await ctx.telegram.editMessageText(
+         targetChatId,
+         statusMsg.message_id,
+         null,
+         errPrompt.text,
+         {
+           parse_mode: "HTML",
+           reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+         }
+       ).catch(() => {});
        return;
     }
 
@@ -617,7 +910,19 @@ async function handleDownload(ctx, resourceId) {
             clearInterval(pendingDeliveries.get(newMsgId).actionInterval);
             pendingDeliveries.delete(newMsgId);
             activeUserRequests.delete(requestKey);
-            await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+
+            // Relay timeout is temporary - never mark resource unavailable!
+            const errPrompt = templates.renderDeliveryError(DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE, resource);
+            await ctx.telegram.editMessageText(
+              targetChatId,
+              statusMsg.message_id,
+              null,
+              errPrompt.text,
+              {
+                parse_mode: "HTML",
+                reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+              }
+            ).catch(() => {});
           }
         }, 30000);
 
@@ -635,7 +940,12 @@ async function handleDownload(ctx, resourceId) {
 
   } catch (err) {
     activeUserRequests.delete(requestKey);
-    await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
+    const errorClass = classifyDeliveryError(err);
+    const errPrompt = templates.renderDeliveryError(errorClass);
+    await ctx.reply(errPrompt.text, {
+      parse_mode: "HTML",
+      reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+    }).catch(() => {});
   }
 }
 
@@ -786,6 +1096,7 @@ async function handleGroupDownload(ctx, resourceId) {
     let forwardedMessages;
     let usedArchive = false;
     let tg = null;
+    let groupDeliveryError = null;
     const archiveChatId = process.env.ARCHIVE_CHAT_ID ? parseInt(process.env.ARCHIVE_CHAT_ID) : null;
 
     try {
@@ -822,6 +1133,7 @@ async function handleGroupDownload(ctx, resourceId) {
         }
       }
     } catch (gramError) {
+      groupDeliveryError = gramError;
       console.warn(`[DELIVERY] Primary group forward failed: ${gramError.message}`);
       // 3. Fallback to archive if not yet used
       const archiveIds = items.map(it => it.archiveMessageId).filter(Boolean);
@@ -832,6 +1144,7 @@ async function handleGroupDownload(ctx, resourceId) {
             fromPeer: archiveChatId
           }));
           usedArchive = true;
+          groupDeliveryError = null;
           console.log(`[DELIVERY] Fallback archive delivered ${archiveIds.length} of ${items.length} items`);
         } catch (err) {
           console.warn('[ARCHIVE FALLBACK FAIL]', err.message);
@@ -841,7 +1154,25 @@ async function handleGroupDownload(ctx, resourceId) {
       if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+
+        const errorClass = classifyDeliveryError(groupDeliveryError);
+        console.log(`[DELIVERY] Group forward error classified as: ${errorClass} for resource ${resourceId}`);
+
+        if (errorClass === DELIVERY_ERROR_TYPES.PERMANENT_FAILURE) {
+          await markResourceUnavailable(resource._id, resource.groupId);
+        }
+
+        const errPrompt = templates.renderDeliveryError(errorClass, resource);
+        await ctx.telegram.editMessageText(
+          targetChatId,
+          statusMsg.message_id,
+          null,
+          errPrompt.text,
+          {
+            parse_mode: "HTML",
+            reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+          }
+        ).catch(() => {});
         return;
       }
     }
@@ -849,7 +1180,21 @@ async function handleGroupDownload(ctx, resourceId) {
     if (!forwardedMessages || forwardedMessages.length === 0) {
         clearInterval(actionInterval);
         activeUserRequests.delete(requestKey);
-        await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+        const errorClass = classifyDeliveryError(groupDeliveryError);
+        if (errorClass === DELIVERY_ERROR_TYPES.PERMANENT_FAILURE) {
+          await markResourceUnavailable(resource._id, resource.groupId);
+        }
+        const errPrompt = templates.renderDeliveryError(errorClass, resource);
+        await ctx.telegram.editMessageText(
+          targetChatId,
+          statusMsg.message_id,
+          null,
+          errPrompt.text,
+          {
+            parse_mode: "HTML",
+            reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+          }
+        ).catch(() => {});
         return;
     }
 
@@ -857,7 +1202,21 @@ async function handleGroupDownload(ctx, resourceId) {
     if (newMsgIds.length === 0) {
          clearInterval(actionInterval);
          activeUserRequests.delete(requestKey);
-         await ctx.telegram.editMessageText(targetChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+         const errorClass = classifyDeliveryError(groupDeliveryError);
+         if (errorClass === DELIVERY_ERROR_TYPES.PERMANENT_FAILURE) {
+           await markResourceUnavailable(resource._id, resource.groupId);
+         }
+         const errPrompt = templates.renderDeliveryError(errorClass, resource);
+         await ctx.telegram.editMessageText(
+           targetChatId,
+           statusMsg.message_id,
+           null,
+           errPrompt.text,
+           {
+             parse_mode: "HTML",
+             reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+           }
+         ).catch(() => {});
          return;
     }
 
@@ -913,7 +1272,17 @@ async function handleGroupDownload(ctx, resourceId) {
                     }
                     recordSuccessfulDelivery(userId, resource, "view_set");
                 } else {
-                    await ctx.telegram.editMessageText(destChatId, statusMsg.message_id, null, templates.renderError(), { parse_mode: "HTML" }).catch(() => {});
+                    const errPrompt = templates.renderDeliveryError(DELIVERY_ERROR_TYPES.TEMPORARY_FAILURE, resource);
+                    await ctx.telegram.editMessageText(
+                      destChatId,
+                      statusMsg.message_id,
+                      null,
+                      errPrompt.text,
+                      {
+                        parse_mode: "HTML",
+                        reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+                      }
+                    ).catch(() => {});
                 }
             }
         }, 30000);
@@ -933,7 +1302,12 @@ async function handleGroupDownload(ctx, resourceId) {
 
   } catch (err) {
     activeUserRequests.delete(requestKey);
-    await ctx.reply(templates.renderError(), { parse_mode: "HTML" });
+    const errorClass = classifyDeliveryError(err);
+    const errPrompt = templates.renderDeliveryError(errorClass);
+    await ctx.reply(errPrompt.text, {
+      parse_mode: "HTML",
+      reply_markup: Markup.inlineKeyboard(errPrompt.keyboard).reply_markup
+    }).catch(() => {});
   }
 }
 
@@ -952,14 +1326,14 @@ function registerFileDeliveryHandlers(bot) {
 
   bot.action(/flt_([a-f0-9]+)_(\d+)_([a-z]+)/, async (ctx) => {
     const queryHash = ctx.match[1];
-    const page = parseInt(ctx.match[2], 10);
+    const page = Math.max(1, parseInt(ctx.match[2], 10) || 1);
     const filter = ctx.match[3];
 
-    const session = await QuerySession.findOne({ queryHash });
-    const query = session ? session.query : null;
-    if (!query) {
-      return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    const resolved = await resolveSearchSession(ctx, queryHash);
+    if (!resolved || !resolved.query) {
+      return await handleExpiredSession(ctx, queryHash);
     }
+    const query = resolved.query;
 
     const user = await userService.findByTelegramId(ctx.from.id);
 
@@ -977,21 +1351,23 @@ function registerFileDeliveryHandlers(bot) {
 
   bot.action(/pg_([a-f0-9]+|saves)_(\d+)(?:_([a-z]+))?/, async (ctx) => {
     const queryHash = ctx.match[1];
-    const page = parseInt(ctx.match[2], 10);
+    const page = Math.max(1, parseInt(ctx.match[2], 10) || 1);
     const activeFilter = ctx.match[3] || "all";
 
-    await ctx.answerCbQuery();
-
     if (queryHash === "saves") {
+      await ctx.answerCbQuery();
       const user = await userService.findByTelegramId(ctx.from.id);
       const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
       return await sendPaginatedSaves(ctx, saves, page);
     }
 
-    const session = await QuerySession.findOne({ queryHash });
-    const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    const resolved = await resolveSearchSession(ctx, queryHash);
+    if (!resolved || !resolved.query) {
+      return await handleExpiredSession(ctx, queryHash);
+    }
+    const query = resolved.query;
 
+    await ctx.answerCbQuery(`📄 Page ${page}`);
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
     await sendPaginatedResults(ctx, results, query, queryHash, page, activeFilter, user);
@@ -999,22 +1375,24 @@ function registerFileDeliveryHandlers(bot) {
 
   bot.action(/num_([a-f0-9]+|saves)_(\d+)_(\d+)(?:_([a-z]+))?/, async (ctx) => {
     const queryHash = ctx.match[1];
-    const page = parseInt(ctx.match[2], 10);
+    const page = Math.max(1, parseInt(ctx.match[2], 10) || 1);
     const resultIndex = parseInt(ctx.match[3], 10);
     const activeFilter = ctx.match[4] || "all";
 
-    await ctx.answerCbQuery();
-
     if (queryHash === "saves") {
+      await ctx.answerCbQuery();
       const user = await userService.findByTelegramId(ctx.from.id);
       const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
       return await renderSavedDetailCard(ctx, saves, page, resultIndex);
     }
 
-    const session = await QuerySession.findOne({ queryHash });
-    const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    const resolved = await resolveSearchSession(ctx, queryHash);
+    if (!resolved || !resolved.query) {
+      return await handleExpiredSession(ctx, queryHash);
+    }
+    const query = resolved.query;
 
+    await ctx.answerCbQuery();
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
     await renderDetailCardHandler(ctx, results, queryHash, page, resultIndex, activeFilter, user);
@@ -1022,21 +1400,23 @@ function registerFileDeliveryHandlers(bot) {
 
   bot.action(/back_([a-f0-9]+|saves)_(\d+)(?:_([a-z]+))?/, async (ctx) => {
     const queryHash = ctx.match[1];
-    const page = parseInt(ctx.match[2], 10);
+    const page = Math.max(1, parseInt(ctx.match[2], 10) || 1);
     const activeFilter = ctx.match[3] || "all";
 
-    await ctx.answerCbQuery();
-
     if (queryHash === "saves") {
+      await ctx.answerCbQuery();
       const user = await userService.findByTelegramId(ctx.from.id);
       const saves = await SavedResource.find({ userId: user._id }).sort({ savedAt: -1 });
       return await sendPaginatedSaves(ctx, saves, page);
     }
 
-    const session = await QuerySession.findOne({ queryHash });
-    const query = session ? session.query : null;
-    if (!query) return await ctx.answerCbQuery("❌ Session expired. Please search again.", { show_alert: true });
+    const resolved = await resolveSearchSession(ctx, queryHash);
+    if (!resolved || !resolved.query) {
+      return await handleExpiredSession(ctx, queryHash);
+    }
+    const query = resolved.query;
 
+    await ctx.answerCbQuery();
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
     await sendPaginatedResults(ctx, results, query, queryHash, page, activeFilter, user);
@@ -1101,14 +1481,11 @@ function registerFileDeliveryHandlers(bot) {
 
     await ctx.answerCbQuery();
 
-    const session = await QuerySession.findOne({ queryHash });
-    const query = session ? session.query : null;
-    if (!query) {
-      return await ctx.answerCbQuery(
-        "❌ Session expired. Please search again.",
-        { show_alert: true }
-      );
+    const resolved = await resolveSearchSession(ctx, queryHash);
+    if (!resolved || !resolved.query) {
+      return await handleExpiredSession(ctx, queryHash);
     }
+    const query = resolved.query;
 
     const user = await userService.findByTelegramId(ctx.from.id);
     const results = await orchestrationService.searchResources(query, user);
@@ -1310,4 +1687,11 @@ module.exports = {
   getPendingDeliveryDebugInfo,
   handleDownload,
   handleGroupDownload,
+  resolveSearchSession,
+  extractQueryFromMessage,
+  saveSearchSession,
+  handleExpiredSession,
+  classifyDeliveryError,
+  DELIVERY_ERROR_TYPES,
+  markResourceUnavailable,
 };

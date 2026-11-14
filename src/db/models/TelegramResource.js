@@ -48,6 +48,8 @@ TelegramResourceSchema.index(
   { channelUsername: 1, messageId: 1 },
   { unique: true },
 );
+TelegramResourceSchema.index({ groupId: 1 });
+TelegramResourceSchema.index({ fileUniqueId: 1 });
 TelegramResourceSchema.index({ courseCode: 1 });
 TelegramResourceSchema.index({ isExam: 1, fileType: 1 });
 
